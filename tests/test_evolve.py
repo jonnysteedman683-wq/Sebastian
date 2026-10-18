@@ -301,3 +301,89 @@ def test_open_pr_uses_gh(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
         open_pr(tmp_path, "x", item)
     with pytest.raises(EvolveError, match="git is not installed"):
         evolve_once(tmp_path, agent(), cfg(tmp_path))
+
+
+# --- sandboxed gates (B27) ----------------------------------------------------------------
+
+FAKE_BWRAP = f"""#!{PY}
+# Stand-in for bubblewrap: logs its argv, then runs the wrapped command in the bound dir.
+import os, subprocess, sys
+args = sys.argv[1:]
+with open(os.environ.get("FAKE_BWRAP_LOG", "/dev/null"), "a") as fh:
+    fh.write(" ".join(args) + "\\n")
+if args[:1] == ["--unshare-all"] and "--" not in args:
+    sys.exit(0)
+cut = args.index("--")
+opts, cmd = args[:cut], args[cut + 1:]
+cwd = opts[opts.index("--bind") + 1] if "--bind" in opts else None
+sys.exit(subprocess.run(cmd, cwd=cwd).returncode)
+"""
+
+
+@pytest.fixture
+def fake_bwrap(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    fake = tmp_path / "bin" / "bwrap"
+    fake.parent.mkdir()
+    fake.write_text(FAKE_BWRAP)
+    fake.chmod(0o755)
+    log = tmp_path / "bwrap.log"
+    monkeypatch.setenv("FAKE_BWRAP_LOG", str(log))
+    real = shutil.which
+    monkeypatch.setattr("shutil.which", lambda n, *a, **k: str(fake) if n == "bwrap" else real(n))
+    return log
+
+
+def test_resolve_sandbox_modes(fake_bwrap: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from sebastian.evolve import resolve_sandbox
+
+    assert resolve_sandbox("none") is None
+    assert resolve_sandbox("auto") is not None
+    assert resolve_sandbox("bwrap") is not None
+    with pytest.raises(EvolveError, match="unknown sandbox"):
+        resolve_sandbox("docker")
+    monkeypatch.setattr("shutil.which", lambda *a, **k: None)
+    assert resolve_sandbox("auto") is None
+    with pytest.raises(EvolveError, match="missing or blocked"):
+        resolve_sandbox("bwrap")
+
+
+def test_bwrap_usable_probe(fake_bwrap: Path, tmp_path: Path) -> None:
+    from sebastian.tools.builtin import bwrap_usable
+
+    assert bwrap_usable(shutil.which("bwrap") or "")
+    assert not bwrap_usable(str(tmp_path / "missing"))
+
+
+def test_gates_run_inside_the_sandbox(repo: Path, tmp_path: Path, fake_bwrap: Path) -> None:
+    report = evolve_once(
+        repo, agent(write("1", "greet.txt", "hello")), cfg(tmp_path, sandbox="bwrap")
+    )
+    assert report.accepted, report.summary()
+    assert report.sandbox == "bwrap"
+    assert "gate sandbox: bwrap" in report.summary()
+    log = fake_bwrap.read_text().splitlines()
+    wrapped = [line for line in log if line.startswith("--unshare-all --die-with-parent")]
+    assert len(wrapped) == 3  # one check + baseline eval + candidate eval
+    for line in wrapped:
+        assert line.startswith("--unshare-all --die-with-parent --new-session")
+        assert " /workspace --chdir /workspace --clearenv " in line
+        assert "--setenv HOME /workspace" in line
+        assert "--setenv PYTHONPATH /workspace/src" in line
+        assert f"--ro-bind-try {sys.prefix} {sys.prefix}" in line
+        assert f" -- {PY} " in line
+
+
+def test_unsandboxed_when_asked(repo: Path, tmp_path: Path, fake_bwrap: Path) -> None:
+    report = evolve_once(repo, agent(write("1", "greet.txt", "x")), cfg(tmp_path, sandbox="none"))
+    assert report.accepted
+    assert report.sandbox == "none"
+    assert "--die-with-parent" not in (fake_bwrap.read_text() if fake_bwrap.exists() else "")
+
+
+def test_required_sandbox_fails_before_any_work(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("shutil.which", lambda n, *a, **k: None if n == "bwrap" else GIT)
+    with pytest.raises(EvolveError, match="required"):
+        evolve_once(repo, agent(write("1", "greet.txt", "x")), cfg(tmp_path, sandbox="bwrap"))
+    assert git(repo, "worktree", "list").count("\n") == 1
