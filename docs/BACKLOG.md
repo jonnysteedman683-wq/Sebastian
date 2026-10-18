@@ -19,7 +19,7 @@ Rules:
   *Done when:* tests with `FakeClock` and `ScriptedLLM` show exactly one warning per limit.
 - [x] **B5 `sebastian traces` CLI command.** Print the last N runs from `traces.jsonl` (run_id, start time, stop reason, steps, tokens).
   *Done when:* tests cover empty file, N > runs, malformed line skipped. Update `schemas/examples/` (new CLI command) and re-sign.
-- [ ] **B6 Memory dedup.** In `MemoryStore.record`, replace an episode with the same task text instead of appending a duplicate.
+- [x] **B6 Memory dedup.** In `MemoryStore.record`, replace an episode with the same task text instead of appending a duplicate.
   *Done when:* tests show one episode after recording the same task twice, with the newest outcome kept.
 - [ ] **B7 Docs coverage.** Every public function and class in `src/sebastian/` has a docstring; add ruff rule `D1` for `src/` only.
   *Done when:* `ruff check .` passes with `D1` enabled for `src/`.
@@ -38,6 +38,15 @@ Rules:
 
 - [x] **B14 Planning phase + replan nudge.** Tool-free planning call feeding `<plan>` into the system prompt; nudge after N consecutive tool failures.
   *Done when:* tests show the plan call has no tools, counts as a step and reaches the acting prompt; one nudge after 3 failures.
+
+- [x] **B15 BM25 recall.** Replace keyword-overlap recall with BM25 (no dependencies).
+  *Done when:* rare terms outrank common ones; existing recall tests pass unchanged.
+
+- [x] **B16 Parallel read tools.** Run a turn's READ-only tool calls concurrently, preserving result order.
+  *Done when:* a 3-way barrier test proves concurrency; a turn with a WRITE stays in order.
+
+- [x] **B17 Model routing.** Separate planner and escalation models (e.g. `claude-opus-5-5`) over a cheaper main model.
+  *Done when:* tests show the planner gets only the plan call and the escalation model only the step after a nudge.
 
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 

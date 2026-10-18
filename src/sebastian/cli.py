@@ -46,6 +46,8 @@ def _build_parser() -> argparse.ArgumentParser:
     run.add_argument(
         "--plan", action="store_true", help="plan before acting (one extra tool-free model call)"
     )
+    run.add_argument("--plan-model", help="model for the planning phase (implies --plan)")
+    run.add_argument("--escalation-model", help="model for the step after repeated tool failures")
 
     demo = sub.add_parser("demo", help="offline scripted run (no API key) to verify install")
     demo.add_argument("--workspace", "-w", type=Path, required=True)
@@ -133,13 +135,20 @@ def main(
     else:
         approver = InteractiveApprover()
 
-    model = args.model or cfg.model
+    make: Callable[[str], LLM]
     if llm_factory is None:
         from sebastian.llm.anthropic import AnthropicLLM  # noqa: PLC0415
 
-        llm: LLM = RetryingLLM(AnthropicLLM(model))
+        def make(name: str) -> LLM:
+            return RetryingLLM(AnthropicLLM(name))
+
     else:
-        llm = llm_factory(model)
+        make = llm_factory
+
+    model = args.model or cfg.model
+    llm = make(model)
+    plan_model = args.plan_model or cfg.plan_model
+    escalation_model = args.escalation_model or cfg.escalation_model
 
     agent = Sebastian(
         llm=llm,
@@ -149,7 +158,11 @@ def main(
         memory=None if args.no_memory else MemoryStore(cfg.home / "memory.json"),
         tracer=JsonlTracer(cfg.home / "traces.jsonl", clock),
         clock=clock,
-        plan=args.plan,
+        plan=args.plan or bool(args.plan_model),
+        planner_llm=make(plan_model) if plan_model and plan_model != model else None,
+        escalation_llm=(
+            make(escalation_model) if escalation_model and escalation_model != model else None
+        ),
     )
     return _print_result(agent.run(args.task))
 

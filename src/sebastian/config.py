@@ -32,6 +32,8 @@ class Config:
     max_tokens: int = 200_000
     max_seconds: int = 600
     home: Path = Path.home() / ".sebastian"
+    plan_model: str = ""
+    escalation_model: str = ""
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> Config:
@@ -42,4 +44,6 @@ class Config:
             max_tokens=_int(env, "SEBASTIAN_MAX_TOKENS", 200_000),
             max_seconds=_int(env, "SEBASTIAN_MAX_SECONDS", 600),
             home=Path(env.get("SEBASTIAN_HOME") or Path.home() / ".sebastian"),
+            plan_model=env.get("SEBASTIAN_PLAN_MODEL", ""),
+            escalation_model=env.get("SEBASTIAN_ESCALATION_MODEL", ""),
         )
