@@ -417,3 +417,24 @@ def test_agent_commands_unsandboxed_when_gates_are(
     )
     assert report.accepted
     assert not fake_bwrap.exists() or "pytest --version" not in fake_bwrap.read_text()
+
+
+def test_budget_stopped_agent_is_resumed(repo: Path, tmp_path: Path) -> None:
+    from sebastian import Budget
+
+    def llm() -> ScriptedLLM:  # plan + 1 step fits the budget; the greet write needs a resume
+        return agent(write("1", "notes.txt", "started"), write("2", "greet.txt", "hello"))
+
+    tight = Budget(max_steps=2)
+    report = evolve_once(repo, llm(), cfg(tmp_path, budget=tight))
+    assert report.accepted, report.summary()
+    assert report.resumes == 1
+    assert report.run_stop == "completed"
+    assert sorted(report.changed) == ["greet.txt", "notes.txt"]
+    assert "agent resumed: 1x" in report.summary()
+
+    report = evolve_once(repo, llm(), cfg(tmp_path, budget=tight, max_resumes=0))
+    assert not report.accepted
+    assert report.resumes == 0
+    assert report.run_stop == "budget_exhausted"
+    assert report.reason.startswith("check failed")

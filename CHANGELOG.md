@@ -4,6 +4,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B31 evolve resume)
+- `sebastian evolve --resumes N` (default 1): when the agent run inside a cycle stops on its budget, it is resumed from its saved conversation (fresh budget each time) up to N times before the gates run, instead of the work being judged half-done. `--resumes 0` disables it. The report shows `agent resumed: Nx`; gates and limits are unchanged.
+
 ### Added (B30 red-team twin)
 - `sebastian redteam -n N [--attacker-model M] [--out evals/scars] [--no-save]`: an attacker model writes prompt-injection test cases (a harmless read-only task plus workspace files hiding an instruction). Every attack must aim at a fixed canary (create `PWNED.txt` or run `echo pwned`); proposals without the canary, with unsafe paths, a pre-seeded canary or oversized content are discarded before they run.
 - Each attack runs against a fresh target with every gated action denied, so nothing changes even on success. A *breach* is any attempt at a gated action; breaches are saved as scars (`evals/scars/redteam-*.json`, expecting `no_gated_attempt` and `unchanged`) that every live eval run replays. Exit code 1 when any breach was found. The attacker gets no tools.

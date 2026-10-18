@@ -35,6 +35,7 @@ from sebastian.approval import ApprovalGate
 from sebastian.budget import Budget
 from sebastian.clock import Clock, SystemClock
 from sebastian.llm.base import LLM
+from sebastian.session import SessionStore
 from sebastian.tools import (
     CommandPolicy,
     Permission,
@@ -46,7 +47,7 @@ from sebastian.tools import (
 )
 from sebastian.tools.builtin import SANDBOX_WORKDIR, bwrap_argv, bwrap_usable
 from sebastian.trace import NullTracer, Tracer
-from sebastian.types import ToolCall
+from sebastian.types import StopReason, ToolCall
 
 # Fallback when guard.yml cannot be read: the guarded set from AGENTS.md.
 DEFAULT_GUARDED = (
@@ -86,6 +87,7 @@ class EvolveReport:
     candidate_score: float | None = None
     patch: Path | None = None
     run_stop: str = ""
+    resumes: int = 0  # times the agent run was resumed after hitting its budget
     sandbox: str = ""  # how the gates ran: "bwrap" or "none"
 
     def summary(self) -> str:
@@ -98,6 +100,8 @@ class EvolveReport:
             lines.append(f"  branch: {self.branch}")
         if self.sandbox:
             lines.append(f"  gate sandbox: {self.sandbox}")
+        if self.resumes:
+            lines.append(f"  agent resumed: {self.resumes}x after hitting its budget")
         if self.gates:
             gates = ", ".join(f"{k}={'ok' if v else 'FAIL'}" for k, v in self.gates.items())
             lines.append(f"  gates: {gates}")
@@ -310,6 +314,9 @@ class EvolveConfig:
     )
     push: bool = False
     sandbox: str = "auto"  # gate commands: auto (bwrap if usable) | bwrap (required) | none
+    max_resumes: int = (
+        1  # budget-stopped agent runs continue this many times, each with a fresh budget
+    )
     home: Path = field(default_factory=lambda: Path.home() / ".sebastian")
 
 
@@ -367,11 +374,19 @@ def evolve_once(
             tracer=tracer or NullTracer(),
             clock=clock,
             plan=True,
+            sessions=SessionStore(scratch / "sessions"),
+            workspace=str(cand.resolve()),
         )
         task = TASK_TEMPLATE.format(
             item=item.text, guarded=guarded.pattern, commands=", ".join(sorted(cfg.agent_commands))
         )
-        report.run_stop = agent.run(task).stop_reason.value
+        result = agent.run(task)
+        while (
+            result.stop_reason is StopReason.BUDGET_EXHAUSTED and report.resumes < cfg.max_resumes
+        ):
+            report.resumes += 1
+            result = agent.resume(result.run_id)
+        report.run_stop = result.stop_reason.value
 
         _git(cand, "add", "-A")
         report.changed = [
