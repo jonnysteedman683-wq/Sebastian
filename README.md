@@ -64,7 +64,7 @@ sebastian-watch canary --seq N                                          # watche
 sebastian-watch verify report.json --expect-seq N --expect-from <sha>   # coordinator: accept/reject
 ```
 
-Report contract: [`schemas/`](schemas/).
+Report contract: [`schemas/`](schemas/). Automated by `.github/workflows/watch.yml`: setup in [`docs/watch/RUNBOOK.md`](docs/watch/RUNBOOK.md).
 
 ## Development
 

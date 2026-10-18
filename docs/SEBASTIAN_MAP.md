@@ -37,7 +37,7 @@ flowchart TD
 | Memory/state | `memory.py` (JSON, schema v1) |
 | LLM backends | `llm/anthropic.py`, `llm/scripted.py`, `llm/base.py` |
 | Schedulers / servers | None (deliberately). See PROPOSALS. |
-| Repo watch tooling | `watch/` (`sebastian-watch`): `gitio.py` read-only git, `inventory.py` static AST inventory + risk signals, `report.py` finalise/sign/verify, `cli.py` |
+| Repo watch tooling | `watch/` (`sebastian-watch`): `gitio.py` read-only git, `inventory.py` static AST inventory + risk signals, `report.py` finalise/sign/verify, `runner.py` unattended run + delivery, `cli.py`; scheduled by `.github/workflows/watch.yml` (state on `watch-state` branch) |
 | External contracts | `schemas/repo_change_report.schema.json`: report format for the repo watcher and coordinator bots (`docs/watch/`) |
 
 ## Dependencies
@@ -57,7 +57,7 @@ See README table. Only secret is `ANTHROPIC_API_KEY`, read by the SDK; never sto
 
 ## Tests
 
-pytest, 131 tests (incl. 27 schema contract and 19 watchkit tests), 98.6% branch coverage (gate 90%). No network or real LLM in tests.
+pytest, 156 tests (incl. 27 schema contract and 44 watchkit tests), 98.6% branch coverage (gate 90%). No network or real LLM in tests.
 
 ## Runtime check
 

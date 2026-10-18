@@ -11,6 +11,10 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 - Dev dependencies: `jsonschema`, `types-jsonschema`.
 - `sebastian-watch` (watchkit, `sebastian.watch`): `scan`, `finalize`, `canary`, `verify` for the watcher and coordinator. Static capability inventory via `git show` + `ast` (repo code never executed), deterministic risk signals, history-rewrite detection, rule enforcement (priority/risk/escalation only ever raised), schema validation and HMAC signing. Optional extra `watch`.
 - CI: watchkit canary build + verify smoke step.
+- `.github/workflows/watch.yml`: unattended watcher on push, hourly, daily digest (08:00 Brisbane) and weekly canary (Mon 08:15 Brisbane). State on the `watch-state` branch, advanced only on coordinator acknowledgement. Dry run until secrets are set.
+- `sebastian-watch run`: full pipeline with Grok draft endpoint, mechanical fallback draft, delivery retries (30s/2m/8m), outage and history-rewrite escalation.
+- Changes to watch tooling, the watch workflow or the schema now add +3 risk and always escalate.
+- `docs/watch/RUNBOOK.md`: setup, endpoint contracts, state, operations.
 
 ## [0.1.0] - 2026-10-18
 
