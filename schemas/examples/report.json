@@ -90,6 +90,7 @@
     "cli_commands": [
       "run",
       "demo",
+      "traces",
       "version"
     ],
     "llm_backends": [
@@ -114,5 +115,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "e920e8f76c98b03372bc616c7ee6de45a47159269ba89a5909f909de7c80b385"
+  "signature": "f4c195c4aa65b7605027ee5ef726aa3c4008579ba9e1664647a3953803b26355"
 }

@@ -119,7 +119,15 @@ class Sebastian:
         governor: Governor,
         detail: str = "",
     ) -> RunResult:
-        self.tracer.emit(run_id, "run_end", stop=reason.value, steps=governor.steps, detail=detail)
+        self.tracer.emit(
+            run_id,
+            "run_end",
+            stop=reason.value,
+            steps=governor.steps,
+            detail=detail,
+            # "usage", not "tokens": keys containing "token" are redacted as secrets.
+            usage={"input": governor.usage.input_tokens, "output": governor.usage.output_tokens},
+        )
         return RunResult(run_id, reason, answer, governor.steps, governor.usage, detail)
 
     def _remember(self, task: str, result: RunResult) -> None:

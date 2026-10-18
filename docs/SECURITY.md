@@ -17,7 +17,7 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 | Prompt injection via tool output / memory | System prompt marks them as data; memory wrapped in `<recalled_memory>` | Prompt review (behavioural evals: proposal U12) |
 | Runaway cost / infinite loop | Governor: steps, tokens, wall-clock | `test_step_budget_stops_run`, `test_token_and_time_budgets` |
 | Repeat-failure loops | Identical failed call is blocked within a run | `test_repeated_failed_call_is_blocked` |
-| Secrets in logs | `trace.redact` on keys and token-shaped values | `test_redaction`, `test_jsonl_tracer` |
+| Secrets in logs | `trace.redact` on keys and token-shaped values. The key match is broad on purpose (any key containing `token`), so non-secret counts must use other key names, e.g. `run_end.usage` | `test_redaction`, `test_jsonl_tracer`, `test_run_end_usage_survives_redaction` |
 | Corrupt / tampered memory | Schema-validated load, raises instead of wiping; atomic writes | `test_memory_corruption_raises` |
 | Untrusted deserialisation | JSON only. No pickle/eval anywhere. | `grep -rn "pickle\|eval(" src` is empty |
 

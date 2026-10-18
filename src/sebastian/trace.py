@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -60,3 +61,43 @@ class JsonlTracer:
         record.update(redact(data))
         with self.path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
+
+
+@dataclass(slots=True)
+class RunSummary:
+    run_id: str
+    started: float | None = None
+    stop: str = "running"
+    steps: int = 0
+    tokens: int = 0
+
+
+def summarize_runs(path: str | Path, limit: int) -> list[RunSummary]:
+    """Summarise the last ``limit`` runs in a JSONL trace file, oldest first.
+
+    Missing files give no runs; malformed or foreign lines are skipped.
+    """
+    runs: dict[str, RunSummary] = {}
+    try:
+        lines = Path(path).read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError:
+        return []
+    for line in lines:
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(rec, dict) or not isinstance(rec.get("run_id"), str):
+            continue
+        run = runs.setdefault(rec["run_id"], RunSummary(rec["run_id"]))
+        event = rec.get("event")
+        if event == "run_start" and isinstance(rec.get("t"), int | float):
+            run.started = float(rec["t"])
+        elif event == "run_end":
+            run.stop = str(rec.get("stop", "unknown"))
+            if isinstance(rec.get("steps"), int):
+                run.steps = rec["steps"]
+            usage = rec.get("usage")
+            if isinstance(usage, dict):
+                run.tokens = sum(v for v in usage.values() if isinstance(v, int))
+    return list(runs.values())[-limit:]
