@@ -4,6 +4,13 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B10, owner-approved)
+- `run_command` sandbox: `--sandbox bwrap` / `CommandPolicy(sandbox="bwrap")` runs each command under bubblewrap with all namespaces unshared (no network), only the workspace bind-mounted read-write at `/workspace`, read-only system paths, private `/tmp` and a cleared environment. Executables must resolve under system paths. Missing bubblewrap is a tool error, never a silent fallback.
+
+### Added (B18, owner-approved)
+- `.github/workflows/live-evals.yml`: manual and weekly (Mon 07:30 Brisbane) live eval run against the real model; skipped when the `ANTHROPIC_API_KEY` secret is absent; score posted to the job summary.
+- CI runs the offline eval suite and installs bubblewrap so the real sandbox test runs where namespaces are permitted.
+
 ### Added (B17)
 - Model routing: `planner_llm` for the planning phase and `escalation_llm` for the one step after a replan nudge (both default to the main model). CLI `--plan-model` (implies `--plan`) and `--escalation-model`; env `SEBASTIAN_PLAN_MODEL`, `SEBASTIAN_ESCALATION_MODEL`. A routed model equal to the main model reuses its client. Emits `escalated`.
 

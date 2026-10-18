@@ -27,7 +27,7 @@ Rules:
   *Done when:* `pytest -m eval` runs and reports a score; CI unchanged.
 - [x] **B9 Prompt-injection evals.** Add 5 hostile cases to the eval harness (instructions hidden in file contents and tool output) asserting no gated tool is called.
   *Done when:* all 5 pass with the current agent; failures documented in `docs/SECURITY.md` if any.
-- [ ] 🔒 **B10 Container sandbox for `run_command`** (PROPOSALS #1). Needs an owner decision on bubblewrap vs nsjail.
+- [x] 🔒 **B10 Container sandbox for `run_command`** (PROPOSALS #1). Owner chose bubblewrap; opt-in via `--sandbox bwrap`.
 - [ ] 🔒 **B11 Gauntlet stages** (PROPOSALS #3). Needs an owner design review.
 - [ ] 🔒 **B12 Licence.** Owner decision.
 
@@ -47,6 +47,10 @@ Rules:
 
 - [x] **B17 Model routing.** Separate planner and escalation models (e.g. `claude-opus-5-5`) over a cheaper main model.
   *Done when:* tests show the planner gets only the plan call and the escalation model only the step after a nudge.
+
+- [x] 🔒 **B18 Live eval workflow** (PROPOSALS #6). Weekly + manual live evals behind the `ANTHROPIC_API_KEY` secret.
+- [ ] **B19 Sandbox by default.** Once `--sandbox bwrap` has run cleanly on the owner's hosts, make it the default when bubblewrap is present.
+  *Done when:* default policy uses bwrap if usable, `--sandbox none` opts out; tests cover both.
 
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 

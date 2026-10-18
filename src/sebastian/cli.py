@@ -46,6 +46,12 @@ def _build_parser() -> argparse.ArgumentParser:
     run.add_argument(
         "--plan", action="store_true", help="plan before acting (one extra tool-free model call)"
     )
+    run.add_argument(
+        "--sandbox",
+        choices=["none", "bwrap"],
+        default="none",
+        help="isolate run_command: bwrap = Linux namespaces, no network, workspace-only",
+    )
     run.add_argument("--plan-model", help="model for the planning phase (implies --plan)")
     run.add_argument("--escalation-model", help="model for the step after repeated tool failures")
 
@@ -127,7 +133,7 @@ def main(
         return _print_result(agent.run("Write hello.txt containing 'hello' and verify it."))
 
     if args.allow_cmd:
-        registry.register(command_tool(ws, CommandPolicy.of(args.allow_cmd)))
+        registry.register(command_tool(ws, CommandPolicy.of(args.allow_cmd, sandbox=args.sandbox)))
 
     approver: Approver
     if args.unattended or not sys.stdin.isatty():
