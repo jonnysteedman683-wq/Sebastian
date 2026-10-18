@@ -18,7 +18,12 @@ from sebastian.tools import (
     file_tools,
     make_tool,
 )
-from sebastian.tools.builtin import MAX_OUTPUT_CHARS, MAX_READ_BYTES, _truncate
+from sebastian.tools.builtin import (
+    MAX_OUTPUT_CHARS,
+    MAX_READ_BYTES,
+    MAX_SEARCH_MATCHES,
+    _truncate,
+)
 
 
 @pytest.fixture
@@ -112,10 +117,62 @@ def test_read_line_range_out_of_range(ws: Workspace, args: dict[str, int]) -> No
         t["read_file"].invoke({"path": "f.txt", **args})
 
 
+def _search(ws: Workspace, **args: object) -> str:
+    return {tool.name: tool for tool in file_tools(ws)}["search_files"].invoke(dict(args))
+
+
+def test_search_finds_matches(ws: Workspace) -> None:
+    (ws.root / "a.txt").write_text("alpha\nneedle one\n")
+    (ws.root / "d").mkdir()
+    (ws.root / "d" / "b.py").write_text("x = 1\n# needle two\n")
+    assert _search(ws, query="needle") == "a.txt:2: needle one\nd/b.py:2: # needle two"
+    assert _search(ws, query="needle", path="d") == "d/b.py:2: # needle two"
+
+
+def test_search_no_match_and_empty_query(ws: Workspace) -> None:
+    (ws.root / "a.txt").write_text("alpha\n")
+    assert _search(ws, query="zzz") == "(no matches)"
+    with pytest.raises(ToolError, match="empty query"):
+        _search(ws, query="")
+    with pytest.raises(ToolError, match="not a directory"):
+        _search(ws, query="a", path="a.txt")
+
+
+def test_search_caps_matches(ws: Workspace) -> None:
+    (ws.root / "many.txt").write_text("hit\n" * (MAX_SEARCH_MATCHES + 5))
+    out = _search(ws, query="hit").splitlines()
+    assert len(out) == MAX_SEARCH_MATCHES + 1
+    assert out[-1] == f"...[capped at {MAX_SEARCH_MATCHES} matches]"
+
+
+def test_search_skips_binary_large_and_git(ws: Workspace) -> None:
+    (ws.root / "bin.dat").write_bytes(b"needle\x00\x01")
+    (ws.root / "big.txt").write_bytes(b"needle\n" + b"x" * MAX_READ_BYTES)
+    (ws.root / ".git").mkdir()
+    (ws.root / ".git" / "config").write_text("needle\n")
+    (ws.root / "ok.txt").write_text("needle\n")
+    assert _search(ws, query="needle") == "ok.txt:1: needle"
+
+
+def test_search_stays_in_jail(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    (tmp_path / "secret.txt").write_text("needle\n")
+    (tmp_path / "outdir").mkdir()
+    (tmp_path / "outdir" / "s.txt").write_text("needle\n")
+    (root / "link.txt").symlink_to(tmp_path / "secret.txt")
+    (root / "linkdir").symlink_to(tmp_path / "outdir")
+    w = Workspace(root)
+    assert _search(w, query="needle") == "(no matches)"
+    with pytest.raises(WorkspaceError):
+        _search(w, query="needle", path="..")
+
+
 def test_permissions(ws: Workspace) -> None:
     t = {tool.name: tool for tool in file_tools(ws)}
     assert t["read_file"].permission is Permission.READ
     assert t["write_file"].permission is Permission.WRITE
+    assert t["search_files"].permission is Permission.READ
 
 
 # --- schema + argument validation -----------------------------------------
@@ -158,7 +215,7 @@ def test_make_tool_requires_docstring_and_supported_types() -> None:
 
 def test_registry(ws: Workspace) -> None:
     reg = ToolRegistry(file_tools(ws))
-    assert len(reg) == 3
+    assert len(reg) == 4
     assert reg.get("nope") is None
     with pytest.raises(ValueError, match="duplicate"):
         reg.register(file_tools(ws)[0])

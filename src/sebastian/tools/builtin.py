@@ -9,12 +9,14 @@ import subprocess
 import sys
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from sebastian.tools.base import Permission, Tool, ToolError, make_tool
-from sebastian.tools.workspace import Workspace
+from sebastian.tools.workspace import Workspace, WorkspaceError
 
 MAX_READ_BYTES = 200_000
 MAX_OUTPUT_CHARS = 20_000
+MAX_SEARCH_MATCHES = 200
 
 
 def _truncate(text: str, limit: int = MAX_OUTPUT_CHARS) -> str:
@@ -62,11 +64,49 @@ def file_tools(ws: Workspace) -> list[Tool]:
         entries = sorted(p.name + ("/" if p.is_dir() else "") for p in target.iterdir())
         return "\n".join(entries) if entries else "(empty)"
 
+    def search_files(query: str, path: str = ".") -> str:
+        """Find lines containing `query` (case-sensitive substring) in workspace text files.
+
+        Returns `path:line: text` (line numbers are 1-based), at most 200 matches. Skips binary
+        files, files over the read limit, `.git/` and anything a symlink points outside the jail.
+        """
+        if not query:
+            raise ToolError("empty query")
+        base = ws.resolve(path)
+        if not base.is_dir():
+            raise ToolError(f"not a directory: {path}")
+        matches = _search_tree(ws, base, query)
+        return _truncate("\n".join(matches)) if matches else "(no matches)"
+
     return [
         make_tool(read_file, permission=Permission.READ),
         make_tool(write_file, permission=Permission.WRITE),
         make_tool(list_dir, permission=Permission.READ),
+        make_tool(search_files, permission=Permission.READ),
     ]
+
+
+def _search_tree(ws: Workspace, base: Path, query: str) -> list[str]:
+    matches: list[str] = []
+    for dirpath, dirnames, filenames in os.walk(base):  # never follows directory symlinks
+        dirnames[:] = sorted(d for d in dirnames if d != ".git")
+        for name in sorted(filenames):
+            shown = ws.display(Path(dirpath) / name)
+            try:
+                target = ws.resolve(shown)  # a file symlink may point outside the jail
+            except WorkspaceError:
+                continue
+            if not target.is_file() or target.stat().st_size > MAX_READ_BYTES:
+                continue
+            data = target.read_bytes()
+            if b"\x00" in data:
+                continue
+            for lineno, line in enumerate(data.decode("utf-8", errors="replace").splitlines(), 1):
+                if query in line:
+                    if len(matches) == MAX_SEARCH_MATCHES:
+                        return [*matches, f"...[capped at {MAX_SEARCH_MATCHES} matches]"]
+                    matches.append(f"{shown}:{lineno}: {line}")
+    return matches
 
 
 @dataclass(frozen=True, slots=True)

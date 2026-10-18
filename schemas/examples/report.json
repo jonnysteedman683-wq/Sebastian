@@ -84,6 +84,7 @@
       "read_file",
       "write_file",
       "list_dir",
+      "search_files",
       "run_command"
     ],
     "cli_commands": [
@@ -113,5 +114,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "0965a1d08e818df5b823eb004b0f8a4880a96cc0f15ac7b3b43c8b0dcbbca594"
+  "signature": "e920e8f76c98b03372bc616c7ee6de45a47159269ba89a5909f909de7c80b385"
 }

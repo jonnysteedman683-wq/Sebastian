@@ -10,6 +10,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 - `.github/workflows/guard.yml`: fails PRs touching the watcher, CI, the report contract or agent rules unless labelled `owner-approved`.
 - `scripts/resign_examples.py`: re-signs schema examples and updates `schemas/examples/VECTORS.md` (test vectors moved there, so routine capability changes don't touch guarded files).
 
+### Added (B3)
+- `search_files` tool (READ): case-sensitive substring search across workspace text files, returning `path:line: text` (1-based), capped at 200 matches; skips binary files, files over `MAX_READ_BYTES`, `.git/` and symlinks that leave the workspace.
+
 ### Added (B2)
 - `read_file` takes optional `start_line` (0-based) and `max_lines` (0 = all) to read a slice of a file; out-of-range or negative values return a tool error.
 
