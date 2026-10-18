@@ -4,6 +4,10 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B29 sandboxed agent commands in evolve)
+- When `evolve`'s gates run under bubblewrap, the agent's own `run_command` calls during the cycle (pytest, ruff, mypy) run in the same sandbox: no network, only the worktree writable, cleared environment. The whole self-improvement loop is now sandboxed whenever bwrap is usable.
+- `CommandPolicy.extra_ro`: extra read-only paths inside the sandbox; executables under them are allowed. `python_roots()` now also exposes the console-script directories (system and `pip --user`).
+
 ### Added (B27 sandboxed evolve gates)
 - `sebastian evolve --sandbox auto|bwrap|none` (default `auto`): the gate commands (ruff, format, mypy, pytest, and both eval runs) execute under bubblewrap when it is usable: every namespace unshared (no network), only the worktree writable (at `/workspace`), system and Python install paths read-only, private `/tmp`, cleared environment. `bwrap` makes the sandbox mandatory and fails before any worktree is created if it is unavailable; `auto` falls back to unsandboxed and says so. The report shows `gate sandbox: bwrap|none`.
 - `bwrap_argv(..., extra_ro=...)` and `bwrap_usable()` in `tools/builtin.py`.

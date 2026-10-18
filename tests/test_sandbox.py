@@ -83,3 +83,33 @@ def test_real_bwrap_jails_files_and_network(tmp_path: Path) -> None:  # pragma: 
     assert "inside" in tool.invoke({"command": "cat in.txt"})
     assert "exit_code=0" not in tool.invoke({"command": f"cat {Path.home()}/.bashrc"})
     assert "exit_code=0" not in tool.invoke({"command": "ls /root"})
+
+
+def test_extra_ro_makes_tools_visible(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    venv_bin = tmp_path / "venv" / "bin"
+    venv_bin.mkdir(parents=True)
+    tool = venv_bin / "mytool"
+    tool.write_text("#!/bin/sh\necho tool\n")
+    tool.chmod(0o755)
+    fake = tmp_path / "fakebwrap"
+    fake.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
+    fake.chmod(0o755)
+    real_which = shutil.which
+
+    def which(name: str, path: str | None = None) -> str | None:
+        return str(fake) if name == "bwrap" else real_which(name, path=path)
+
+    monkeypatch.setattr("shutil.which", which)
+    monkeypatch.setenv("PATH", f"{venv_bin}:/usr/bin:/bin")
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    hidden = command_tool(Workspace(ws), CommandPolicy.of(["mytool"], sandbox="bwrap"))
+    with pytest.raises(ToolError, match="not available inside the sandbox"):
+        hidden.invoke({"command": "mytool"})
+    venv = str(tmp_path / "venv")
+    seen = command_tool(
+        Workspace(ws), CommandPolicy.of(["mytool"], sandbox="bwrap", extra_ro=(venv,))
+    )
+    out = seen.invoke({"command": "mytool x"}).splitlines()
+    assert f"--ro-bind-try\n{venv}\n{venv}" in "\n".join(out)
+    assert out[-3:] == ["--", str(tool), "x"]
