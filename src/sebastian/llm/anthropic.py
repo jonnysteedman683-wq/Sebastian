@@ -19,6 +19,8 @@ _TRANSIENT_STATUS = {408, 409, 429, 500, 502, 503, 504, 529}
 
 
 class AnthropicLLM:
+    """Claude via the Anthropic Messages API, with prompt caching on the system prompt."""
+
     def __init__(
         self,
         model: str,
@@ -67,6 +69,7 @@ class AnthropicLLM:
     def complete(
         self, system: str, messages: Sequence[Message], tools: Sequence[Tool]
     ) -> LLMResponse:
+        """Send one request. Transient API failures raise ``TransientLLMError``."""
         import anthropic  # noqa: PLC0415
 
         kwargs: dict[str, Any] = {

@@ -21,7 +21,7 @@ Rules:
   *Done when:* tests cover empty file, N > runs, malformed line skipped. Update `schemas/examples/` (new CLI command) and re-sign.
 - [x] **B6 Memory dedup.** In `MemoryStore.record`, replace an episode with the same task text instead of appending a duplicate.
   *Done when:* tests show one episode after recording the same task twice, with the newest outcome kept.
-- [ ] **B7 Docs coverage.** Every public function and class in `src/sebastian/` has a docstring; add ruff rule `D1` for `src/` only.
+- [x] **B7 Docs coverage.** Every public function and class in `src/sebastian/` has a docstring; add ruff rule `D1` for `src/` only.
   *Done when:* `ruff check .` passes with `D1` enabled for `src/`.
 - [x] **B8 Eval harness skeleton (U12).** `evals/` with 5 scripted tasks run through `ScriptedLLM`, a scorer, and a `pytest` marker `eval`; no network.
   *Done when:* `pytest -m eval` runs and reports a score; CI unchanged.
@@ -51,6 +51,9 @@ Rules:
 - [x] 🔒 **B18 Live eval workflow** (PROPOSALS #6). Weekly + manual live evals behind the `ANTHROPIC_API_KEY` secret.
 - [ ] **B19 Sandbox by default.** Once `--sandbox bwrap` has run cleanly on the owner's hosts, make it the default when bubblewrap is present.
   *Done when:* default policy uses bwrap if usable, `--sandbox none` opts out; tests cover both.
+
+- [ ] 🔒 **B21 Docstrings for `watch/`.** B7 excluded `src/sebastian/watch/` (guarded). Add docstrings there and drop its `D1` ignore in `pyproject.toml`.
+  *Done when:* `ruff check .` passes with no `D1` ignore for `watch/`.
 
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 

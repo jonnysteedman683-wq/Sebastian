@@ -39,6 +39,7 @@ REPLAN_NUDGE = (
 
 
 def build_system_prompt(recalled: Sequence[Episode], plan: str = "") -> str:
+    """System prompt plus the optional plan and recalled memory, both marked as data."""
     prompt = SYSTEM_PROMPT
     if plan.strip():
         prompt += (

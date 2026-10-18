@@ -50,6 +50,8 @@ def _call_key(call: ToolCall) -> str:
 
 @dataclass
 class Sebastian:
+    """The agent: runs one task to completion inside its budget, approval gate and tools."""
+
     llm: LLM
     tools: ToolRegistry
     gate: ApprovalGate = field(default_factory=lambda: ApprovalGate(DenyApprover()))
@@ -67,6 +69,7 @@ class Sebastian:
     escalation_llm: LLM | None = None  # the step right after a replan nudge; defaults to ``llm``
 
     def run(self, task: str) -> RunResult:
+        """Run ``task`` and return how it ended. Always terminates (budget-bounded)."""
         if not task.strip():
             raise ValueError("task must not be empty")
         run_id = self.ids.new_id()

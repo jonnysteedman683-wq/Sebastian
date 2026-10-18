@@ -20,9 +20,12 @@ class TransientLLMError(LLMError):
 
 
 class LLM(Protocol):
+    """Anything that can answer one conversation turn, optionally with tool calls."""
+
     def complete(
         self, system: str, messages: Sequence[Message], tools: Sequence[Tool]
-    ) -> LLMResponse: ...
+    ) -> LLMResponse:
+        """Return the model's next turn for ``messages`` with ``tools`` available."""
 
 
 class RetryingLLM:
@@ -49,6 +52,7 @@ class RetryingLLM:
     def complete(
         self, system: str, messages: Sequence[Message], tools: Sequence[Tool]
     ) -> LLMResponse:
+        """Call the inner model, retrying transient errors."""
         for attempt in range(self.attempts):
             try:
                 return self.inner.complete(system, messages, tools)

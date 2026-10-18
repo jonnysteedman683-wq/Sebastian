@@ -27,6 +27,8 @@ def _truncate(text: str, limit: int = MAX_OUTPUT_CHARS) -> str:
 
 
 def file_tools(ws: Workspace) -> list[Tool]:
+    """READ and WRITE file tools jailed to ``ws``."""
+
     def read_file(path: str, start_line: int = 0, max_lines: int = 0) -> str:
         """Read a UTF-8 text file inside the workspace. `path` is relative to the workspace.
 
@@ -127,6 +129,7 @@ class CommandPolicy:
 
     @classmethod
     def of(cls, allowed: Iterable[str], **kwargs: object) -> CommandPolicy:
+        """Build a policy allowing the executables in ``allowed``."""
         return cls(allowed=frozenset(allowed), **kwargs)  # type: ignore[arg-type]
 
 
@@ -171,6 +174,7 @@ def _limits(policy: CommandPolicy) -> None:  # pragma: no cover - runs in the ch
 
 
 def command_tool(ws: Workspace, policy: CommandPolicy) -> Tool:
+    """The EXEC-level ``run_command`` tool, limited by ``policy``."""
     if not policy.allowed:
         raise ValueError("command tool requires a non-empty allowlist")
 

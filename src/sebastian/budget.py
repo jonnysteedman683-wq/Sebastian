@@ -15,6 +15,8 @@ WARN_FRACTION = 0.8
 
 @dataclass(frozen=True, slots=True)
 class Budget:
+    """Hard limits for one run: steps, tokens and wall-clock seconds."""
+
     max_steps: int = 25
     max_tokens: int = 200_000
     max_seconds: float = 600.0
@@ -25,6 +27,8 @@ class Budget:
 
 
 class Governor:
+    """Tracks a run's usage against its ``Budget``."""
+
     def __init__(self, budget: Budget, clock: Clock) -> None:
         self.budget = budget
         self._clock = clock
@@ -34,11 +38,13 @@ class Governor:
         self._warned: set[str] = set()
 
     def record_step(self, usage: Usage) -> None:
+        """Count one model call and add its token usage."""
         self.steps += 1
         self.usage = self.usage + usage
 
     @property
     def elapsed(self) -> float:
+        """Seconds since the run started, by the injected clock."""
         return self._clock.monotonic() - self._start
 
     def new_warnings(self) -> list[tuple[str, float, float]]:

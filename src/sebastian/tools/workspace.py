@@ -10,6 +10,8 @@ class WorkspaceError(PermissionError):
 
 
 class Workspace:
+    """The only directory tools may touch; every path is resolved and jailed to it."""
+
     def __init__(self, root: str | Path) -> None:
         self.root = Path(root).resolve(strict=True)
         if not self.root.is_dir():
@@ -28,5 +30,6 @@ class Workspace:
         return resolved
 
     def display(self, path: Path) -> str:
+        """``path`` relative to the workspace, for messages."""
         rel = path.relative_to(self.root)
         return "." if str(rel) == "." else rel.as_posix()

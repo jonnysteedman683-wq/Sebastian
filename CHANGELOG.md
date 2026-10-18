@@ -4,6 +4,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B7)
+- Docstrings on every public module, class, function and method in `src/sebastian/` (except the guarded `watch/` package, tracked as B21). Ruff now enforces `D1` for `src/` (`D105`/`D107` ignored; tests and scripts exempt).
+
 ### Fixed (B20)
 - `llm_step` and `plan` trace events now carry `usage={"input", "output"}` instead of `tokens`, which redaction always replaced with `[REDACTED]`. Redaction rules are unchanged. (Backlog item renumbered from a duplicate B13.)
 

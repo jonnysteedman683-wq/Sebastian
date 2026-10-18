@@ -29,6 +29,8 @@ class ToolError(Exception):
 
 @dataclass(frozen=True, slots=True)
 class Tool:
+    """A callable the model may use, with its permission level and JSON schema."""
+
     name: str
     description: str
     permission: Permission
@@ -36,6 +38,7 @@ class Tool:
     schema: JSON
 
     def invoke(self, arguments: JSON) -> str:
+        """Validate ``arguments`` against the schema, then run the tool."""
         allowed = set(self.schema["properties"])
         unknown = set(arguments) - allowed
         if unknown:
@@ -62,6 +65,7 @@ def _matches(value: Any, json_type: str) -> bool:
 
 
 def build_schema(func: Callable[..., str]) -> JSON:
+    """JSON schema for ``func`` inferred from its type hints and defaults."""
     hints = get_type_hints(func)
     props: JSON = {}
     required: list[str] = []
@@ -78,6 +82,7 @@ def build_schema(func: Callable[..., str]) -> JSON:
 
 
 def make_tool(func: Callable[..., str], *, permission: Permission, name: str | None = None) -> Tool:
+    """Wrap ``func`` as a ``Tool``; its docstring becomes the description."""
     doc = inspect.getdoc(func)
     if not doc:
         raise ValueError(f"tool {func.__name__} needs a docstring; it becomes the description")
@@ -91,17 +96,21 @@ def make_tool(func: Callable[..., str], *, permission: Permission, name: str | N
 
 
 class ToolRegistry:
+    """The set of tools available to a run, by unique name."""
+
     def __init__(self, tools: list[Tool] | None = None) -> None:
         self._tools: dict[str, Tool] = {}
         for tool in tools or []:
             self.register(tool)
 
     def register(self, tool: Tool) -> None:
+        """Add a tool; duplicate names are an error."""
         if tool.name in self._tools:
             raise ValueError(f"duplicate tool name: {tool.name}")
         self._tools[tool.name] = tool
 
     def get(self, name: str) -> Tool | None:
+        """Look a tool up by name."""
         return self._tools.get(name)
 
     def __iter__(self) -> Iterator[Tool]:
