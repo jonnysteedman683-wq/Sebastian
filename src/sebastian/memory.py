@@ -22,11 +22,15 @@ _WORD = re.compile(r"[a-z0-9_]{3,}")
 
 
 class MemoryCorruptError(ValueError):
+    """The memory file exists but is not valid; it is never silently discarded."""
+
     pass
 
 
 @dataclass(frozen=True, slots=True)
 class Episode:
+    """One remembered run: the task, how it ended, a short summary and when."""
+
     task: str
     outcome: str
     summary: str
@@ -34,6 +38,7 @@ class Episode:
 
     @classmethod
     def from_json(cls, raw: Any) -> Episode:
+        """Parse and validate one stored episode."""
         if not isinstance(raw, dict):
             raise MemoryCorruptError("episode is not an object")
         try:
@@ -105,6 +110,8 @@ def _task_key(task: str) -> str:
 
 
 class MemoryStore:
+    """Episodic memory persisted as JSON, written atomically and capped in size."""
+
     def __init__(self, path: str | Path, max_episodes: int = 500) -> None:
         self.path = Path(path)
         self.max_episodes = max_episodes

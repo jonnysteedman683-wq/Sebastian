@@ -27,6 +27,8 @@ def _int(env: Mapping[str, str], key: str, default: int) -> int:
 
 @dataclass(frozen=True, slots=True)
 class Config:
+    """Runtime settings read from ``SEBASTIAN_*`` environment variables. Holds no secrets."""
+
     model: str = DEFAULT_MODEL
     max_steps: int = 25
     max_tokens: int = 200_000
@@ -37,6 +39,7 @@ class Config:
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> Config:
+        """Build a config from ``env`` (default ``os.environ``), validating numbers."""
         env = os.environ if env is None else env
         return cls(
             model=env.get("SEBASTIAN_MODEL") or DEFAULT_MODEL,

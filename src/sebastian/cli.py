@@ -113,6 +113,7 @@ def main(
     argv: Sequence[str] | None = None,
     llm_factory: Callable[[str], LLM] | None = None,
 ) -> int:
+    """Parse ``argv`` and run a CLI command. Returns the process exit code."""
     args = _build_parser().parse_args(argv)
     if args.cmd == "version":
         print(__version__)

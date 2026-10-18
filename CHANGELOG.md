@@ -4,6 +4,15 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B22)
+- `edit_file` tool (WRITE, gated): replaces exact text in an existing workspace file; the text must be unique unless `replace_all` is set, and the file is untouched on any error. Saves the model rewriting whole files for small changes. Capability inventory in `schemas/examples/` updated and re-signed.
+
+### Added (B7)
+- Docstrings on every public module, class, function and method in `src/sebastian/` (except the guarded `watch/` package, tracked as B21). Ruff now enforces `D1` for `src/` (`D105`/`D107` ignored; tests and scripts exempt).
+
+### Fixed (B20)
+- `llm_step` and `plan` trace events now carry `usage={"input", "output"}` instead of `tokens`, which redaction always replaced with `[REDACTED]`. Redaction rules are unchanged. (Backlog item renumbered from a duplicate B13.)
+
 ### Added (B10, owner-approved)
 - `run_command` sandbox: `--sandbox bwrap` / `CommandPolicy(sandbox="bwrap")` runs each command under bubblewrap with all namespaces unshared (no network), only the workspace bind-mounted read-write at `/workspace`, read-only system paths, private `/tmp` and a cleared environment. Executables must resolve under system paths. Missing bubblewrap is a tool error, never a silent fallback.
 

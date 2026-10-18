@@ -17,6 +17,7 @@ from sebastian.llm.base import LLM, RetryingLLM
 
 
 def main(argv: Sequence[str] | None = None, live_llm: Callable[[str], LLM] | None = None) -> int:
+    """Run the eval suite and print the summary. Exit 1 below ``--min-score``."""
     p = argparse.ArgumentParser(prog="python -m sebastian.evals")
     p.add_argument("--live", action="store_true", help="run against a real model")
     p.add_argument("--model", help="override SEBASTIAN_MODEL (live only)")

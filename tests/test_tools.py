@@ -215,7 +215,7 @@ def test_make_tool_requires_docstring_and_supported_types() -> None:
 
 def test_registry(ws: Workspace) -> None:
     reg = ToolRegistry(file_tools(ws))
-    assert len(reg) == 4
+    assert len(reg) == 5
     assert reg.get("nope") is None
     with pytest.raises(ValueError, match="duplicate"):
         reg.register(file_tools(ws)[0])
@@ -277,3 +277,48 @@ def test_command_timeout_kills(ws: Workspace, monkeypatch: pytest.MonkeyPatch) -
     tool = command_tool(ws, CommandPolicy.of([PY], timeout_seconds=0.5))
     with pytest.raises(ToolError, match="timed out"):
         tool.invoke({"command": f'{PY} -c "import time; time.sleep(30)"'})
+
+
+def test_edit_file_replaces_unique_text(ws: Workspace) -> None:
+    edit = {tool.name: tool for tool in file_tools(ws)}["edit_file"]
+    assert edit.permission is Permission.WRITE
+    (ws.root / "a.py").write_text("x = 1\ny = 2\n")
+    assert edit.invoke({"path": "a.py", "old": "y = 2", "new": "y = 3"}) == (
+        "replaced 1 occurrence(s) in a.py"
+    )
+    assert (ws.root / "a.py").read_text() == "x = 1\ny = 3\n"
+
+
+def test_edit_file_ambiguity_and_replace_all(ws: Workspace) -> None:
+    edit = {tool.name: tool for tool in file_tools(ws)}["edit_file"]
+    (ws.root / "a.txt").write_text("a a a")
+    with pytest.raises(ToolError, match="occurs 3 times"):
+        edit.invoke({"path": "a.txt", "old": "a", "new": "b"})
+    assert (ws.root / "a.txt").read_text() == "a a a"  # untouched on error
+    assert "3 occurrence" in edit.invoke(
+        {"path": "a.txt", "old": "a", "new": "b", "replace_all": True}
+    )
+    assert (ws.root / "a.txt").read_text() == "b b b"
+
+
+@pytest.mark.parametrize(
+    ("args", "error"),
+    [
+        ({"path": "a.txt", "old": "", "new": "x"}, "must not be empty"),
+        ({"path": "a.txt", "old": "zzz", "new": "x"}, "not found"),
+        ({"path": "missing.txt", "old": "a", "new": "x"}, "not a file"),
+        ({"path": "big.txt", "old": "a", "new": "x"}, "larger than"),
+    ],
+)
+def test_edit_file_errors(ws: Workspace, args: dict[str, str], error: str) -> None:
+    edit = {tool.name: tool for tool in file_tools(ws)}["edit_file"]
+    (ws.root / "a.txt").write_text("abc")
+    (ws.root / "big.txt").write_text("a" * (MAX_READ_BYTES + 1))
+    with pytest.raises(ToolError, match=error):
+        edit.invoke(args)
+
+
+def test_edit_file_is_jailed(ws: Workspace) -> None:
+    edit = {tool.name: tool for tool in file_tools(ws)}["edit_file"]
+    with pytest.raises(WorkspaceError):
+        edit.invoke({"path": "../etc/passwd", "old": "root", "new": "x"})

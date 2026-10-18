@@ -21,6 +21,7 @@ class ScriptedLLM:
     def complete(
         self, system: str, messages: Sequence[Message], tools: Sequence[Tool]
     ) -> LLMResponse:
+        """Return the next scripted response; record the call for assertions."""
         self.calls.append((system, tuple(messages), tuple(t.name for t in tools)))
         if not self._script:
             raise LLMError("scripted LLM exhausted")

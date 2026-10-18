@@ -29,6 +29,7 @@
     "tools": [
       "read_file",
       "write_file",
+      "edit_file",
       "list_dir",
       "search_files",
       "run_command"
@@ -53,5 +54,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "e5ca53d6e44e90f9bb6504a0fe7269c5753faf366fc5197b6d36d2c7a6ceba12"
+  "signature": "0e37cb3acd19b71c9279c4a650b13d0d1120129b8e476ff9815425f520b78bba"
 }

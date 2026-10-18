@@ -16,6 +16,7 @@ REDACTED = "[REDACTED]"
 
 
 def redact(value: Any) -> Any:
+    """Copy of ``value`` with secret-looking keys and values replaced."""
     if isinstance(value, dict):
         return {
             k: (REDACTED if isinstance(k, str) and _SECRET_KEY.search(k) else redact(v))
@@ -29,26 +30,37 @@ def redact(value: Any) -> Any:
 
 
 class Tracer(Protocol):
-    def emit(self, run_id: str, event: str, **data: Any) -> None: ...
+    """Receives structured run events."""
+
+    def emit(self, run_id: str, event: str, **data: Any) -> None:
+        """Record ``event`` for ``run_id``."""
 
 
 class NullTracer:
+    """Discards everything."""
+
     def emit(self, run_id: str, event: str, **data: Any) -> None:
-        return None
+        """Do nothing."""
 
 
 class MemoryTracer:
+    """Keeps redacted events in memory, for tests and evals."""
+
     def __init__(self) -> None:
         self.events: list[dict[str, Any]] = []
 
     def emit(self, run_id: str, event: str, **data: Any) -> None:
+        """Store a redacted event."""
         self.events.append({"run_id": run_id, "event": event, **redact(data)})
 
     def names(self) -> list[str]:
+        """Event names in order."""
         return [e["event"] for e in self.events]
 
 
 class JsonlTracer:
+    """Appends one redacted JSON object per event to a file."""
+
     def __init__(self, path: str | Path, clock: Clock) -> None:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -56,6 +68,7 @@ class JsonlTracer:
         self._seq = 0
 
     def emit(self, run_id: str, event: str, **data: Any) -> None:
+        """Append a redacted, timestamped, sequenced event."""
         self._seq += 1
         record = {"t": self._clock.now(), "seq": self._seq, "run_id": run_id, "event": event}
         record.update(redact(data))
@@ -65,6 +78,8 @@ class JsonlTracer:
 
 @dataclass(slots=True)
 class RunSummary:
+    """One run as shown by ``sebastian traces``."""
+
     run_id: str
     started: float | None = None
     stop: str = "running"

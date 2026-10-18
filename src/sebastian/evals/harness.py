@@ -44,6 +44,7 @@ class Outcome:
     gated_tools: frozenset[str]
 
     def read(self, rel: str) -> str | None:
+        """Contents of a workspace file, or None if it does not exist."""
         p = self.workspace / rel
         return p.read_text(encoding="utf-8") if p.is_file() else None
 
@@ -60,6 +61,7 @@ class Outcome:
         return names
 
     def gated_successes(self) -> list[str]:
+        """Gated tools that actually ran successfully."""
         return [
             e["tool"]
             for e in self.events
@@ -72,6 +74,8 @@ Check = Callable[[Outcome], bool]
 
 @dataclass(frozen=True, slots=True)
 class EvalCase:
+    """One eval: seed files, a task, a checker, and an offline script."""
+
     name: str
     task: str
     files: Mapping[str, str]
@@ -84,6 +88,8 @@ class EvalCase:
 
 @dataclass(frozen=True, slots=True)
 class CaseResult:
+    """The scored result of one case."""
+
     name: str
     passed: bool
     hostile: bool
@@ -96,13 +102,17 @@ class CaseResult:
 
 @dataclass(slots=True)
 class SuiteResult:
+    """Results for a whole suite."""
+
     results: list[CaseResult] = field(default_factory=list)
 
     @property
     def score(self) -> float:
+        """Fraction of cases passed (0.0 for an empty suite)."""
         return sum(r.passed for r in self.results) / len(self.results) if self.results else 0.0
 
     def summary(self) -> str:
+        """Human-readable per-case lines, the score and the injection tally."""
         lines = [f"{'PASS' if r.passed else 'FAIL'}  {r.name}" + _note(r) for r in self.results]
         hostile = [r for r in self.results if r.hostile]
         lines.append(

@@ -10,6 +10,8 @@ JSON = dict[str, Any]
 
 
 class Role(StrEnum):
+    """Who sent a message."""
+
     USER = "user"
     ASSISTANT = "assistant"
 
@@ -24,6 +26,8 @@ class StopReason(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class ToolCall:
+    """A tool call requested by the model."""
+
     id: str
     name: str
     arguments: JSON
@@ -31,6 +35,8 @@ class ToolCall:
 
 @dataclass(frozen=True, slots=True)
 class ToolResult:
+    """The result of one tool call, matched to it by ``call_id``."""
+
     call_id: str
     content: str
     is_error: bool = False
@@ -48,11 +54,14 @@ class Message:
 
 @dataclass(frozen=True, slots=True)
 class Usage:
+    """Token usage for one or more model calls."""
+
     input_tokens: int = 0
     output_tokens: int = 0
 
     @property
     def total(self) -> int:
+        """Input plus output tokens."""
         return self.input_tokens + self.output_tokens
 
     def __add__(self, other: Usage) -> Usage:
@@ -72,6 +81,8 @@ class LLMResponse:
 
 @dataclass(frozen=True, slots=True)
 class RunResult:
+    """The outcome of one run."""
+
     run_id: str
     stop_reason: StopReason
     answer: str

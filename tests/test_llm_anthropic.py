@@ -71,6 +71,7 @@ def test_anthropic_maps_request_and_response(tmp_path: Path) -> None:
     assert {t["name"] for t in kw["tools"]} == {
         "read_file",
         "write_file",
+        "edit_file",
         "list_dir",
         "search_files",
     }

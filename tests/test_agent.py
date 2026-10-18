@@ -213,7 +213,13 @@ def test_memory_is_recorded_and_recalled(tmp_path: Path) -> None:
 def test_tools_advertised_to_model(tmp_path: Path) -> None:
     agent, llm, _ = make_agent(tmp_path, [LLMResponse("ok")])
     agent.run("t")
-    assert set(llm.calls[0][2]) == {"read_file", "write_file", "list_dir", "search_files"}
+    assert set(llm.calls[0][2]) == {
+        "read_file",
+        "write_file",
+        "edit_file",
+        "list_dir",
+        "search_files",
+    }
 
 
 def test_budget_warning_once_per_limit(tmp_path: Path) -> None:
@@ -256,3 +262,17 @@ def test_run_end_usage_survives_redaction(tmp_path: Path) -> None:
     agent, _, tracer = make_agent(tmp_path, [LLMResponse("ok", (), Usage(7, 3))])
     agent.run("t")
     assert tracer.events[-1]["usage"] == {"input": 7, "output": 3}
+
+
+def test_step_and_plan_usage_survive_redaction(tmp_path: Path) -> None:
+    agent, _, tracer = make_agent(
+        tmp_path,
+        [LLMResponse("1. plan", usage=Usage(3, 4)), LLMResponse("done", usage=Usage(5, 6))],
+    )
+    agent.plan = True
+    agent.run("t")
+    by_name = {e["event"]: e for e in tracer.events}
+    assert by_name["plan"]["usage"] == {"input": 3, "output": 4}
+    assert by_name["llm_step"]["usage"] == {"input": 5, "output": 6}
+    assert by_name["run_end"]["usage"] == {"input": 8, "output": 10}
+    assert "[REDACTED]" not in str(tracer.events)
