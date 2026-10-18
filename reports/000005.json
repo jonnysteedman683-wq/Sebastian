@@ -1,0 +1,71 @@
+{
+  "summary": "2 commit(s): feat: emit budget_warning at 80% of each budget limit (B4); Merge pull request #9 from jonnysteedman683-wq/claude/sebastian-upgrade-x7dl17",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "6 file(s) changed",
+      "description": "Detected automatically from code: 6 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "0246a33c7f798df4fd93f5fd63d7b1155fa55e44",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 5,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "fa37f7ed6eba18025b5949d97cbf42856ff8326f",
+    "to_sha": "0246a33c7f798df4fd93f5fd63d7b1155fa55e44"
+  },
+  "generated_at": "2026-10-18T14:34:26Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "demo",
+      "run",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "c4bfbf16e5b794c4d77d771f82b8cb90554d9fad35e676ff814644b387693981"
+}
