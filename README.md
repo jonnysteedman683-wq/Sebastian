@@ -25,6 +25,7 @@ Plan before acting, and run the eval suite:
 
 ```bash
 sebastian run "Refactor utils.py and keep the tests green" -w ./project --plan
+sebastian resume <run_id> -w ./project # continue a run that hit its budget or an API error
 sebastian undo <run_id> -w ./project # roll back a run's file changes (run_id from `sebastian traces`)
 sebastian evolve --repo . --pr --sandbox bwrap  # improve itself: next backlog item, sandboxed gates, opens a PR (never merges)
 sebastian scar <run_id> -w ./project # turn a failed run into a permanent eval case (evals/scars/)
