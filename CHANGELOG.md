@@ -4,6 +4,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Changed (B6, B15)
+- Memory: recording the same task again (case/whitespace-insensitive) replaces the old episode, so the newest outcome wins. Recall is now BM25 over task + summary with stopwords removed (rare terms outweigh common ones; shorter matching episodes rank higher; ties go to the most recent). Still pure Python.
+
 ### Added (B14)
 - Planning phase (`Sebastian(plan=True)`, `sebastian run --plan`): one tool-free model call writes a numbered plan that is injected into the system prompt as `<plan>`; counts against the step and token budget; emits a `plan` trace event. Off by default.
 - Replan nudge: after `replan_after_errors` (default 3) consecutive failed tool calls, a `<replan>` note rides on the tool-results turn asking the model to revise its approach; emits `replan_nudge`. `0` disables it.
