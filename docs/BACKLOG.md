@@ -17,7 +17,7 @@ Rules:
   *Done when:* tests cover match, no match, cap, binary skip, jail escape. Update `schemas/examples/` inventory and re-sign per `schemas/README.md`.
 - [x] **B4 Token budget warning.** When a run passes 80% of any budget limit, emit a `budget_warning` trace event once per limit.
   *Done when:* tests with `FakeClock` and `ScriptedLLM` show exactly one warning per limit.
-- [ ] **B5 `sebastian traces` CLI command.** Print the last N runs from `traces.jsonl` (run_id, start time, stop reason, steps, tokens).
+- [x] **B5 `sebastian traces` CLI command.** Print the last N runs from `traces.jsonl` (run_id, start time, stop reason, steps, tokens).
   *Done when:* tests cover empty file, N > runs, malformed line skipped. Update `schemas/examples/` (new CLI command) and re-sign.
 - [ ] **B6 Memory dedup.** In `MemoryStore.record`, replace an episode with the same task text instead of appending a duplicate.
   *Done when:* tests show one episode after recording the same task twice, with the newest outcome kept.
@@ -34,3 +34,6 @@ Rules:
 ## Proposed
 
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
+
+- [ ] **B13 Un-redact `llm_step` token counts.** Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
+  *Done when:* a `JsonlTracer` test shows the per-step counts in the file; redaction tests unchanged.

@@ -11,8 +11,10 @@ import pytest
 
 from sebastian import __version__
 from sebastian.cli import main
+from sebastian.clock import FakeClock
 from sebastian.llm import LLM, ScriptedLLM
-from sebastian.types import LLMResponse, ToolCall
+from sebastian.trace import JsonlTracer
+from sebastian.types import LLMResponse, ToolCall, Usage
 
 
 @pytest.fixture(autouse=True)
@@ -123,3 +125,74 @@ def test_run_default_backend_is_anthropic(tmp_path: Path, monkeypatch: pytest.Mo
 
 def test_module_entrypoint_exists() -> None:
     assert os.path.exists(Path(__file__).parents[1] / "src" / "sebastian" / "__main__.py")
+
+
+def _write_traces(home: Path, runs: int, junk: bool = False) -> Path:
+    path = home / "traces.jsonl"
+    tracer = JsonlTracer(path, FakeClock(1_760_000_000.0))
+    for i in range(runs):
+        rid = f"run{i}"
+        tracer.emit(rid, "run_start", task=f"task {i}", recalled=0)
+        tracer.emit(rid, "llm_step", step=1, text="", tool_calls=[], tokens=10)
+        usage = {"input": 10 + i, "output": 5}
+        tracer.emit(rid, "run_end", stop="completed", steps=2, detail="", usage=usage)
+        if junk and i == 0:
+            with path.open("a") as fh:
+                fh.write('{not json\n[1, 2]\n{"event": "run_end"}\n\n')
+    return path
+
+
+def test_traces_missing_or_empty_file(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["traces"]) == 0
+    assert capsys.readouterr().out.strip() == "(no runs)"
+    home.mkdir(parents=True, exist_ok=True)
+    (home / "traces.jsonl").write_text("")
+    assert main(["traces"]) == 0
+    assert capsys.readouterr().out.strip() == "(no runs)"
+
+
+def test_traces_lists_last_n_runs(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _write_traces(home, 3)
+    assert main(["traces", "-n", "2"]) == 0
+    lines = capsys.readouterr().out.splitlines()
+    assert lines == [
+        "run1  2025-10-09T08:53:20+00:00  completed  steps=2  tokens=16",
+        "run2  2025-10-09T08:53:20+00:00  completed  steps=2  tokens=17",
+    ]
+
+
+def test_traces_n_larger_than_runs_and_unfinished(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = _write_traces(home, 1)
+    with path.open("a") as fh:
+        fh.write(json.dumps({"t": 1_760_000_000.0, "run_id": "live", "event": "run_start"}) + "\n")
+    assert main(["traces", "-n", "50"]) == 0
+    lines = capsys.readouterr().out.splitlines()
+    assert lines == [
+        "run0  2025-10-09T08:53:20+00:00  completed  steps=2  tokens=15",
+        "live  2025-10-09T08:53:20+00:00  running  steps=0  tokens=0",
+    ]
+
+
+def test_traces_skips_malformed_lines(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _write_traces(home, 2, junk=True)
+    assert main(["traces"]) == 0
+    out = capsys.readouterr().out.splitlines()
+    assert [line.split()[0] for line in out] == ["run0", "run1"]
+
+
+def test_traces_rejects_bad_limit(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        main(["traces", "-n", "0"])
+
+
+def test_traces_after_real_run(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    script = [LLMResponse("done", (), Usage(12, 8))]
+    assert main(["run", "t", "-w", str(ws), "--no-memory"], llm_factory=factory(script, [])) == 0
+    capsys.readouterr()
+    assert main(["traces"]) == 0
+    out = capsys.readouterr().out.split()
+    assert out[2:] == ["completed", "steps=1", "tokens=20"]

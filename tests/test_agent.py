@@ -250,3 +250,9 @@ def test_no_budget_warning_below_threshold(tmp_path: Path) -> None:
     agent, _, tracer = make_agent(tmp_path, [LLMResponse("ok", (), Usage(1, 1))])
     agent.run("t")
     assert "budget_warning" not in tracer.names()
+
+
+def test_run_end_usage_survives_redaction(tmp_path: Path) -> None:
+    agent, _, tracer = make_agent(tmp_path, [LLMResponse("ok", (), Usage(7, 3))])
+    agent.run("t")
+    assert tracer.events[-1]["usage"] == {"input": 7, "output": 3}

@@ -1,10 +1,11 @@
-"""Command-line entry point: ``sebastian run``, ``sebastian demo``, ``sebastian version``."""
+"""Command-line entry point: ``sebastian run``, ``demo``, ``traces`` and ``version``."""
 
 from __future__ import annotations
 
 import argparse
 import sys
 from collections.abc import Callable, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 
 from sebastian import __version__
@@ -17,7 +18,7 @@ from sebastian.llm.base import LLM, RetryingLLM
 from sebastian.llm.scripted import ScriptedLLM
 from sebastian.memory import MemoryStore
 from sebastian.tools import CommandPolicy, ToolRegistry, Workspace, command_tool, file_tools
-from sebastian.trace import JsonlTracer
+from sebastian.trace import JsonlTracer, summarize_runs
 from sebastian.types import LLMResponse, RunResult, StopReason, ToolCall
 
 
@@ -46,8 +47,32 @@ def _build_parser() -> argparse.ArgumentParser:
     demo = sub.add_parser("demo", help="offline scripted run (no API key) to verify install")
     demo.add_argument("--workspace", "-w", type=Path, required=True)
 
+    traces = sub.add_parser("traces", help="list recent runs from traces.jsonl")
+    traces.add_argument("-n", "--limit", type=_positive_int, default=10, help="runs to show")
+
     sub.add_parser("version")
     return p
+
+
+def _positive_int(value: str) -> int:
+    n = int(value)
+    if n < 1:
+        raise argparse.ArgumentTypeError("must be >= 1")
+    return n
+
+
+def _print_traces(path: Path, limit: int) -> int:
+    runs = summarize_runs(path, limit)
+    if not runs:
+        print("(no runs)")
+    for r in runs:
+        started = (
+            datetime.fromtimestamp(r.started, UTC).isoformat(timespec="seconds")
+            if r.started is not None
+            else "?"
+        )
+        print(f"{r.run_id}  {started}  {r.stop}  steps={r.steps}  tokens={r.tokens}")
+    return 0
 
 
 def _demo_llm() -> ScriptedLLM:
@@ -83,6 +108,9 @@ def main(
         return 0
 
     cfg = Config.from_env()
+    if args.cmd == "traces":
+        return _print_traces(cfg.home / "traces.jsonl", args.limit)
+
     clock = SystemClock()
     ws = Workspace(args.workspace)
     registry = ToolRegistry(file_tools(ws))

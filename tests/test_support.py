@@ -20,7 +20,15 @@ from sebastian.config import DEFAULT_MODEL, Config
 from sebastian.memory import Episode, MemoryCorruptError, MemoryStore
 from sebastian.prompts import SYSTEM_PROMPT, build_system_prompt
 from sebastian.tools import Permission, Workspace, file_tools
-from sebastian.trace import REDACTED, JsonlTracer, MemoryTracer, NullTracer, redact
+from sebastian.trace import (
+    REDACTED,
+    JsonlTracer,
+    MemoryTracer,
+    NullTracer,
+    RunSummary,
+    redact,
+    summarize_runs,
+)
 from sebastian.types import ToolCall, Usage
 
 # --- memory ---------------------------------------------------------------
@@ -245,3 +253,14 @@ def test_config_defaults_and_env(tmp_path: Path) -> None:
 def test_config_rejects_bad_ints(value: str) -> None:
     with pytest.raises(ValueError, match="SEBASTIAN_MAX_STEPS"):
         Config.from_env({"SEBASTIAN_MAX_STEPS": value})
+
+
+def test_summarize_runs_tolerates_partial_records(tmp_path: Path) -> None:
+    path = tmp_path / "t.jsonl"
+    path.write_text(
+        json.dumps({"run_id": "a", "event": "run_start", "t": "noon"})
+        + "\n"
+        + json.dumps({"run_id": "a", "event": "run_end"})
+        + "\n"
+    )
+    assert summarize_runs(path, 5) == [RunSummary("a", None, "unknown", 0, 0)]

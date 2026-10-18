@@ -10,6 +10,10 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 - `.github/workflows/guard.yml`: fails PRs touching the watcher, CI, the report contract or agent rules unless labelled `owner-approved`.
 - `scripts/resign_examples.py`: re-signs schema examples and updates `schemas/examples/VECTORS.md` (test vectors moved there, so routine capability changes don't touch guarded files).
 
+### Added (B5)
+- `sebastian traces [-n N]`: prints the last N runs (default 10) from `traces.jsonl` as `run_id  start  stop  steps=  tokens=`; skips malformed lines; unfinished runs show `running`.
+- `run_end` trace events carry `usage={"input", "output"}`. The key avoids "token", which redaction treats as a secret (that is why `llm_step`'s `tokens` field is always redacted; see B13).
+
 ### Added (B4)
 - `budget_warning` trace event (`limit`, `used`, `max`) emitted once per run for each of steps, tokens and seconds when usage reaches 80% of its limit (`Governor.new_warnings`, `WARN_FRACTION`). Stopping behaviour is unchanged.
 
