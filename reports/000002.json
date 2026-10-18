@@ -1,0 +1,72 @@
+{
+  "summary": "2 commit(s): feat: set up the repo for daily upgrades by Jules; Merge pull request #6 from jonnysteedman683-wq/sebastian/jules-daily",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "13 file(s) changed",
+      "description": "Detected automatically from code: 13 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "9f9139fb63b99ab2599d41e07a5f553d5d12d990",
+          "path": ".github/workflows/guard.yml"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [
+    "watch tooling or report contract changed: .github/workflows/guard.yml, AGENTS.md, CLAUDE.md, schemas/README.md, src/sebastian/watch/report.py"
+  ],
+  "report_type": "repo_change_report",
+  "seq": 2,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "1f36b16b91796a7def8be5d446cd41d8302028c4",
+    "to_sha": "9f9139fb63b99ab2599d41e07a5f553d5d12d990"
+  },
+  "generated_at": "2026-10-18T11:35:21Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "list_dir",
+      "read_file",
+      "run_command",
+      "write_file"
+    ],
+    "cli_commands": [
+      "demo",
+      "run",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 3,
+  "escalate": true,
+  "priority": "HIGH",
+  "signature": "691a9b8b5fb71fc9f89cbeebbc317690c4ea25a18976bd241c493d4435fdaa12"
+}

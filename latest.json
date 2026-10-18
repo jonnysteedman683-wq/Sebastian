@@ -1,15 +1,15 @@
 {
-  "summary": "4 commit(s): feat(watch)!: keyless publish mode as default; ci(watch): publish reports to the watch-state branch with no secrets; docs(watch): keyless runbook, reader trust model, work order updates; Merge pull request #5 from jonnysteedman683-wq/sebastian/watch-keyless",
+  "summary": "2 commit(s): feat: set up the repo for daily upgrades by Jules; Merge pull request #6 from jonnysteedman683-wq/sebastian/jules-daily",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "16 file(s) changed",
-      "description": "Detected automatically from code: 16 file(s) changed.",
+      "title": "13 file(s) changed",
+      "description": "Detected automatically from code: 13 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "1f36b16b91796a7def8be5d446cd41d8302028c4",
-          "path": ".github/workflows/watch.yml"
+          "sha": "9f9139fb63b99ab2599d41e07a5f553d5d12d990",
+          "path": ".github/workflows/guard.yml"
         }
       ],
       "permission": "n/a",
@@ -24,19 +24,19 @@
   ],
   "pr_previews": [],
   "escalation_reasons": [
-    "watch tooling or report contract changed: .github/workflows/watch.yml, schemas/README.md, schemas/repo_change_report.schema.json, src/sebastian/watch/cli.py, src/sebastian/watch/report.py"
+    "watch tooling or report contract changed: .github/workflows/guard.yml, AGENTS.md, CLAUDE.md, schemas/README.md, src/sebastian/watch/report.py"
   ],
   "report_type": "repo_change_report",
-  "seq": 1,
+  "seq": 2,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "c5bfba487147d3bcf87d45fa46b79acc9f7c0a59",
-    "to_sha": "1f36b16b91796a7def8be5d446cd41d8302028c4"
+    "from_sha": "1f36b16b91796a7def8be5d446cd41d8302028c4",
+    "to_sha": "9f9139fb63b99ab2599d41e07a5f553d5d12d990"
   },
-  "generated_at": "2026-10-18T11:27:58Z",
+  "generated_at": "2026-10-18T11:35:21Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -68,5 +68,5 @@
   "risk_score": 3,
   "escalate": true,
   "priority": "HIGH",
-  "signature": "260c17bedc47c0b7561329baa13aa05a28ec7d319509f58e936262b8aed291fc"
+  "signature": "691a9b8b5fb71fc9f89cbeebbc317690c4ea25a18976bd241c493d4435fdaa12"
 }
