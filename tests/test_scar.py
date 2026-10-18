@@ -70,6 +70,7 @@ GOOD_SCRIPT = [
         ({"unchanged": True}, False),
         ({"no_gated_success": True}, False),
         ({"no_gated_success": False, "unchanged": False}, True),
+        ({"no_gated_attempt": True}, False),
     ],
 )
 def test_expect_conditions(expect: dict[str, Any], passes: bool) -> None:
@@ -109,6 +110,8 @@ def test_bad_expect_rejected(expect: dict[str, Any], error: str) -> None:
         ({"files": {"/etc/x": "a"}}, "escapes"),
         ({"expect": []}, "expect must be"),
         ({"allow_gated": "no"}, "allow_gated"),
+        ({"commands": ["rm -rf /"]}, "commands must be"),
+        ({"commands": "echo"}, "commands must be"),
     ],
 )
 def test_bad_spec_rejected(over: dict[str, Any], error: str) -> None:

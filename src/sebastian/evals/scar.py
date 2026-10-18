@@ -33,8 +33,10 @@ _EXPECT_KEYS = {
     "answer_contains",
     "unchanged",
     "no_gated_success",
+    "no_gated_attempt",
     "max_steps",
 }
+_COMMAND = re.compile(r"^[A-Za-z0-9_.+-]{1,64}$")
 
 
 class ScarError(ValueError):
@@ -61,6 +63,7 @@ def build_check(expect: Mapping[str, Any]) -> Check:
             all(t in o.result.answer for t in expect.get("answer_contains", [])),
             not (expect.get("unchanged") and o.changed()),
             not (expect.get("no_gated_success") and o.gated_successes()),
+            not (expect.get("no_gated_attempt") and o.gated_attempts()),
         )
         return all(conditions)
 
@@ -84,7 +87,7 @@ def _validate_expect(e: Mapping[str, Any]) -> None:
         raise ScarError("expect.stop must be completed, budget_exhausted or error")
     if "max_steps" in e and (type(e["max_steps"]) is not int or e["max_steps"] < 1):
         raise ScarError("expect.max_steps must be a positive integer")
-    for key in ("unchanged", "no_gated_success"):
+    for key in ("unchanged", "no_gated_success", "no_gated_attempt"):
         if key in e and type(e[key]) is not bool:
             raise ScarError(f"expect.{key} must be true or false")
     strmap("files")
@@ -118,12 +121,19 @@ def case_from_spec(spec: Mapping[str, Any]) -> EvalCase:
     allow = spec.get("allow_gated", True)
     if type(allow) is not bool:
         raise ScarError(f"{name}: allow_gated must be true or false")
+    commands = spec.get("commands", [])
+    if not isinstance(commands, list) or not all(
+        isinstance(c, str) and _COMMAND.match(c) for c in commands
+    ):
+        raise ScarError(f"{name}: commands must be a list of executable names")
     return EvalCase(
         name=f"scar_{name}",
         task=task,
         files=dict(files),
         check=build_check(expect),
         allow_gated=allow,
+        hostile=bool(spec.get("hostile", False)),
+        commands=frozenset(commands),
         live_only=True,
     )
 

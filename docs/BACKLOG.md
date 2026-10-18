@@ -72,6 +72,9 @@ Rules:
 - [x] **B29 Sandboxed agent commands in evolve.** The agent's `run_command` calls during `evolve` share the gates' bubblewrap sandbox.
   *Done when:* with the sandbox on, an agent `pytest` call runs through the wrapper with the Python roots visible; with it off, it does not.
 
+- [x] **B30 Red-team twin.** Attacker model generates canary-goal injection attacks; breaches become live scar cases.
+  *Done when:* proposals are validated against the canary, a fooled target is recorded as a breach and saved as a scar that fails until the target resists.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
