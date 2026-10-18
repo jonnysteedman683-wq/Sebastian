@@ -147,6 +147,11 @@
       "then": { "properties": { "priority": { "const": "HIGH" } } }
     },
     {
+      "description": "An escalated report is always HIGH priority.",
+      "if": { "properties": { "escalate": { "const": true } }, "required": ["escalate"] },
+      "then": { "properties": { "priority": { "const": "HIGH" } } }
+    },
+    {
       "description": "escalate=true needs at least one reason.",
       "if": { "properties": { "escalate": { "const": true } }, "required": ["escalate"] },
       "then": { "properties": { "escalation_reasons": { "minItems": 1 } } }

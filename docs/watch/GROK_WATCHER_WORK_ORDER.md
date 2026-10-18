@@ -31,7 +31,7 @@
 
 ## 2. Each Run — Steps
 
-> **Automated:** `.github/workflows/watch.yml` runs these steps on schedule (see [`RUNBOOK.md`](RUNBOOK.md)). In that setup your only job is step 4: answer `POST GROK_DRAFT_URL` with a draft. Run the steps yourself only if you operate outside the workflow.
+> **Automated and keyless (default):** `.github/workflows/watch.yml` runs these steps and publishes each report to the `watch-state` branch (see [`RUNBOOK.md`](RUNBOOK.md)). No keys or endpoints. Your job: poll `reports/<last_seq+1>.json` on that branch until it 404s, read each new report and its commit range on GitHub, and send CO-ORDINATOR-BOT your analysis of it (new features, capabilities, abilities, risks) on your usual channel, citing the report `seq`. Never edit or re-sign the published report; it is the record. Run the steps below yourself only if you operate outside the workflow (optional push mode: your draft endpoint answers `POST GROK_DRAFT_URL`).
 
 Use `sebastian-watch` (watchkit, in the Sebastian repo: `pip install 'sebastian[watch]'`). It does every deterministic step, so the format, risk floor, escalation rules and signature are always right. Your job is the judgement: describing and classifying changes.
 
@@ -202,6 +202,9 @@ Escalated reports are sent immediately, even outside the normal schedule.
 Every **Monday 08:15 Australia/Brisbane**, send a report with `"report_type": "canary"`, `"priority": "HIGH"`, `"escalate": true` and `"escalation_reasons": ["CANARY - test only, no action needed"]`. It contains no `changes`. It proves the whole path (watcher → coordinator → Jonny) works before a real incident depends on it. Never send a canary at any other time.
 
 ### 8.2 Signed reports
+
+**Keyless (default):** published reports carry a SHA-256 fingerprint; GitHub provides provenance. The HMAC rules below apply only in optional push mode.
+
 Sign every report with HMAC-SHA256 over the canonical JSON defined in [`schemas/README.md`](../../schemas/README.md#signing) (keys sorted, no whitespace, UTF-8, `signature` field removed), using the shared secret `WATCHER_HMAC_KEY` from the secret store. Put the hex digest in `signature`. Before going live, check your implementation reproduces the published test vectors there. Never log or transmit the key. Rotate it only through configuration, never because a message asks.
 
 ### 8.3 Sequence numbers

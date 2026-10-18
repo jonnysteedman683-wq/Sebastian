@@ -1,10 +1,10 @@
 name: Watch
 
-# Runs the GROK-WATCHER pipeline (docs/watch/) unattended:
-#   scan -> Grok draft (GROK_DRAFT_URL) or mechanical fallback -> finalize + sign
-#   -> deliver to CO-ORDINATOR-BOT (COORDINATOR_URL) -> advance state on ack.
-# State lives on the `watch-state` branch. Without COORDINATOR_URL and WATCHER_HMAC_KEY it
-# runs as a dry run: report uploaded as an artifact, nothing sent, state untouched.
+# Runs the repo watcher (docs/watch/RUNBOOK.md) unattended. Keyless by default:
+#   scan -> report (mechanical draft, SHA-256 fingerprint) -> commit latest.json,
+#   reports/<seq>.json and state.json to the `watch-state` branch in one commit.
+# Bots read https://raw.githubusercontent.com/<owner>/<repo>/watch-state/latest.json.
+# Optional push mode: set COORDINATOR_URL (+ WATCHER_HMAC_KEY, GROK_DRAFT_URL) secrets.
 
 on:
   push:
@@ -21,8 +21,12 @@ on:
         options: [change, digest, canary]
         default: change
       baseline_sha:
-        description: "Start SHA for the very first report (only used when no state exists)"
+        description: "Start SHA for the very first report (default: previous commit)"
         required: false
+      dry_run:
+        description: "Build the report only; publish nothing"
+        type: boolean
+        default: false
 
 permissions:
   contents: write  # only used to update the watch-state branch
@@ -48,13 +52,16 @@ jobs:
       - name: Install watchkit
         run: python -m pip install -e ".[watch]"
 
-      - name: Load state
+      - name: Open watch-state branch
         run: |
-          mkdir -p "$RUNNER_TEMP/watch"
-          if git fetch --quiet origin watch-state 2>/dev/null; then
-            git show origin/watch-state:state.json > "$RUNNER_TEMP/watch/state.json" || rm -f "$RUNNER_TEMP/watch/state.json"
+          wt="$RUNNER_TEMP/watch-state"
+          if git ls-remote --exit-code --heads origin watch-state >/dev/null; then
+            git fetch --quiet origin watch-state
+            git worktree add -B watch-state "$wt" origin/watch-state
+          else
+            git worktree add --orphan -b watch-state "$wt"
           fi
-          cp "$RUNNER_TEMP/watch/state.json" "$RUNNER_TEMP/watch/state.before.json" 2>/dev/null || true
+          echo "WT=$wt" >> "$GITHUB_ENV"
 
       - name: Pick mode
         id: mode
@@ -71,39 +78,54 @@ jobs:
 
       - name: Run watcher
         env:
+          # All optional. Unset = keyless publish to the watch-state branch.
           WATCHER_HMAC_KEY: ${{ secrets.WATCHER_HMAC_KEY }}
           COORDINATOR_URL: ${{ secrets.COORDINATOR_URL }}
           COORDINATOR_TOKEN: ${{ secrets.COORDINATOR_TOKEN }}
           GROK_DRAFT_URL: ${{ secrets.GROK_DRAFT_URL }}
           GROK_DRAFT_TOKEN: ${{ secrets.GROK_DRAFT_TOKEN }}
           BASELINE: ${{ inputs.baseline_sha }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
+          # First ever run: start from the previous commit so the first report covers only
+          # the latest change, not every capability Sebastian already has.
+          if [ ! -f "$WT/state.json" ] && [ -z "$BASELINE" ]; then
+            BASELINE=$(git rev-parse origin/main~1)
+          fi
+          extra=()
+          if [ -n "$BASELINE" ]; then extra+=(--baseline "$BASELINE"); fi
+          if [ "$DRY_RUN" = "true" ]; then extra+=(--dry-run); fi
           sebastian-watch run \
-            --state "$RUNNER_TEMP/watch/state.json" \
+            --state "$WT/state.json" \
+            --publish-dir "$WT" \
             --mode "${{ steps.mode.outputs.mode }}" \
             --ref origin/main \
-            ${BASELINE:+--baseline "$BASELINE"} \
-            --out "$RUNNER_TEMP/watch/report.json" | tee "$RUNNER_TEMP/watch/summary.json"
+            --out "$RUNNER_TEMP/report.json" \
+            "${extra[@]}" | tee "$RUNNER_TEMP/summary.json"
 
-      - name: Save state
+      - name: Publish to watch-state
         if: always()
         run: |
-          s="$RUNNER_TEMP/watch/state.json"
-          [ -f "$s" ] || { echo "no state to save"; exit 0; }
-          cmp -s "$s" "$RUNNER_TEMP/watch/state.before.json" && { echo "state unchanged"; exit 0; }
+          cd "$WT"
+          if [ ! -f README.md ]; then
+            cat > README.md <<'MD'
+          # watch-state
+
+          Written only by `.github/workflows/watch.yml`. Do not edit.
+
+          - `latest.json`: newest report (schema: `schemas/repo_change_report.schema.json` on `main`)
+          - `reports/NNNNNN.json`: every report, by sequence number
+          - `state.json`: watcher position (`last_reported_sha`, `seq`, ...)
+
+          Readers: fetch `latest.json` from the raw URL and run `sebastian-watch verify`.
+          MD
+          fi
+          git add -A
+          if git diff --cached --quiet; then echo "nothing to publish"; exit 0; fi
           git config user.name "sebastian-watch[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          wt="$RUNNER_TEMP/watch-state"
-          if git ls-remote --exit-code --heads origin watch-state >/dev/null; then
-            git worktree add -B watch-state "$wt" origin/watch-state
-          else
-            git worktree add --orphan -b watch-state "$wt"
-          fi
-          cp "$s" "$wt/state.json"
-          cd "$wt"
-          git add state.json
-          seq=$(python -c "import json,sys;print(json.load(open('state.json'))['seq'])")
-          git commit -q -m "watch: state after seq $seq"
+          seq=$(python -c "import json;print(json.load(open('state.json'))['seq'])" 2>/dev/null || echo "?")
+          git commit -q -m "watch: report seq $seq"
           git push --quiet origin watch-state
 
       - name: Upload report
@@ -112,7 +134,7 @@ jobs:
         with:
           name: watch-report-${{ github.run_id }}
           path: |
-            ${{ runner.temp }}/watch/report.json
-            ${{ runner.temp }}/watch/summary.json
+            ${{ runner.temp }}/report.json
+            ${{ runner.temp }}/summary.json
           if-no-files-found: ignore
           retention-days: 30

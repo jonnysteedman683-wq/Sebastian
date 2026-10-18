@@ -13,7 +13,6 @@ from sebastian.watch.cli import main as watch_main
 from sebastian.watch.gitio import Git
 from sebastian.watch.report import verify
 from sebastian.watch.runner import (
-    DRY_RUN_KEY,
     Endpoints,
     State,
     StateError,
@@ -173,7 +172,8 @@ def test_invalid_grok_draft_rejected_then_mechanical(repo: Path) -> None:
 def test_no_grok_url_uses_mechanical(repo: Path) -> None:
     post = FakePost({COORD: [(200, "")]})
     result = go(repo, State(), post, endpoints=Endpoints(COORD))
-    assert "GROK_DRAFT_URL not configured" in result.notes[0]
+    assert result.notes == []
+    assert result.state.grok_failures == 0
     assert post.to(GROK) == []
 
 
@@ -299,21 +299,36 @@ def test_canary_does_not_move_range(repo: Path) -> None:
     assert result.state.last_reported_sha == start  # pending changes still reported later
 
 
-@pytest.mark.parametrize(
-    ("key", "endpoints", "why"), [(None, EP, "no signing key"), (KEY, None, "no COORDINATOR_URL")]
-)
+def test_keyless_publish_mode_advances_state_without_sending(repo: Path) -> None:
+    post = FakePost({})
+    result = go(repo, State(seq=4), post, key=None, endpoints=None)
+    assert result.action == "published"
+    assert result.state.seq == 5
+    assert result.state.last_reported_sha == head(repo)
+    assert result.state.grok_failures == 0  # no draft service is by design, not a failure
+    assert post.calls == []
+    rep = result.report
+    assert verify(rep, key=None, schema=SCHEMA, expected_seq=5) == []
+    assert rep["open_questions"][0].startswith("Mechanical draft (no draft service configured)")
+
+
+def test_keyless_fingerprint_detects_tampering(repo: Path) -> None:
+    result = go(repo, State(), FakePost({}), key=None, endpoints=None)
+    forged = {**result.report, "summary": "nothing to see"}
+    assert any("signature" in p for p in verify(forged, key=None, schema=SCHEMA))
+
+
+@pytest.mark.parametrize(("key", "endpoints"), [(None, None), (KEY, EP)])
 def test_dry_run_never_sends_or_changes_state(
-    repo: Path, key: bytes | None, endpoints: Endpoints | None, why: str
+    repo: Path, key: bytes | None, endpoints: Endpoints | None
 ) -> None:
     post = FakePost({GROK: [(200, ok_draft())], COORD: [(200, "")]})
     state = State(seq=4)
-    result = go(repo, state, post, key=key, endpoints=endpoints)
+    result = go(repo, state, post, key=key, endpoints=endpoints, dry_run=True)
     assert result.action == "dry_run"
-    assert why in result.detail
     assert result.state is state
     assert post.to(COORD) == []
-    used = KEY if key else DRY_RUN_KEY
-    assert verify(result.report, key=used, schema=SCHEMA) == []
+    assert verify(result.report, key=key, schema=SCHEMA) == []
 
 
 # --- http_post (no network: patched urlopen) -------------------------------------
@@ -361,40 +376,46 @@ def test_http_post_paths(monkeypatch: pytest.MonkeyPatch) -> None:
 # --- CLI ----------------------------------------------------------------------
 
 
-def test_cli_run_dry_and_state_file(
+def test_cli_run_keyless_publish_dry_and_push(
     repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     schema = str(Path(__file__).parents[1] / "schemas" / "repo_change_report.schema.json")
     state_file = tmp_path / "state" / "state.json"
+    pub = tmp_path / "pub"
     out = tmp_path / "report.json"
     for var in ("WATCHER_HMAC_KEY", "COORDINATOR_URL", "GROK_DRAFT_URL"):
         monkeypatch.delenv(var, raising=False)
-    args = [
-        "--repo",
-        str(repo),
-        "--schema",
-        schema,
-        "run",
-        "--state",
-        str(state_file),
-        "--ref",
-        "HEAD",
-    ]
-    code = watch_main([*args, "--out", str(out)])
-    summary = json.loads(capsys.readouterr().out)
-    assert code == 0
-    assert summary["action"] == "dry_run"
+    base = ["--repo", str(repo), "--schema", schema]
+    args = [*base, "run", "--state", str(state_file), "--ref", "HEAD"]
+
+    # dry run: nothing saved
+    assert watch_main([*args, "--dry-run", "--out", str(out)]) == 0
+    assert json.loads(capsys.readouterr().out)["action"] == "dry_run"
     assert json.loads(out.read_text())["seq"] == 1
     assert not state_file.exists()
 
+    # keyless publish: report files + advanced state, no network
+    assert watch_main([*args, "--publish-dir", str(pub)]) == 0
+    assert json.loads(capsys.readouterr().out)["action"] == "published"
+    latest = json.loads((pub / "latest.json").read_text())
+    assert latest == json.loads((pub / "reports" / "000001.json").read_text())
+    assert json.loads(state_file.read_text())["seq"] == 1
+    assert watch_main([*base, "verify", str(pub / "latest.json"), "--expect-seq", "1"]) == 0
+    assert json.loads(capsys.readouterr().out)["accepted"] is True
+
+    # quiet second run publishes nothing new
+    assert watch_main([*args, "--publish-dir", str(pub)]) == 0
+    assert json.loads(capsys.readouterr().out)["action"] == "quiet"
+    assert not (pub / "reports" / "000002.json").exists()
+
+    # optional push mode still works and fails visibly when unreachable
+    commit(repo, {"README.md": "push\n"}, "docs")
     monkeypatch.setenv("WATCHER_HMAC_KEY", "k")
     monkeypatch.setenv("COORDINATOR_URL", "https://127.0.0.1:9/never")  # nothing listens
     monkeypatch.setattr("sebastian.watch.runner.time.sleep", lambda _: None)
-    code = watch_main(args)
-    summary = json.loads(capsys.readouterr().out)
-    assert code == 1
-    assert summary["action"] == "failed"
-    assert json.loads(state_file.read_text())["seq"] == 1
+    assert watch_main(args) == 1
+    assert json.loads(capsys.readouterr().out)["action"] == "failed"
+    assert json.loads(state_file.read_text())["seq"] == 2
 
     monkeypatch.setenv("COORDINATOR_URL", "http://insecure")
     assert watch_main(args) == 2

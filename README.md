@@ -57,14 +57,14 @@ Full map: [`docs/SEBASTIAN_MAP.md`](docs/SEBASTIAN_MAP.md). Threat model: [`docs
 
 ```bash
 pip install -e ".[watch]"
-export WATCHER_HMAC_KEY=...                                   # never printed
+# Keyless by default. Optional: export WATCHER_HMAC_KEY=... for HMAC signing (never printed)
 sebastian-watch scan --from <last_sha> --to origin/main > facts.json   # watcher: facts
 sebastian-watch finalize --draft draft.json --facts facts.json --seq N # watcher: validate + sign
 sebastian-watch canary --seq N                                          # watcher: weekly test
 sebastian-watch verify report.json --expect-seq N --expect-from <sha>   # coordinator: accept/reject
 ```
 
-Report contract: [`schemas/`](schemas/). Automated by `.github/workflows/watch.yml`: setup in [`docs/watch/RUNBOOK.md`](docs/watch/RUNBOOK.md).
+Report contract: [`schemas/`](schemas/). Automated by `.github/workflows/watch.yml` with no keys: reports land on the `watch-state` branch ([`latest.json`](https://raw.githubusercontent.com/jonnysteedman683-wq/Sebastian/watch-state/latest.json)). Details: [`docs/watch/RUNBOOK.md`](docs/watch/RUNBOOK.md).
 
 ## Development
 

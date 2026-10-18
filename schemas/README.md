@@ -19,17 +19,24 @@ The contract between **GROK-WATCHER** (producer) and **CO-ORDINATOR-BOT** (consu
 | `risk_score >= 6` requires `escalate: true` | Watcher §8.4 |
 | Any HIGH security alert requires `priority: HIGH` | Can't under-report a security issue |
 | `escalate: true` requires at least one reason | Coordinator needs to tell Jonny why |
+| `escalate: true` requires `priority: HIGH` | Escalation and priority never disagree |
 | Unknown fields rejected; bot names and repo are fixed constants | Catches drift and misrouted messages |
 
 ### Signing
+
+`signature` is always 64 lowercase hex characters over the same canonical bytes:
 
 ```
 canonical = UTF-8 bytes of JSON(report without "signature",
                                  keys sorted at every level,
                                  separators "," and ":", no extra whitespace,
                                  non-ASCII characters kept as-is, not \u-escaped)
-signature = lowercase hex( HMAC-SHA256(key = WATCHER_HMAC_KEY, msg = canonical) )
 ```
+
+| Mode | `signature` | Proves | When |
+|---|---|---|---|
+| **Keyless** (default) | `hex(SHA-256(canonical))` | Integrity: the report wasn't altered after it was built | Reports read from the `watch-state` branch; GitHub vouches for who wrote them |
+| **Keyed** (optional) | `hex(HMAC-SHA256(WATCHER_HMAC_KEY, canonical))` | Integrity **and** sender | Reports pushed to a coordinator endpoint |
 
 Python reference:
 
@@ -37,7 +44,7 @@ Python reference:
 json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 ```
 
-Compare signatures in constant time.
+Compare signatures in constant time. `sebastian-watch verify` uses keyed mode when `WATCHER_HMAC_KEY` is set and keyless otherwise.
 
 ### Test vectors
 

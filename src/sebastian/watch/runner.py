@@ -22,9 +22,8 @@ from sebastian.watch.report import ReportError, canary, finalize, scan
 
 Post = Callable[[str, Mapping[str, Any], Mapping[str, str]], tuple[int, str]]
 Mode = Literal["change", "digest", "canary"]
-Action = Literal["quiet", "sent", "dry_run", "failed"]
+Action = Literal["quiet", "sent", "published", "dry_run", "failed"]
 
-DRY_RUN_KEY = b"DRY-RUN-NOT-A-SECRET"
 GROK_FAILURE_ESCALATION = 3
 _HIGH_RISK = ("(EXEC)", "(NETWORK)", "-> EXEC", "-> NETWORK")
 
@@ -187,8 +186,8 @@ def mechanical_draft(facts: Mapping[str, Any], reason: str) -> dict[str, Any]:
         "summary": summary[:600],
         "changes": changes,
         "open_questions": [
-            f"Mechanical draft: watcher draft unavailable ({reason[:200]}). Descriptions come "
-            "from computed capability changes and commit messages and were not reviewed."
+            f"Mechanical draft ({reason[:200]}): descriptions come from computed capability "
+            "changes and commit messages and were not reviewed by the watcher."
         ],
     }
 
@@ -268,7 +267,7 @@ def _build_change_report(
     reasons: list[str],
     *,
     seq: int,
-    key: bytes,
+    key: bytes | None,
     schema: Mapping[str, Any],
     endpoints: Endpoints | None,
     post: Post,
@@ -279,12 +278,11 @@ def _build_change_report(
     draft: dict[str, Any]
     if start == head:
         draft, draft_ok = {"summary": f"No changes in last 24h; head = {head[:7]}"}, True
+    elif endpoints is None or not endpoints.grok_url:
+        # No draft service configured: mechanical draft by design, not a failure.
+        draft, draft_ok = mechanical_draft(facts, "no draft service configured"), True
     else:
-        got, why = (
-            request_draft(post, endpoints, facts, git.diff_text(start, head))
-            if endpoints
-            else (None, "dry run")
-        )
+        got, why = request_draft(post, endpoints, facts, git.diff_text(start, head))
         draft_ok = got is not None
         draft = got if got is not None else mechanical_draft(facts, why)
         if not draft_ok:
@@ -328,10 +326,18 @@ def run(
     ref: str = "origin/main",
     baseline: str | None = None,
     backoff: Sequence[float] = (30, 120, 480),
+    dry_run: bool = False,
 ) -> RunResult:
-    """One watcher run. ``state`` is only advanced when the coordinator acknowledges;
-    ``seq`` is consumed by any delivery attempt, per the work order."""
-    sign_key = key or DRY_RUN_KEY
+    """One watcher run.
+
+    * ``endpoints`` set: push to the coordinator; state advances only on a 2xx
+      (``seq`` is consumed by any delivery attempt, per the work order).
+    * ``endpoints`` None: keyless publish mode; the returned state is advanced and the caller
+      commits report + state together (GitHub is the transport and the source of trust).
+    * ``key`` None: reports carry a SHA-256 fingerprint instead of an HMAC signature.
+    * ``dry_run``: build only; nothing sent, state unchanged.
+    """
+    sign_key = key
     head = git.resolve(ref)
     timestamp = now()
     new = State(**asdict(state))
@@ -371,11 +377,12 @@ def run(
             timestamp=timestamp,
         )
 
-    if endpoints is None or not key:
-        why = "no signing key" if not key else "no COORDINATOR_URL"
-        return RunResult(
-            "dry_run", state, built.report, f"dry run ({why}); state unchanged", built.notes
-        )
+    if dry_run:
+        return RunResult("dry_run", state, built.report, "dry run; state unchanged", built.notes)
+
+    if endpoints is None:
+        _advance(new, built, head, timestamp)
+        return RunResult("published", new, built.report, "ready to publish", built.notes)
 
     ok, detail = _deliver(post, endpoints, built.report, sleep or time.sleep, backoff)
     if not ok:
@@ -383,10 +390,14 @@ def run(
         new.coordinator_down_since = state.coordinator_down_since or timestamp
         return RunResult("failed", new, built.report, f"delivery failed: {detail}", built.notes)
 
+    _advance(new, built, head, timestamp)
+    return RunResult("sent", new, built.report, detail, built.notes)
+
+
+def _advance(new: State, built: _Built, head: str, timestamp: str) -> None:
     new.grok_failures = built.grok_failures
     if built.report["report_type"] != "canary":
         new.last_reported_sha = head
     new.last_run_at = timestamp
     new.delivery_failures = 0
     new.coordinator_down_since = None
-    return RunResult("sent", new, built.report, detail, built.notes)
