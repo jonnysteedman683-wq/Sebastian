@@ -133,7 +133,9 @@ def _write_traces(home: Path, runs: int, junk: bool = False) -> Path:
     for i in range(runs):
         rid = f"run{i}"
         tracer.emit(rid, "run_start", task=f"task {i}", recalled=0)
-        tracer.emit(rid, "llm_step", step=1, text="", tool_calls=[], tokens=10)
+        tracer.emit(
+            rid, "llm_step", step=1, text="", tool_calls=[], usage={"input": 5, "output": 5}
+        )
         usage = {"input": 10 + i, "output": 5}
         tracer.emit(rid, "run_end", stop="completed", steps=2, detail="", usage=usage)
         if junk and i == 0:

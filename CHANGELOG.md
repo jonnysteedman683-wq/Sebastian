@@ -4,6 +4,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Fixed (B20)
+- `llm_step` and `plan` trace events now carry `usage={"input", "output"}` instead of `tokens`, which redaction always replaced with `[REDACTED]`. Redaction rules are unchanged. (Backlog item renumbered from a duplicate B13.)
+
 ### Added (B10, owner-approved)
 - `run_command` sandbox: `--sandbox bwrap` / `CommandPolicy(sandbox="bwrap")` runs each command under bubblewrap with all namespaces unshared (no network), only the workspace bind-mounted read-write at `/workspace`, read-only system paths, private `/tmp` and a cleared environment. Executables must resolve under system paths. Missing bubblewrap is a tool error, never a silent fallback.
 

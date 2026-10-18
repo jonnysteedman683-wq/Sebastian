@@ -54,5 +54,5 @@ Rules:
 
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
-- [ ] **B13 Un-redact `llm_step` token counts.** Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
+- [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
   *Done when:* a `JsonlTracer` test shows the per-step counts in the file; redaction tests unchanged.

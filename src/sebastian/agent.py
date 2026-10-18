@@ -23,6 +23,7 @@ from sebastian.types import (
     StopReason,
     ToolCall,
     ToolResult,
+    Usage,
 )
 
 MAX_PARALLEL_READS = 8
@@ -36,6 +37,11 @@ def _invoke(tool: Tool, call: ToolCall) -> tuple[str, str | None]:
         return "", str(exc)
     except Exception as exc:
         return "", f"{type(exc).__name__}: {exc}"
+
+
+def _usage(u: Usage) -> dict[str, int]:
+    """Token counts for traces. The key avoids "token", which redaction treats as a secret."""
+    return {"input": u.input_tokens, "output": u.output_tokens}
 
 
 def _call_key(call: ToolCall) -> str:
@@ -100,7 +106,7 @@ class Sebastian:
                 step=governor.steps,
                 text=resp.text,
                 tool_calls=[c.name for c in resp.tool_calls],
-                tokens=resp.usage.total,
+                usage=_usage(resp.usage),
             )
             messages.append(Message(Role.ASSISTANT, text=resp.text, tool_calls=resp.tool_calls))
             if not resp.tool_calls:
@@ -140,7 +146,7 @@ class Sebastian:
         except LLMError as exc:
             return "", self._finish(run_id, StopReason.ERROR, "", governor, f"planning: {exc}")
         governor.record_step(resp.usage)
-        self.tracer.emit(run_id, "plan", text=resp.text, tokens=resp.usage.total)
+        self.tracer.emit(run_id, "plan", text=resp.text, usage=_usage(resp.usage))
         return resp.text, None
 
     def _warn(self, run_id: str, governor: Governor) -> None:
@@ -220,8 +226,7 @@ class Sebastian:
             stop=reason.value,
             steps=governor.steps,
             detail=detail,
-            # "usage", not "tokens": keys containing "token" are redacted as secrets.
-            usage={"input": governor.usage.input_tokens, "output": governor.usage.output_tokens},
+            usage=_usage(governor.usage),
         )
         return RunResult(run_id, reason, answer, governor.steps, governor.usage, detail)
 
