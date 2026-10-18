@@ -4,6 +4,12 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (daily agent)
+- `docs/BACKLOG.md`: ranked one-PR-sized queue for the daily upgrade agent (Jules), with *done when* checks; 🔒 items need owner sign-off.
+- `AGENTS.md` / `CLAUDE.md`: the daily routine (one item, one PR, full checks, no self-merge) and hard limits.
+- `.github/workflows/guard.yml`: fails PRs touching the watcher, CI, the report contract or agent rules unless labelled `owner-approved`.
+- `scripts/resign_examples.py`: re-signs schema examples and updates `schemas/examples/VECTORS.md` (test vectors moved there, so routine capability changes don't touch guarded files).
+
 ### Changed
 - **Watch pipeline is keyless by default.** Reports are published to the `watch-state` branch (`latest.json`, `reports/NNNNNN.json`, `state.json` in one commit) and read from GitHub's public raw URLs. Reports carry a SHA-256 fingerprint; GitHub provides provenance. Push mode (endpoints + HMAC) remains optional.
 - First run starts from the previous commit automatically; no baseline or secrets needed.

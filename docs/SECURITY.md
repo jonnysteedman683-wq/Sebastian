@@ -33,6 +33,7 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 | Plaintext endpoints | `Endpoints` rejects non-https URLs (push mode) | `test_endpoints_require_https` |
 | Report and state out of step | Report and `state.json` committed together; a failed push writes neither | `.github/workflows/watch.yml` (Publish step) |
 | Escalation hidden behind low priority | Schema and `finalize`: `escalate: true` forces `priority: HIGH` | `test_invalid_reports_rejected`, `test_finalize_never_lowers_watcher_judgement` |
+| Daily coding agent changes what watches it | Guard check fails any PR touching `.github/`, `src/sebastian/watch/`, the schema/signing spec, `docs/watch/`, `docs/WORK_ORDER.md`, `AGENTS.md` or `CLAUDE.md` without the owner's `owner-approved` label; such changes also escalate in watch reports | `.github/workflows/guard.yml`, `test_watch_tooling_change_is_flagged_and_escalated` |
 | Secrets exposed to forks | Watch workflow triggers only on `main` push, schedule and manual dispatch (never `pull_request`) | `.github/workflows/watch.yml` |
 
 ## Residual risks (escalated, not fixed)
@@ -43,6 +44,7 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 4. **RLIMIT_AS** can break some runtimes (e.g. JVM). Tunable via `CommandPolicy.max_memory_bytes`.
 5. **The watcher runs from `main`.** Whoever can merge to `main` can change the watcher and its workflow together. Mitigated by always-escalated tooling changes and the coordinator's heartbeat/canary; fully fixed only by branch protection + CODEOWNERS on `.github/`, `src/sebastian/watch/`, `schemas/` (owner action).
 6. **Keyless trust depends on GitHub.** Anyone with push rights to `watch-state` could publish a report with a valid fingerprint. Mitigation: readers fetch only from GitHub and treat non-bot commits there as incidents; fully fixed by protecting `watch-state` so only Actions can push (owner action).
+7. **The Guard label is only as strong as who can apply it.** Anyone with triage/write access (including a coding agent with write access) can add `owner-approved`. Fully fixed by branch protection on `main` requiring your review plus CODEOWNERS on guarded paths (owner action).
 
 ## Reporting
 Raise a private issue to the owner (Jonny). Never include keys or memory contents.

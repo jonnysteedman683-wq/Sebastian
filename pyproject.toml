@@ -44,7 +44,7 @@ ignore = [
 [tool.mypy]
 strict = true
 python_version = "3.11"
-files = ["src", "tests"]
+files = ["src", "tests", "scripts"]
 
 [[tool.mypy.overrides]]
 module = ["anthropic", "anthropic.*"]

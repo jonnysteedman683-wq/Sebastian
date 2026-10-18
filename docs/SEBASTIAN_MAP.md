@@ -38,6 +38,7 @@ flowchart TD
 | LLM backends | `llm/anthropic.py`, `llm/scripted.py`, `llm/base.py` |
 | Schedulers / servers | None (deliberately). See PROPOSALS. |
 | Repo watch tooling | `watch/` (`sebastian-watch`): `gitio.py` read-only git, `inventory.py` static AST inventory + risk signals, `report.py` finalise/sign/verify, `runner.py` unattended run + delivery, `cli.py`; scheduled by `.github/workflows/watch.yml`; keyless publish to the `watch-state` branch (`latest.json`, `reports/`, `state.json`) |
+| Daily agent | `docs/BACKLOG.md` (queue), `AGENTS.md` (routine), `.github/workflows/guard.yml` (guarded paths), `scripts/resign_examples.py` |
 | External contracts | `schemas/repo_change_report.schema.json`: report format for the repo watcher and coordinator bots (`docs/watch/`) |
 
 ## Dependencies
