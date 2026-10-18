@@ -20,6 +20,16 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 | Corrupt / tampered memory | Schema-validated load, raises instead of wiping; atomic writes | `test_memory_corruption_raises` |
 | Untrusted deserialisation | JSON only. No pickle/eval anywhere. | `grep -rn "pickle\|eval(" src` is empty |
 
+## Repo watch tooling (`sebastian.watch`)
+
+| Threat | Control | Evidence |
+|---|---|---|
+| Malicious commit runs code in the watcher | Inventory parses source with `ast` from `git show`; nothing imported or executed | `tests/test_watch.py::test_inventory_never_executes_repo_code` |
+| Watcher draft hides risk | `finalize` only raises priority/risk/escalation; computed fields override the draft; unknown draft fields rejected | `test_finalize_never_lowers_watcher_judgement`, `test_finalize_rejects_overreach_and_bad_drafts` |
+| Force-push hides history | `history_rewritten` detection adds +3 risk and escalates | `test_history_rewrite_detected_and_escalated` |
+| Forged / replayed reports | HMAC-SHA256 (constant-time compare), `seq` and `from_sha` continuity in `verify` | `test_verify_catches_tampering_seq_and_gaps` |
+| Key leakage | Key read from env only, never printed or logged | `test_cli_full_flow` asserts key absent from output |
+
 ## Residual risks (escalated, not fixed)
 
 1. **`run_command` arguments are not jailed.** An allowlisted `cat /etc/passwd` reads outside the workspace, and allowlisting an interpreter (`python`) is equivalent to arbitrary code. Mitigation today: approval gate (EXEC needs a yes) and an explicit allowlist. Upgrade: run commands in a container or Linux namespace (bubblewrap/nsjail) with no network.

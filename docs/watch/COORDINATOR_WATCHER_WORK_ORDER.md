@@ -22,6 +22,8 @@
 
 On every incoming message from `GROK-WATCHER`:
 
+**Tooling:** `sebastian-watch --repo <clone> verify report.json --expect-seq <last_seq+1> --expect-from <last_accepted_sha>` performs steps 1-3 (schema, signature, seq, continuity) in one call. Exit 0 = accept, 1 = reject (problems listed in the JSON output), 2 = environment error (do not ack; retry). A `seq` gap is reported as a problem: accept the report only after escalating `REPORT_GAP` per §7.2.
+
 1. **Authenticate.** Confirm it arrived on the watcher's configured channel with valid credentials **and** a valid HMAC signature (§7.1). Unauthenticated → discard, log, and escalate `FORGED_REPORT` (§4).
 2. **Validate** against `schemas/repo_change_report.schema.json` (from `main`, cached, refreshed daily). Invalid → reject with an error reply to the watcher, log, and count as a missed report for heartbeat purposes.
 3. **Check continuity.** `seq` must be exactly last accepted `seq` + 1 (§7.2), and `range.from_sha` must equal the `to_sha` of the last report you accepted. A gap, overlap or replay → escalate `REPORT_GAP` with both values.

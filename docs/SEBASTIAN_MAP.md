@@ -31,12 +31,13 @@ flowchart TD
 
 | Concern | Location |
 |---|---|
-| Entry points | `sebastian` console script, `python -m sebastian` -> `cli.main` |
+| Entry points | `sebastian` console script, `python -m sebastian` -> `cli.main`; `sebastian-watch` -> `watch.cli.main` |
 | Agent loop | `agent.py` |
 | Tool layer | `tools/base.py`, `tools/builtin.py`, `tools/workspace.py` |
 | Memory/state | `memory.py` (JSON, schema v1) |
 | LLM backends | `llm/anthropic.py`, `llm/scripted.py`, `llm/base.py` |
 | Schedulers / servers | None (deliberately). See PROPOSALS. |
+| Repo watch tooling | `watch/` (`sebastian-watch`): `gitio.py` read-only git, `inventory.py` static AST inventory + risk signals, `report.py` finalise/sign/verify, `cli.py` |
 | External contracts | `schemas/repo_change_report.schema.json`: report format for the repo watcher and coordinator bots (`docs/watch/`) |
 
 ## Dependencies
@@ -56,7 +57,7 @@ See README table. Only secret is `ANTHROPIC_API_KEY`, read by the SDK; never sto
 
 ## Tests
 
-pytest, 112 tests (incl. 27 schema contract tests), 99.6% branch coverage (gate 90%). No network or real LLM in tests.
+pytest, 131 tests (incl. 27 schema contract and 19 watchkit tests), 98.6% branch coverage (gate 90%). No network or real LLM in tests.
 
 ## Runtime check
 

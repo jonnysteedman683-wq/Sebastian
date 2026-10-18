@@ -51,10 +51,25 @@ Full map: [`docs/SEBASTIAN_MAP.md`](docs/SEBASTIAN_MAP.md). Threat model: [`docs
 | `SEBASTIAN_MAX_SECONDS` | `600` | |
 | `SEBASTIAN_HOME` | `~/.sebastian` | Memory and traces. |
 
+## Repo watch (watchkit)
+
+`sebastian-watch` supports the GROK-WATCHER and CO-ORDINATOR-BOT ([`docs/watch/`](docs/watch/)). It reads the repo through git and `ast` only, never running repo code.
+
+```bash
+pip install -e ".[watch]"
+export WATCHER_HMAC_KEY=...                                   # never printed
+sebastian-watch scan --from <last_sha> --to origin/main > facts.json   # watcher: facts
+sebastian-watch finalize --draft draft.json --facts facts.json --seq N # watcher: validate + sign
+sebastian-watch canary --seq N                                          # watcher: weekly test
+sebastian-watch verify report.json --expect-seq N --expect-from <sha>   # coordinator: accept/reject
+```
+
+Report contract: [`schemas/`](schemas/).
+
 ## Development
 
 ```bash
-pip install -e ".[dev,anthropic]"
+pip install -e ".[dev,anthropic,watch]"
 ruff check . && ruff format --check . && mypy && pytest --cov
 ```
 

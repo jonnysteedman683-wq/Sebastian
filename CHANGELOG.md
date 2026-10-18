@@ -9,6 +9,8 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 - Work orders for both bots in `docs/watch/`, pointing at the schema as the authoritative contract.
 - Contract tests (`tests/test_report_schema.py`): schema validity, examples, signatures, 20 invalid-report cases, and a check that the example capability inventory matches what Sebastian actually ships.
 - Dev dependencies: `jsonschema`, `types-jsonschema`.
+- `sebastian-watch` (watchkit, `sebastian.watch`): `scan`, `finalize`, `canary`, `verify` for the watcher and coordinator. Static capability inventory via `git show` + `ast` (repo code never executed), deterministic risk signals, history-rewrite detection, rule enforcement (priority/risk/escalation only ever raised), schema validation and HMAC signing. Optional extra `watch`.
+- CI: watchkit canary build + verify smoke step.
 
 ## [0.1.0] - 2026-10-18
 

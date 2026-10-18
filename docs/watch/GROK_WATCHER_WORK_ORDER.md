@@ -31,14 +31,17 @@
 
 ## 2. Each Run — Steps
 
-1. Load state: `last_reported_sha`, `last_run_at`.
-2. Fetch `main` head SHA. If equal to `last_reported_sha` → stop (quiet run).
-3. Collect commits in range `last_reported_sha..head` (oldest first), with full diffs.
-4. Also collect: PRs merged, opened or closed since `last_run_at`; new tags/releases; CI status of `head`.
-5. Classify every change using §4.
-6. Build the report (§5). Validate it against `schemas/repo_change_report.schema.json` from the current `main` before sending. An invalid report is never sent: fix it, or send an `escalate: true` report describing the validation failure.
-7. Send to CO-ORDINATOR-BOT (§6). Only on confirmed delivery, set `last_reported_sha = head`, `last_run_at = now`.
-8. On any failure, do **not** advance state. The next run retries the same range.
+Use `sebastian-watch` (watchkit, in the Sebastian repo: `pip install 'sebastian[watch]'`). It does every deterministic step, so the format, risk floor, escalation rules and signature are always right. Your job is the judgement: describing and classifying changes.
+
+1. Load state: `last_reported_sha`, `seq`, `last_run_at`.
+2. `git -C <clone> fetch origin main` (read-only). If `origin/main` equals `last_reported_sha` → quiet run, stop.
+3. **Facts:** `sebastian-watch --repo <clone> scan --from <last_reported_sha> --to origin/main > facts.json` (omit `--from` on the first run). This gives commits, changed files, `sensitive_files`, version, `capability_inventory`, `capability_diff`, `risk_signals` and `history_rewritten`. It reads git objects and parses source; it never runs repo code.
+4. **Draft:** read the diffs for the commits in `facts.json` (prioritise `sensitive_files`), then write `draft.json` with only these fields: `summary`, `summary_markdown`, `changes` (classified per §4, each with evidence), `prs`, `security_alerts`, `breaking_changes`, `open_questions`, `pr_previews`, `escalation_reasons`, and optionally `ci_status`, `priority`, `risk_score`, `escalate` from your own judgement (§8.4 points that need judgement, e.g. "approval gate weakened").
+5. **Finalise:** `sebastian-watch --repo <clone> finalize --draft draft.json --facts facts.json --seq <seq+1> > report.json`. It computes all other fields, raises (never lowers) priority, risk and escalation to what the facts require, validates against the schema and signs with `WATCHER_HMAC_KEY`. Non-zero exit = do not send; fix the draft (exit 1) or the environment (exit 2).
+6. Send `report.json` to CO-ORDINATOR-BOT (§6). Only on confirmed delivery: `last_reported_sha = facts.range.to_sha`, `seq += 1`, `last_run_at = now`.
+7. On any failure, do **not** advance state. The next run retries the same range.
+
+**Canary (§8.1):** `sebastian-watch --repo <clone> canary --seq <seq+1>`.
 
 ---
 
