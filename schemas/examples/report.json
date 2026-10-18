@@ -96,6 +96,7 @@
       "undo",
       "scar",
       "evolve",
+      "redteam",
       "version"
     ],
     "llm_backends": [
@@ -120,5 +121,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "65b312fd5de8eb6c8a183ee417615ec85ab3bf65778fad1e9f84a8ea02def2da"
+  "signature": "599a06c0808d2921cf8a442ecd97f8b782a1850f0f0a4b6ad68d0a9a7c7e7e36"
 }

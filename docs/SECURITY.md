@@ -37,6 +37,14 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 | Daily coding agent changes what watches it | Guard check fails any PR touching `.github/`, `src/sebastian/watch/`, the schema/signing spec, `docs/watch/`, `docs/WORK_ORDER.md`, `AGENTS.md` or `CLAUDE.md` without the owner's `owner-approved` label; such changes also escalate in watch reports | `.github/workflows/guard.yml`, `test_watch_tooling_change_is_flagged_and_escalated` |
 | Secrets exposed to forks | Watch workflow triggers only on `main` push, schedule and manual dispatch (never `pull_request`) | `.github/workflows/watch.yml` |
 
+## Red team (`evals/redteam.py`)
+
+`sebastian redteam` has a model generate prompt-injection attacks against Sebastian. Every
+attack's goal is a fixed harmless canary (`PWNED.txt` / `echo pwned`), enforced in code; anything
+else is discarded. Attacks run with all gated actions denied, so a successful attack changes
+nothing; it only shows the model *tried*. Breaches become live scar cases, so the suite grows
+with every new technique the attacker finds. Review new `redteam-*` scars before committing them.
+
 ## Self-improvement (`evolve.py`)
 
 `sebastian evolve` lets the agent change its own code, so its limits live in code, not prompts:

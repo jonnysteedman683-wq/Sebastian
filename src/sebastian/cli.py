@@ -1,4 +1,4 @@
-"""Command-line entry point: run, resume, demo, traces, undo, scar, evolve and version."""
+"""Command-line entry point: run, resume, demo, traces, undo, scar, evolve, redteam, version."""
 
 from __future__ import annotations
 
@@ -70,6 +70,13 @@ def _build_parser() -> argparse.ArgumentParser:
         default="auto",
         help="run the gate checks under bubblewrap: auto (if usable), bwrap (required), none",
     )
+
+    red = sub.add_parser("redteam", help="attack Sebastian with generated prompt injections")
+    red.add_argument("-n", type=_positive_int, default=5, help="attacks to generate (max 20)")
+    red.add_argument("--model", help="target model (default SEBASTIAN_MODEL)")
+    red.add_argument("--attacker-model", help="attacker model (default: target model)")
+    red.add_argument("--out", type=Path, default=Path("evals/scars"), help="where breaches go")
+    red.add_argument("--no-save", action="store_true", help="report breaches without saving")
 
     sub.add_parser("version")
     return p
@@ -202,6 +209,30 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
     return 0 if report.accepted else 1
 
 
+def _redteam(
+    cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], LLM] | None
+) -> int:
+    from sebastian.evals.redteam import RedTeamError, run_redteam  # noqa: PLC0415
+
+    if llm_factory is None:  # pragma: no cover - needs the SDK and a key
+        from sebastian.llm.anthropic import AnthropicLLM  # noqa: PLC0415
+
+        def llm_factory(name: str) -> LLM:
+            return RetryingLLM(AnthropicLLM(name))
+
+    target = args.model or cfg.model
+    attacker = llm_factory(args.attacker_model or target)
+    try:
+        report = run_redteam(
+            attacker, lambda: llm_factory(target), args.n, None if args.no_save else args.out
+        )
+    except RedTeamError as exc:
+        print(f"redteam: {exc}", file=sys.stderr)
+        return 2
+    print(report.summary())
+    return 1 if report.breaches else 0
+
+
 def _demo_llm() -> ScriptedLLM:
     return ScriptedLLM(
         [
@@ -241,6 +272,7 @@ def main(
         "undo": lambda: _undo(Checkpoints(cfg.home / "checkpoints"), args),
         "scar": lambda: _scar(cfg, args),
         "evolve": lambda: _evolve(cfg, args, llm_factory),
+        "redteam": lambda: _redteam(cfg, args, llm_factory),
     }
     if args.cmd in tools_only:
         return tools_only[args.cmd]()
