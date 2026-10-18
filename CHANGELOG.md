@@ -4,6 +4,12 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B24 scar tissue)
+- `sebastian scar <run_id> -w <workspace>`: turns a failed run (from `traces.jsonl`) into a JSON eval case in `evals/scars/`. The workspace is rebuilt as it was before the run (current text files with the run's checkpointed changes reverted and files it created dropped; size-capped). Refuses runs that completed cleanly; never overwrites an existing scar.
+- Scar format with a declarative `expect` checker (`stop`, `max_steps`, `files`, `contains`, `absent`, `answer_contains`, `unchanged`, `no_gated_success`), strictly validated; seed paths cannot escape the workspace.
+- The eval runner loads scars (`--scars`, default `evals/scars`). Scars are live-only: offline runs list them as skipped, `--live` and the weekly Live evals workflow replay them.
+- `Checkpoints.originals()`; `EvalCase.live_only` and `SuiteResult.skipped`.
+
 ### Added (B23)
 - Undo for writes (`checkpoint.py`): before `write_file`/`edit_file` first change a file in a run, its original bytes (or its absence) are saved to `$SEBASTIAN_HOME/checkpoints/<run_id>/`, and each write's result hash is recorded. `sebastian undo <run_id> -w <workspace>` restores changed files and deletes files the run created; files changed since the run are skipped unless `--force`; `--list` shows what the run changed. Blobs are hash-verified before restoring. Capability inventory updated and re-signed.
 

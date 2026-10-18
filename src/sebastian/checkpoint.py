@@ -113,6 +113,19 @@ class Checkpoints:
         """The workspace root the run wrote to."""
         return self._load(run_id)[0]
 
+    def originals(self, run_id: str) -> dict[str, bytes | None]:
+        """Each changed file's bytes before the run (None = the run created it)."""
+        out: dict[str, bytes | None] = {}
+        for rel, entry in self._load(run_id)[1].items():
+            if entry.before is None:
+                out[rel] = None
+                continue
+            data = (self._dir(run_id) / "blobs" / entry.before).read_bytes()
+            if _sha(data) != entry.before:
+                raise CheckpointError(f"checkpoint blob for {rel} is corrupt")
+            out[rel] = data
+        return out
+
     def undo(self, run_id: str, ws: Workspace, force: bool = False) -> UndoReport:
         """Restore every file ``run_id`` changed in ``ws`` to its state before the run."""
         root, entries = self._load(run_id)
