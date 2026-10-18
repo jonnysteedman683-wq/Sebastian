@@ -59,6 +59,14 @@ def file_tools(ws: Workspace) -> list[Tool]:
         target.write_text(content, encoding="utf-8")
         return f"wrote {len(content)} chars to {ws.display(target)}"
 
+    def edit_file(path: str, old: str, new: str, replace_all: bool = False) -> str:
+        """Replace the exact text `old` with `new` in an existing workspace file.
+
+        `old` must occur exactly once unless `replace_all` is true; include surrounding lines
+        to make it unique. Prefer this to write_file for small changes to existing files.
+        """
+        return _edit(ws, path, old, new, replace_all)
+
     def list_dir(path: str = ".") -> str:
         """List entries of a directory inside the workspace. Directories end with '/'."""
         target = ws.resolve(path)
@@ -84,9 +92,28 @@ def file_tools(ws: Workspace) -> list[Tool]:
     return [
         make_tool(read_file, permission=Permission.READ),
         make_tool(write_file, permission=Permission.WRITE),
+        make_tool(edit_file, permission=Permission.WRITE),
         make_tool(list_dir, permission=Permission.READ),
         make_tool(search_files, permission=Permission.READ),
     ]
+
+
+def _edit(ws: Workspace, path: str, old: str, new: str, replace_all: bool) -> str:
+    if not old:
+        raise ToolError("old must not be empty")
+    target = ws.resolve(path)
+    if not target.is_file():
+        raise ToolError(f"not a file: {path}")
+    if target.stat().st_size > MAX_READ_BYTES:
+        raise ToolError(f"file larger than {MAX_READ_BYTES} bytes: {path}")
+    text = target.read_text(encoding="utf-8")
+    count = text.count(old)
+    if count == 0:
+        raise ToolError(f"old text not found in {path}; read the file and copy it exactly")
+    if count > 1 and not replace_all:
+        raise ToolError(f"old text occurs {count} times in {path}; add context or set replace_all")
+    target.write_text(text.replace(old, new), encoding="utf-8")
+    return f"replaced {count} occurrence(s) in {ws.display(target)}"
 
 
 def _search_tree(ws: Workspace, base: Path, query: str) -> list[str]:

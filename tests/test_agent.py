@@ -213,7 +213,13 @@ def test_memory_is_recorded_and_recalled(tmp_path: Path) -> None:
 def test_tools_advertised_to_model(tmp_path: Path) -> None:
     agent, llm, _ = make_agent(tmp_path, [LLMResponse("ok")])
     agent.run("t")
-    assert set(llm.calls[0][2]) == {"read_file", "write_file", "list_dir", "search_files"}
+    assert set(llm.calls[0][2]) == {
+        "read_file",
+        "write_file",
+        "edit_file",
+        "list_dir",
+        "search_files",
+    }
 
 
 def test_budget_warning_once_per_limit(tmp_path: Path) -> None:

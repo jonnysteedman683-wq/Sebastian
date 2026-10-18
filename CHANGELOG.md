@@ -4,6 +4,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B22)
+- `edit_file` tool (WRITE, gated): replaces exact text in an existing workspace file; the text must be unique unless `replace_all` is set, and the file is untouched on any error. Saves the model rewriting whole files for small changes. Capability inventory in `schemas/examples/` updated and re-signed.
+
 ### Added (B7)
 - Docstrings on every public module, class, function and method in `src/sebastian/` (except the guarded `watch/` package, tracked as B21). Ruff now enforces `D1` for `src/` (`D105`/`D107` ignored; tests and scripts exempt).
 

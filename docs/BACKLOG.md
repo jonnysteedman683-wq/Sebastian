@@ -52,6 +52,8 @@ Rules:
 - [ ] **B19 Sandbox by default.** Once `--sandbox bwrap` has run cleanly on the owner's hosts, make it the default when bubblewrap is present.
   *Done when:* default policy uses bwrap if usable, `--sandbox none` opts out; tests cover both.
 
+- [x] **B22 `edit_file` tool.** Exact-text replace in an existing file (WRITE).
+  *Done when:* tests cover unique, ambiguous, replace_all, not found, empty, oversize and jail escape.
 - [ ] 🔒 **B21 Docstrings for `watch/`.** B7 excluded `src/sebastian/watch/` (guarded). Add docstrings there and drop its `D1` ignore in `pyproject.toml`.
   *Done when:* `ruff check .` passes with no `D1` ignore for `watch/`.
 
