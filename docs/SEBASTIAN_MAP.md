@@ -36,6 +36,7 @@ flowchart TD
 | Evals | `evals/`: harness, 5 capability + 5 injection cases; `pytest -m eval`, `python -m sebastian.evals [--live]` |
 | Self-improvement | `evolve.py` (`sebastian evolve`): backlog item -> worktree -> scoped agent -> gates (guarded paths, CI checks, eval >= baseline) -> commit/push/PR, never merge |
 | Scar tissue | `evals/scar.py`, `evals/scars/*.json`: failed runs as live-only eval cases (`sebastian scar`) |
+| Sessions / resume | `session.py`: per-run saved conversation under `$SEBASTIAN_HOME/sessions/`, `sebastian resume` |
 | Checkpoints / undo | `checkpoint.py`: per-run original file snapshots under `$SEBASTIAN_HOME/checkpoints/`, `sebastian undo` |
 | Context management | `context.py`: per-result cap + oldest-first elision of tool results (`ContextPolicy`) |
 | Tool layer | `tools/base.py`, `tools/builtin.py`, `tools/workspace.py` |

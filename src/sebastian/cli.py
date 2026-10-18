@@ -1,4 +1,4 @@
-"""Command-line entry point: run, demo, traces, undo, scar, evolve and version."""
+"""Command-line entry point: run, resume, demo, traces, undo, scar, evolve and version."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from sebastian.config import Config
 from sebastian.llm.base import LLM, RetryingLLM
 from sebastian.llm.scripted import ScriptedLLM
 from sebastian.memory import MemoryStore
+from sebastian.session import SessionError, SessionStore
 from sebastian.tools import CommandPolicy, ToolRegistry, Workspace, command_tool, file_tools
 from sebastian.trace import JsonlTracer, summarize_runs
 from sebastian.types import LLMResponse, RunResult, StopReason, ToolCall
@@ -29,32 +30,11 @@ def _build_parser() -> argparse.ArgumentParser:
 
     run = sub.add_parser("run", help="run a task with a real model")
     run.add_argument("task")
-    run.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
-    run.add_argument("--model", help="override SEBASTIAN_MODEL")
-    run.add_argument(
-        "--allow-cmd",
-        action="append",
-        default=[],
-        metavar="EXE",
-        help="enable run_command for this executable (repeatable)",
-    )
-    run.add_argument(
-        "--unattended",
-        action="store_true",
-        help="never prompt; every gated action is denied",
-    )
-    run.add_argument("--no-memory", action="store_true")
-    run.add_argument(
-        "--plan", action="store_true", help="plan before acting (one extra tool-free model call)"
-    )
-    run.add_argument(
-        "--sandbox",
-        choices=["none", "bwrap"],
-        default="none",
-        help="isolate run_command: bwrap = Linux namespaces, no network, workspace-only",
-    )
-    run.add_argument("--plan-model", help="model for the planning phase (implies --plan)")
-    run.add_argument("--escalation-model", help="model for the step after repeated tool failures")
+    _add_run_options(run)
+
+    resume = sub.add_parser("resume", help="continue a run that stopped early")
+    resume.add_argument("run_id")
+    _add_run_options(resume)
 
     demo = sub.add_parser("demo", help="offline scripted run (no API key) to verify install")
     demo.add_argument("--workspace", "-w", type=Path, required=True)
@@ -87,6 +67,35 @@ def _build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("version")
     return p
+
+
+def _add_run_options(run: argparse.ArgumentParser) -> None:
+    run.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
+    run.add_argument("--model", help="override SEBASTIAN_MODEL")
+    run.add_argument(
+        "--allow-cmd",
+        action="append",
+        default=[],
+        metavar="EXE",
+        help="enable run_command for this executable (repeatable)",
+    )
+    run.add_argument(
+        "--unattended",
+        action="store_true",
+        help="never prompt; every gated action is denied",
+    )
+    run.add_argument("--no-memory", action="store_true")
+    run.add_argument(
+        "--plan", action="store_true", help="plan before acting (one extra tool-free model call)"
+    )
+    run.add_argument(
+        "--sandbox",
+        choices=["none", "bwrap"],
+        default="none",
+        help="isolate run_command: bwrap = Linux namespaces, no network, workspace-only",
+    )
+    run.add_argument("--plan-model", help="model for the planning phase (implies --plan)")
+    run.add_argument("--escalation-model", help="model for the step after repeated tool failures")
 
 
 def _positive_int(value: str) -> int:
@@ -228,7 +237,8 @@ def main(
 
     clock = SystemClock()
     ws = Workspace(args.workspace)
-    checkpoints = Checkpoints(cfg.home / "checkpoints") if args.cmd == "run" else None
+    live = args.cmd in {"run", "resume"}
+    checkpoints = Checkpoints(cfg.home / "checkpoints") if live else None
     registry = ToolRegistry(file_tools(ws, checkpoints))
 
     if args.cmd == "demo":
@@ -270,12 +280,20 @@ def main(
         tracer=JsonlTracer(cfg.home / "traces.jsonl", clock),
         clock=clock,
         checkpoints=checkpoints,
+        sessions=SessionStore(cfg.home / "sessions"),
+        workspace=str(ws.root),
         plan=args.plan or bool(args.plan_model),
         planner_llm=make(plan_model) if plan_model and plan_model != model else None,
         escalation_llm=(
             make(escalation_model) if escalation_model and escalation_model != model else None
         ),
     )
+    if args.cmd == "resume":
+        try:
+            return _print_result(agent.resume(args.run_id))
+        except SessionError as exc:
+            print(f"resume: {exc}", file=sys.stderr)
+            return 1
     return _print_result(agent.run(args.task))
 
 
