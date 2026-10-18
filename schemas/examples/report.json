@@ -94,6 +94,7 @@
       "traces",
       "undo",
       "scar",
+      "evolve",
       "version"
     ],
     "llm_backends": [
@@ -118,5 +119,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "75b38c09ca136e235609b072e35aec81daf6050b0d0603f54c1572ecd0427b5d"
+  "signature": "bd930c094e9acf1306d9eba0ba56cd5d83ea30579b371082dfe3b1d2fb316dbe"
 }

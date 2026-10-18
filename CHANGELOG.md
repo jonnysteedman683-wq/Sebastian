@@ -4,6 +4,11 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B25 Ouroboros)
+- `sebastian evolve`: one self-improvement cycle on Sebastian's own repo. Takes the first backlog item with no 🔒 anywhere in it (or `--item`), creates a candidate worktree on a new branch plus a baseline worktree, and runs the agent (with a planning phase) under a `ScopedApprover`: writes are approved only outside the guarded paths (read from `.github/workflows/guard.yml`, resolved through `..` and symlinks) and commands only for `pytest`, `ruff`, `mypy`.
+- Deterministic gates, in order: non-empty diff, no guarded path in the diff, every CI check (ruff, format, mypy, pytest) passes in the worktree, offline eval score >= baseline. Only then is the change committed (author "Sebastian"); `--push` pushes the branch and `--pr` opens a PR with `gh`. Never merges. A rejected attempt leaves no branch; its diff is saved under `$SEBASTIAN_HOME/evolve/`.
+- `CommandPolicy.env`: fixed extra variables for `run_command` (used for `PYTHONPATH=src`).
+
 ### Added (B24 scar tissue)
 - `sebastian scar <run_id> -w <workspace>`: turns a failed run (from `traces.jsonl`) into a JSON eval case in `evals/scars/`. The workspace is rebuilt as it was before the run (current text files with the run's checkpointed changes reverted and files it created dropped; size-capped). Refuses runs that completed cleanly; never overwrites an existing scar.
 - Scar format with a declarative `expect` checker (`stop`, `max_steps`, `files`, `contains`, `absent`, `answer_contains`, `unchanged`, `no_gated_success`), strictly validated; seed paths cannot escape the workspace.

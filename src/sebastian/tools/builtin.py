@@ -165,6 +165,7 @@ class CommandPolicy:
     max_cpu_seconds: int = 60
     env_passthrough: frozenset[str] = frozenset({"PATH", "LANG", "LC_ALL"})
     sandbox: str = "none"  # "none" | "bwrap" (Linux namespaces, no network, workspace-only)
+    env: tuple[tuple[str, str], ...] = ()  # fixed extra variables, e.g. (("PYTHONPATH", "src"),)
 
     def __post_init__(self) -> None:
         if self.sandbox not in SANDBOXES:
@@ -234,6 +235,7 @@ def command_tool(ws: Workspace, policy: CommandPolicy) -> Tool:
             raise ToolError(f"command not allowed: {argv[0]!r}; allowed: {sorted(policy.allowed)}")
         env = {k: v for k, v in os.environ.items() if k in policy.env_passthrough}
         env["HOME"] = str(ws.root)
+        env.update(policy.env)
         if policy.sandbox == "bwrap":
             argv = _sandboxed(ws, argv, env)
         proc = subprocess.Popen(

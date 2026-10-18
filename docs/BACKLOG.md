@@ -58,8 +58,10 @@ Rules:
   *Done when:* tests cover restore, delete-created, skip-if-changed, `--force`, wrong workspace, corrupt manifest and tampered blob.
 - [x] **B24 Scar tissue.** `sebastian scar <run_id>` turns a failed run into a live eval case in `evals/scars/`.
   *Done when:* a failed run produces a scar seeded with the pre-run workspace; the live suite replays it; offline lists it as skipped.
-- [ ] **B25 Self-improvement loop (Ouroboros).** Sebastian works a backlog item in a sandbox branch and opens a PR only if tests pass and the eval score is at least `main`'s.
+- [x] **B25 Self-improvement loop (Ouroboros).** Sebastian works a backlog item in a sandbox branch and opens a PR only if tests pass and the eval score is at least `main`'s.
   *Done when:* a scripted end-to-end test shows a PR opened on a non-regressing change and refused on a regressing one.
+- [ ] **B27 Sandboxed evolve gates.** Run `evolve`'s check and eval commands under bubblewrap (no network, worktree-only) when available.
+  *Done when:* gate commands run via the bwrap wrapper when usable; tests cover both paths.
 - [ ] **B26 Trust ladder.** Autonomy level (L0 suggest .. L3 auto-merge code) derived from the eval and PR record; a failed eval drops a level. Auto-merge levels need owner sign-off.
 - [ ] 🔒 **B21 Docstrings for `watch/`.** B7 excluded `src/sebastian/watch/` (guarded). Add docstrings there and drop its `D1` ignore in `pyproject.toml`.
   *Done when:* `ruff check .` passes with no `D1` ignore for `watch/`.

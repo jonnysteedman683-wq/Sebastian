@@ -37,6 +37,21 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 | Daily coding agent changes what watches it | Guard check fails any PR touching `.github/`, `src/sebastian/watch/`, the schema/signing spec, `docs/watch/`, `docs/WORK_ORDER.md`, `AGENTS.md` or `CLAUDE.md` without the owner's `owner-approved` label; such changes also escalate in watch reports | `.github/workflows/guard.yml`, `test_watch_tooling_change_is_flagged_and_escalated` |
 | Secrets exposed to forks | Watch workflow triggers only on `main` push, schedule and manual dispatch (never `pull_request`) | `.github/workflows/watch.yml` |
 
+## Self-improvement (`evolve.py`)
+
+`sebastian evolve` lets the agent change its own code, so its limits live in code, not prompts:
+
+- **Scope:** writes are approved only for paths outside the guarded set, which is read from
+  `.github/workflows/guard.yml` (one source of truth with the Guard check) and matched after
+  resolving `..` and symlinks. Commands are limited to `pytest`, `ruff`, `mypy`. Everything
+  else is denied.
+- **Gates before commit:** non-empty diff, no guarded path in the final diff (catches side
+  channels), all CI checks pass, offline eval score >= the base commit's.
+- **No merge:** the best outcome is a branch or PR for a human to review.
+- **Residual risk:** the gates run the candidate's own tests on the host, i.e. code the agent
+  just wrote. Run `evolve` in a disposable environment (container, CI runner or VM), not on a
+  machine holding secrets; a bwrap-sandboxed gate runner is a follow-up (B27).
+
 ## Undo (`checkpoint.py`)
 
 Every file a run changes through the file tools is checkpointed first, so a bad or hijacked run
