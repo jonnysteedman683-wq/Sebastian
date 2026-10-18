@@ -48,9 +48,12 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 - **Gates before commit:** non-empty diff, no guarded path in the final diff (catches side
   channels), all CI checks pass, offline eval score >= the base commit's.
 - **No merge:** the best outcome is a branch or PR for a human to review.
-- **Residual risk:** the gates run the candidate's own tests on the host, i.e. code the agent
-  just wrote. Run `evolve` in a disposable environment (container, CI runner or VM), not on a
-  machine holding secrets; a bwrap-sandboxed gate runner is a follow-up (B27).
+- **Gate sandbox:** the gates run code the agent just wrote. With `--sandbox auto` (default) or
+  `bwrap` they run under bubblewrap: no network, only the worktree writable, cleared
+  environment. Use `--sandbox bwrap` to refuse to run at all without it.
+- **Residual risk:** with no usable bubblewrap, `auto` runs the gates unsandboxed (the report
+  says `gate sandbox: none`); the agent's own `run_command` calls during the cycle are not yet
+  sandboxed. Prefer a disposable environment (container, CI runner or VM) either way.
 
 ## Undo (`checkpoint.py`)
 

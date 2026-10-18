@@ -8,7 +8,7 @@ import shutil
 import signal
 import subprocess
 import sys
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -195,12 +195,19 @@ _RO_SYSTEM = (
 )
 
 
-def bwrap_argv(bwrap: str, root: Path, exe: str, args: list[str], env: dict[str, str]) -> list[str]:
+def bwrap_argv(
+    bwrap: str,
+    root: Path,
+    exe: str,
+    args: list[str],
+    env: dict[str, str],
+    extra_ro: Sequence[str] = (),
+) -> list[str]:
     """Wrap a command for bubblewrap: every namespace unshared (so no network), the workspace
-    bind-mounted read-write at ``/workspace``, system paths read-only, a private /tmp, and a
-    cleared environment. ``exe`` must be an absolute path from the host's system paths."""
+    bind-mounted read-write at ``/workspace``, system paths (plus ``extra_ro``) read-only, a
+    private /tmp, and a cleared environment. ``exe`` must be visible inside the sandbox."""
     argv = [bwrap, "--unshare-all", "--die-with-parent", "--new-session"]
-    for path in _RO_SYSTEM:
+    for path in (*_RO_SYSTEM, *extra_ro):
         argv += ["--ro-bind-try", path, path]
     # A fresh, private tmpfs inside the sandbox; nothing is shared with the host /tmp.
     argv += ["--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp"]  # noqa: S108
@@ -269,3 +276,12 @@ def _sandboxed(ws: Workspace, argv: list[str], env: dict[str, str]) -> list[str]
         raise ToolError(f"{argv[0]!r} is not available inside the sandbox")
     inner = dict(env, HOME=SANDBOX_WORKDIR)
     return bwrap_argv(bwrap, ws.root, exe, argv[1:], inner)
+
+
+def bwrap_usable(bwrap: str) -> bool:
+    """True if ``bwrap`` can create an unprivileged sandbox here (namespaces may be blocked)."""
+    probe = [bwrap, "--unshare-all", "--ro-bind", "/", "/", "--", "/bin/true"]
+    try:
+        return subprocess.run(probe, check=False, capture_output=True, timeout=10).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False

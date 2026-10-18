@@ -21,6 +21,7 @@ from __future__ import annotations
 import os
 import re
 import shutil
+import site
 import subprocess
 import sys
 import tempfile
@@ -42,6 +43,7 @@ from sebastian.tools import (
     command_tool,
     file_tools,
 )
+from sebastian.tools.builtin import SANDBOX_WORKDIR, bwrap_argv, bwrap_usable
 from sebastian.trace import NullTracer, Tracer
 from sebastian.types import ToolCall
 
@@ -83,6 +85,7 @@ class EvolveReport:
     candidate_score: float | None = None
     patch: Path | None = None
     run_stop: str = ""
+    sandbox: str = ""  # how the gates ran: "bwrap" or "none"
 
     def summary(self) -> str:
         """One readable block for the CLI."""
@@ -92,6 +95,8 @@ class EvolveReport:
         lines = [f"{verdict} {self.item.id}: {self.item.title}", f"  reason: {self.reason}"]
         if self.branch:
             lines.append(f"  branch: {self.branch}")
+        if self.sandbox:
+            lines.append(f"  gate sandbox: {self.sandbox}")
         if self.gates:
             gates = ", ".join(f"{k}={'ok' if v else 'FAIL'}" for k, v in self.gates.items())
             lines.append(f"  gates: {gates}")
@@ -191,12 +196,46 @@ def _git(repo: Path, *args: str) -> str:
     return proc.stdout
 
 
-def _run(argv: Sequence[str], cwd: Path, timeout: float = CHECK_TIMEOUT) -> tuple[bool, str]:
-    env = dict(os.environ)
-    env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(cwd / "src"), env.get("PYTHONPATH")]))
+def resolve_sandbox(mode: str) -> str | None:
+    """Path to a usable bwrap for ``mode`` (auto | bwrap | none); None means unsandboxed."""
+    if mode not in {"auto", "bwrap", "none"}:
+        raise EvolveError(f"unknown sandbox mode {mode!r}; use auto, bwrap or none")
+    if mode == "none":
+        return None
+    exe = shutil.which("bwrap")
+    if exe is not None and bwrap_usable(exe):
+        return exe
+    if mode == "bwrap":
+        raise EvolveError("sandbox 'bwrap' required but bubblewrap is missing or blocked here")
+    return None
+
+
+def python_roots() -> list[str]:
+    """Read-only paths the interpreter and installed tools (ruff, mypy, pytest) live under."""
+    roots = {sys.prefix, sys.base_prefix, sys.exec_prefix}
+    roots.update(site.getsitepackages())
+    roots.add(site.getusersitepackages())
+    roots.add(str(Path(os.path.realpath(sys.executable)).parent))
+    return sorted(r for r in roots if r and r != "/")
+
+
+def _run(
+    argv: Sequence[str], cwd: Path, bwrap: str | None = None, timeout: float = CHECK_TIMEOUT
+) -> tuple[bool, str]:
+    """Run a gate command in ``cwd``; inside bubblewrap when ``bwrap`` is given."""
+    cmd = list(argv)
+    if bwrap is None:
+        env = dict(os.environ)
+        env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(cwd / "src"), env.get("PYTHONPATH")]))
+    else:
+        exe = cmd[0] if os.path.isabs(cmd[0]) else shutil.which(cmd[0]) or cmd[0]
+        inner = {k: v for k, v in os.environ.items() if k in {"PATH", "LANG", "LC_ALL"}}
+        inner |= {"HOME": SANDBOX_WORKDIR, "PYTHONPATH": f"{SANDBOX_WORKDIR}/src"}
+        cmd = bwrap_argv(bwrap, cwd, exe, cmd[1:], inner, extra_ro=python_roots())
+        env = dict(os.environ)  # bwrap's own env; --clearenv keeps it out of the sandbox
     try:
         proc = subprocess.run(
-            list(argv),
+            cmd,
             cwd=cwd,
             env=env,
             capture_output=True,
@@ -267,6 +306,7 @@ class EvolveConfig:
         default_factory=lambda: Budget(max_steps=60, max_tokens=1_500_000, max_seconds=3600)
     )
     push: bool = False
+    sandbox: str = "auto"  # gate commands: auto (bwrap if usable) | bwrap (required) | none
     home: Path = field(default_factory=lambda: Path.home() / ".sebastian")
 
 
@@ -289,6 +329,8 @@ def evolve_once(
         report.reason = "no unlocked backlog item" + (f" {cfg.item_id}" if cfg.item_id else "")
         return report
 
+    bwrap = resolve_sandbox(cfg.sandbox)
+    report.sandbox = "bwrap" if bwrap else "none"
     clock = clock or SystemClock()
     report.branch = _free_branch(root, f"sebastian/evolve-{item.id.lower()}-{int(clock.now())}")
     guarded = load_guarded(root)
@@ -329,7 +371,7 @@ def evolve_once(
         report.changed = [
             p for p in _git(cand, "diff", "--cached", "--name-only").splitlines() if p
         ]
-        keep_branch = _gate(report, cand, base, guarded, cfg)
+        keep_branch = _gate(report, cand, base, guarded, cfg, bwrap)
         if keep_branch:
             _git(
                 cand,
@@ -362,7 +404,12 @@ def _free_branch(root: Path, name: str) -> str:
 
 
 def _gate(
-    report: EvolveReport, cand: Path, base: Path, guarded: re.Pattern[str], cfg: EvolveConfig
+    report: EvolveReport,
+    cand: Path,
+    base: Path,
+    guarded: re.Pattern[str],
+    cfg: EvolveConfig,
+    bwrap: str | None = None,
 ) -> bool:
     """Run the gates in order, recording each; stop at the first failure."""
     report.gates["non_empty"] = bool(report.changed)
@@ -375,15 +422,15 @@ def _gate(
         report.reason = f"touches guarded paths: {', '.join(hits)}"
         return False
     for argv in cfg.checks:
-        ok, out = _run(argv, cand)
+        ok, out = _run(argv, cand, bwrap)
         name = " ".join(Path(a).name if i == 0 else a for i, a in enumerate(argv))
         report.gates[f"check:{name}"] = ok
         if not ok:
             report.reason = f"check failed: {name}\n{out[-1500:]}"
             return False
     if cfg.eval_cmd:
-        report.baseline_score = parse_score(_run(cfg.eval_cmd, base)[1])
-        report.candidate_score = parse_score(_run(cfg.eval_cmd, cand)[1])
+        report.baseline_score = parse_score(_run(cfg.eval_cmd, base, bwrap)[1])
+        report.candidate_score = parse_score(_run(cfg.eval_cmd, cand, bwrap)[1])
         ok = report.candidate_score is not None and (
             report.baseline_score is None or report.candidate_score >= report.baseline_score
         )

@@ -84,6 +84,12 @@ def _build_parser() -> argparse.ArgumentParser:
     evo.add_argument("--no-evals", action="store_true", help="skip the eval-regression gate")
     evo.add_argument("--push", action="store_true", help="push an accepted branch to origin")
     evo.add_argument("--pr", action="store_true", help="also open a PR with gh (implies --push)")
+    evo.add_argument(
+        "--sandbox",
+        choices=["auto", "bwrap", "none"],
+        default="auto",
+        help="run the gate checks under bubblewrap: auto (if usable), bwrap (required), none",
+    )
 
     sub.add_parser("version")
     return p
@@ -164,7 +170,11 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
     else:
         llm = llm_factory(model)
     config = EvolveConfig(
-        base=args.base, item_id=args.item, push=args.push or args.pr, home=cfg.home
+        base=args.base,
+        item_id=args.item,
+        push=args.push or args.pr,
+        sandbox=args.sandbox,
+        home=cfg.home,
     )
     if args.no_evals:
         config.eval_cmd = None

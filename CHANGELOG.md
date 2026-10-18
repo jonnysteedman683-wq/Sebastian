@@ -4,6 +4,10 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B27 sandboxed evolve gates)
+- `sebastian evolve --sandbox auto|bwrap|none` (default `auto`): the gate commands (ruff, format, mypy, pytest, and both eval runs) execute under bubblewrap when it is usable: every namespace unshared (no network), only the worktree writable (at `/workspace`), system and Python install paths read-only, private `/tmp`, cleared environment. `bwrap` makes the sandbox mandatory and fails before any worktree is created if it is unavailable; `auto` falls back to unsandboxed and says so. The report shows `gate sandbox: bwrap|none`.
+- `bwrap_argv(..., extra_ro=...)` and `bwrap_usable()` in `tools/builtin.py`.
+
 ### Added (B25 Ouroboros)
 - `sebastian evolve`: one self-improvement cycle on Sebastian's own repo. Takes the first backlog item with no 🔒 anywhere in it (or `--item`), creates a candidate worktree on a new branch plus a baseline worktree, and runs the agent (with a planning phase) under a `ScopedApprover`: writes are approved only outside the guarded paths (read from `.github/workflows/guard.yml`, resolved through `..` and symlinks) and commands only for `pytest`, `ruff`, `mypy`.
 - Deterministic gates, in order: non-empty diff, no guarded path in the diff, every CI check (ruff, format, mypy, pytest) passes in the worktree, offline eval score >= baseline. Only then is the change committed (author "Sebastian"); `--push` pushes the branch and `--pr` opens a PR with `gh`. Never merges. A rejected attempt leaves no branch; its diff is saved under `$SEBASTIAN_HOME/evolve/`.
