@@ -1,14 +1,14 @@
 {
-  "summary": "2 commit(s): feat: scar tissue - turn failed runs into permanent eval cases (B24); Merge pull request #17 from jonnysteedman683-wq/claude/scar-tissue",
+  "summary": "3 commit(s): feat: Ouroboros - gated self-improvement cycle, sebastian evolve (B25); test: cover evolve's gh PR opener (B25); Merge pull request #18 from jonnysteedman683-wq/claude/ouroboros",
   "changes": [
     {
       "category": "NEW_FEATURE",
-      "title": "New CLI command scar",
-      "description": "Detected automatically from code: New CLI command scar.",
+      "title": "New CLI command evolve",
+      "description": "Detected automatically from code: New CLI command evolve.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "a914c02d56baecfd6e3d90cec7059e897413cbd5",
+          "sha": "d938720300a4da7b3c5adbdf59941672191eedc2",
           "path": "src/sebastian/cli.py"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 11,
+  "seq": 12,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "fe4001629b79646d181628e15bf004aeb532df3e",
-    "to_sha": "a914c02d56baecfd6e3d90cec7059e897413cbd5"
+    "from_sha": "a914c02d56baecfd6e3d90cec7059e897413cbd5",
+    "to_sha": "d938720300a4da7b3c5adbdf59941672191eedc2"
   },
-  "generated_at": "2026-10-18T17:54:26Z",
+  "generated_at": "2026-10-18T17:54:42Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -51,6 +51,7 @@
     ],
     "cli_commands": [
       "demo",
+      "evolve",
       "run",
       "scar",
       "traces",
@@ -65,7 +66,7 @@
   },
   "capability_diff": {
     "added": [
-      "cli: scar"
+      "cli: evolve"
     ],
     "removed": [],
     "changed": []
@@ -73,5 +74,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "18b2618323d489fdd2320f21f459492e0ed0bb8f798871237676d184179fc1f2"
+  "signature": "165bee3824cb72cbd4fbc69e08aff3a6acfcfa826c0b199a2b667eebf3008b59"
 }
