@@ -1,14 +1,14 @@
 {
-  "summary": "3 commit(s): feat: run evolve gates under bubblewrap (B27); Merge remote-tracking branch 'origin/main' into claude/sandboxed-gates; Merge pull request #20 from jonnysteedman683-wq/claude/sandboxed-gates",
+  "summary": "2 commit(s): feat: sandbox the agent's own commands during evolve (B29); Merge pull request #21 from jonnysteedman683-wq/claude/sandbox-agent-commands",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "8 file(s) changed",
-      "description": "Detected automatically from code: 8 file(s) changed.",
+      "title": "7 file(s) changed",
+      "description": "Detected automatically from code: 7 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "b9b8d0fd6c1ed3be21efdde224abc9f9dadb8b62",
+          "sha": "93bca38e0b22e788ee7c15e74b2df599794cbb17",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 14,
+  "seq": 15,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "373183943062a67bc37a63dc58796bfb67b9e69c",
-    "to_sha": "b9b8d0fd6c1ed3be21efdde224abc9f9dadb8b62"
+    "from_sha": "b9b8d0fd6c1ed3be21efdde224abc9f9dadb8b62",
+    "to_sha": "93bca38e0b22e788ee7c15e74b2df599794cbb17"
   },
-  "generated_at": "2026-10-18T18:21:03Z",
+  "generated_at": "2026-10-18T20:07:04Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -73,5 +73,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "50e19b1ad73619c29d39e527c02201b8f7275d7508232309f8b9d0649e374038"
+  "signature": "f6727babcde28d856b7a1b4a59c0cf52c45268a51f0f1eba8b40203dd1a76a2f"
 }

@@ -1,0 +1,77 @@
+{
+  "summary": "2 commit(s): feat: sandbox the agent's own commands during evolve (B29); Merge pull request #21 from jonnysteedman683-wq/claude/sandbox-agent-commands",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "7 file(s) changed",
+      "description": "Detected automatically from code: 7 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "93bca38e0b22e788ee7c15e74b2df599794cbb17",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 15,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "b9b8d0fd6c1ed3be21efdde224abc9f9dadb8b62",
+    "to_sha": "93bca38e0b22e788ee7c15e74b2df599794cbb17"
+  },
+  "generated_at": "2026-10-18T20:07:04Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "demo",
+      "evolve",
+      "resume",
+      "run",
+      "scar",
+      "traces",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "f6727babcde28d856b7a1b4a59c0cf52c45268a51f0f1eba8b40203dd1a76a2f"
+}
