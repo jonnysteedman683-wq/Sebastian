@@ -80,15 +80,6 @@ def commit(repo: Path, files: Mapping[str, str | None], msg: str) -> str:
     return git(repo, "rev-parse", "HEAD")
 
 
-@pytest.fixture
-def repo(tmp_path: Path) -> Path:
-    r = tmp_path / "repo"
-    r.mkdir()
-    git(r, "init", "-q", "-b", "main")
-    commit(r, V1, "v1")
-    return r
-
-
 def v2(repo: Path) -> str:
     """Adds a NETWORK tool, raises write_file to EXEC, swaps model, drops 'demo', bumps memory."""
     return commit(
@@ -469,3 +460,15 @@ def test_static_inventory_of_real_repo_matches_runtime() -> None:
     for key in ("tools", "cli_commands", "llm_backends"):
         assert real[key] == sorted(published[key]), key
     assert real["default_model"] == published["default_model"]
+
+
+def test_watch_tooling_change_is_flagged_and_escalated(repo: Path) -> None:
+    g = Git(repo)
+    start = g.resolve("HEAD")
+    commit(repo, {"src/sebastian/watch/report.py": "# tampered\n"}, "quiet tweak")
+    facts = scan(g, start, "HEAD")
+    assert any(s["reason"].startswith("watch tooling") for s in facts["risk_signals"])
+    r = finalize(draft(), facts, seq=1, key=KEY, schema=SCHEMA)
+    assert r["escalate"] is True
+    assert r["risk_score"] >= 3
+    assert any(x.startswith("watch tooling") for x in r["escalation_reasons"])

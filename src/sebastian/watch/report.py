@@ -35,6 +35,13 @@ SENSITIVE_PATHS = (
     "schemas/",
 )
 
+# Changing these could blind or subvert the watcher itself, so any change is risk +3 and escalated.
+WATCH_TOOLING_PATHS = (
+    "src/sebastian/watch/",
+    ".github/workflows/watch.yml",
+    "schemas/",
+)
+
 # Fields the watcher (Grok) writes; everything else is computed here.
 AUTHORED: dict[str, Any] = {
     "summary": "",
@@ -109,6 +116,15 @@ def scan(git: Git, from_ref: str | None, to_ref: str) -> dict[str, Any]:
     old = inv.build(git, from_sha)
     new = inv.build(git, to_sha)
     changed = git.changed_files(from_sha, to_sha)
+    signals = [{"points": p, "reason": r} for p, r in inv.risk_signals(old, new)]
+    tooling = sorted(f for f in changed if f.startswith(WATCH_TOOLING_PATHS))
+    if tooling and from_sha is not None:
+        signals.append(
+            {
+                "points": 3,
+                "reason": "watch tooling or report contract changed: " + ", ".join(tooling[:5]),
+            }
+        )
     return {
         "range": {"from_sha": from_sha, "to_sha": to_sha},
         "history_rewritten": history_rewritten,
@@ -118,7 +134,7 @@ def scan(git: Git, from_ref: str | None, to_ref: str) -> dict[str, Any]:
         "version": {"before": old.version, "after": new.version},
         "capability_inventory": new.to_schema(),
         "capability_diff": inv.diff(old, new),
-        "risk_signals": [{"points": p, "reason": r} for p, r in inv.risk_signals(old, new)],
+        "risk_signals": signals,
     }
 
 
@@ -191,7 +207,7 @@ def finalize(
 
     reasons = list(report["escalation_reasons"])
     for s in signals:
-        if s["points"] >= 4:
+        if s["points"] >= 4 or s["reason"].startswith("watch tooling"):
             reasons.append(s["reason"])
     if facts.get("history_rewritten"):
         reasons.append("history rewritten: previous reported commit is not an ancestor of head")

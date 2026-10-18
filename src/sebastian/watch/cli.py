@@ -4,6 +4,7 @@
     finalize  merge draft + facts, enforce rules, validate, sign -> report JSON
     canary    build the weekly signed canary
     verify    coordinator check: schema, signature, seq, continuity
+    run       full unattended run (scan, draft, finalize, deliver, state) for CI schedules
 
 The signing key is read from an environment variable (default WATCHER_HMAC_KEY) and is never
 printed. Exit code 0 = ok, 1 = rejected/invalid, 2 = usage or environment error.
@@ -29,6 +30,7 @@ from sebastian.watch.report import (
     scan,
     verify,
 )
+from sebastian.watch.runner import Endpoints, State, StateError, run
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -51,6 +53,13 @@ def _parser() -> argparse.ArgumentParser:
     c = sub.add_parser("canary")
     c.add_argument("--seq", type=int, required=True)
     c.add_argument("--ref", default="origin/main")
+
+    r = sub.add_parser("run")
+    r.add_argument("--state", type=Path, required=True, help="watch state JSON (created if absent)")
+    r.add_argument("--mode", choices=["change", "digest", "canary"], default="change")
+    r.add_argument("--ref", default="origin/main")
+    r.add_argument("--baseline", help="start SHA when no state exists yet")
+    r.add_argument("--out", type=Path, help="also write the report here")
 
     v = sub.add_parser("verify")
     v.add_argument("report", type=Path)
@@ -78,7 +87,50 @@ def _emit(obj: Any) -> None:
     sys.stdout.write(json.dumps(obj, indent=2, ensure_ascii=False) + "\n")
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def _run(args: argparse.Namespace, git: Git, schema: dict[str, Any]) -> int:
+    key = os.environ.get(args.key_env, "").encode() or None
+    url = os.environ.get("COORDINATOR_URL", "")
+    endpoints = (
+        Endpoints(
+            coordinator_url=url,
+            coordinator_token=os.environ.get("COORDINATOR_TOKEN", ""),
+            grok_url=os.environ.get("GROK_DRAFT_URL", ""),
+            grok_token=os.environ.get("GROK_DRAFT_TOKEN", ""),
+        )
+        if url
+        else None
+    )
+    state = State.load(args.state)
+    result = run(
+        git,
+        state,
+        args.mode,
+        key=key,
+        schema=schema,
+        endpoints=endpoints,
+        ref=args.ref,
+        baseline=args.baseline,
+    )
+    if result.action in ("sent", "failed"):
+        result.state.save(args.state)
+    if args.out and result.report is not None:
+        args.out.write_text(json.dumps(result.report, indent=2, ensure_ascii=False) + "\n")
+    report = result.report or {}
+    _emit(
+        {
+            "action": result.action,
+            "detail": result.detail,
+            "notes": result.notes,
+            "seq": report.get("seq"),
+            "to_sha": (report.get("range") or {}).get("to_sha"),
+            "priority": report.get("priority"),
+            "escalate": report.get("escalate"),
+        }
+    )
+    return 1 if result.action == "failed" else 0
+
+
+def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0911 - one exit per command
     args = _parser().parse_args(argv)
     schema_path = args.schema or args.repo / SCHEMA_PATH
     try:
@@ -87,6 +139,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             _emit(scan(git, args.from_ref, args.to_ref))
             return 0
         schema = load_schema(schema_path)
+        if args.cmd == "run":
+            return _run(args, git, schema)
         key = _key(args.key_env)
         if args.cmd == "finalize":
             _emit(
@@ -115,7 +169,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ReportError as exc:
         sys.stderr.write(f"error: {exc}\n")
         return 1
-    except (ConfigError, GitError, OSError, json.JSONDecodeError) as exc:
+    except (ConfigError, GitError, StateError, ValueError, OSError) as exc:
         sys.stderr.write(f"error: {exc}\n")
         return 2
 
