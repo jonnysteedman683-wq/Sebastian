@@ -33,6 +33,7 @@ flowchart TD
 |---|---|
 | Entry points | `sebastian` console script, `python -m sebastian` -> `cli.main`; `sebastian-watch` -> `watch.cli.main` |
 | Agent loop | `agent.py` |
+| Context management | `context.py`: per-result cap + oldest-first elision of tool results (`ContextPolicy`) |
 | Tool layer | `tools/base.py`, `tools/builtin.py`, `tools/workspace.py` |
 | Memory/state | `memory.py` (JSON, schema v1) |
 | LLM backends | `llm/anthropic.py`, `llm/scripted.py`, `llm/base.py` |

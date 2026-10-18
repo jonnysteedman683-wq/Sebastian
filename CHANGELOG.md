@@ -4,6 +4,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B13)
+- Context management (`context.py`, `ContextPolicy`): each tool result is capped (head + tail kept, default 12k chars) and, once the history passes `max_history_chars` (default 240k), tool results older than the last `keep_recent` turns are replaced by stubs, oldest first. Task text, assistant text and tool-call pairing are never altered. Emits a `context_compacted` trace event.
+
 ### Added (daily agent)
 - `docs/BACKLOG.md`: ranked one-PR-sized queue for the daily upgrade agent (Jules), with *done when* checks; 🔒 items need owner sign-off.
 - `AGENTS.md` / `CLAUDE.md`: the daily routine (one item, one PR, full checks, no self-merge) and hard limits.

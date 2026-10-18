@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from sebastian.approval import ApprovalGate, DenyApprover
 from sebastian.budget import Budget, Governor
 from sebastian.clock import Clock, IdSource, SystemClock, UuidSource
+from sebastian.context import ContextPolicy, cap_result, compact
 from sebastian.llm.base import LLM, LLMError
 from sebastian.memory import Episode, MemoryStore
 from sebastian.prompts import build_system_prompt
@@ -39,6 +40,7 @@ class Sebastian:
     clock: Clock = field(default_factory=SystemClock)
     ids: IdSource = field(default_factory=UuidSource)
     recall_k: int = 3
+    context: ContextPolicy = field(default_factory=ContextPolicy)
 
     def run(self, task: str) -> RunResult:
         if not task.strip():
@@ -59,6 +61,9 @@ class Sebastian:
             if reason:
                 result = self._finish(run_id, StopReason.BUDGET_EXHAUSTED, "", governor, reason)
                 break
+            messages, elided = compact(messages, self.context)
+            if elided:
+                self.tracer.emit(run_id, "context_compacted", elided=elided)
             try:
                 resp = self.llm.complete(system, messages, tool_list)
             except LLMError as exc:
@@ -78,7 +83,10 @@ class Sebastian:
                 self._warn(run_id, governor)
                 result = self._finish(run_id, StopReason.COMPLETED, resp.text, governor)
                 break
-            results = tuple(self._execute(run_id, call, failed) for call in resp.tool_calls)
+            results = tuple(
+                cap_result(self._execute(run_id, call, failed), self.context.max_result_chars)
+                for call in resp.tool_calls
+            )
             messages.append(Message(Role.USER, tool_results=results))
 
         self._remember(task, result)
