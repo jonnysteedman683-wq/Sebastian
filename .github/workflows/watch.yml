@@ -1,0 +1,118 @@
+name: Watch
+
+# Runs the GROK-WATCHER pipeline (docs/watch/) unattended:
+#   scan -> Grok draft (GROK_DRAFT_URL) or mechanical fallback -> finalize + sign
+#   -> deliver to CO-ORDINATOR-BOT (COORDINATOR_URL) -> advance state on ack.
+# State lives on the `watch-state` branch. Without COORDINATOR_URL and WATCHER_HMAC_KEY it
+# runs as a dry run: report uploaded as an artifact, nothing sent, state untouched.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "7 * * * *"     # hourly change check (off the hour to avoid queue spikes)
+    - cron: "0 22 * * *"    # daily digest: 08:00 Australia/Brisbane
+    - cron: "15 22 * * 0"   # weekly canary: Monday 08:15 Australia/Brisbane
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run mode"
+        type: choice
+        options: [change, digest, canary]
+        default: change
+      baseline_sha:
+        description: "Start SHA for the very first report (only used when no state exists)"
+        required: false
+
+permissions:
+  contents: write  # only used to update the watch-state branch
+
+concurrency:
+  group: sebastian-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install watchkit
+        run: python -m pip install -e ".[watch]"
+
+      - name: Load state
+        run: |
+          mkdir -p "$RUNNER_TEMP/watch"
+          if git fetch --quiet origin watch-state 2>/dev/null; then
+            git show origin/watch-state:state.json > "$RUNNER_TEMP/watch/state.json" || rm -f "$RUNNER_TEMP/watch/state.json"
+          fi
+          cp "$RUNNER_TEMP/watch/state.json" "$RUNNER_TEMP/watch/state.before.json" 2>/dev/null || true
+
+      - name: Pick mode
+        id: mode
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+          INPUT_MODE: ${{ inputs.mode }}
+        run: |
+          case "$SCHEDULE" in
+            "15 22 * * 0") mode=canary ;;
+            "0 22 * * *")  mode=digest ;;
+            *)             mode="${INPUT_MODE:-change}" ;;
+          esac
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
+      - name: Run watcher
+        env:
+          WATCHER_HMAC_KEY: ${{ secrets.WATCHER_HMAC_KEY }}
+          COORDINATOR_URL: ${{ secrets.COORDINATOR_URL }}
+          COORDINATOR_TOKEN: ${{ secrets.COORDINATOR_TOKEN }}
+          GROK_DRAFT_URL: ${{ secrets.GROK_DRAFT_URL }}
+          GROK_DRAFT_TOKEN: ${{ secrets.GROK_DRAFT_TOKEN }}
+          BASELINE: ${{ inputs.baseline_sha }}
+        run: |
+          sebastian-watch run \
+            --state "$RUNNER_TEMP/watch/state.json" \
+            --mode "${{ steps.mode.outputs.mode }}" \
+            --ref origin/main \
+            ${BASELINE:+--baseline "$BASELINE"} \
+            --out "$RUNNER_TEMP/watch/report.json" | tee "$RUNNER_TEMP/watch/summary.json"
+
+      - name: Save state
+        if: always()
+        run: |
+          s="$RUNNER_TEMP/watch/state.json"
+          [ -f "$s" ] || { echo "no state to save"; exit 0; }
+          cmp -s "$s" "$RUNNER_TEMP/watch/state.before.json" && { echo "state unchanged"; exit 0; }
+          git config user.name "sebastian-watch[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          wt="$RUNNER_TEMP/watch-state"
+          if git ls-remote --exit-code --heads origin watch-state >/dev/null; then
+            git worktree add -B watch-state "$wt" origin/watch-state
+          else
+            git worktree add --orphan -b watch-state "$wt"
+          fi
+          cp "$s" "$wt/state.json"
+          cd "$wt"
+          git add state.json
+          seq=$(python -c "import json,sys;print(json.load(open('state.json'))['seq'])")
+          git commit -q -m "watch: state after seq $seq"
+          git push --quiet origin watch-state
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: watch-report-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/watch/report.json
+            ${{ runner.temp }}/watch/summary.json
+          if-no-files-found: ignore
+          retention-days: 30
