@@ -1,0 +1,72 @@
+{
+  "summary": "4 commit(s): feat: bound agent context with tool-result caps and oldest-first elision (B13); feat: eval harness with capability and prompt-injection suites (B8, B9); feat: planning phase and replan nudge; fix tool_result ordering for Anthropic (B14); Merge pull request #11 from jonnysteedman683-wq/claude/tier1-context-evals-planner",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "19 file(s) changed",
+      "description": "Detected automatically from code: 19 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "a1f0dd627a74f83c06a0286b8c269a3d393b99aa",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 7,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "15cbe622ae8e67155a6f2612288abb885622ddd9",
+    "to_sha": "a1f0dd627a74f83c06a0286b8c269a3d393b99aa"
+  },
+  "generated_at": "2026-10-18T15:19:25Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "demo",
+      "run",
+      "traces",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "29e247d87c8cef4ab22660bc0b535610b13cbe70ba0c6da67286cb2eefd5680b"
+}

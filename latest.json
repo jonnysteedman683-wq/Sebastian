@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): feat: add sebastian traces CLI command (B5); Merge pull request #10 from jonnysteedman683-wq/claude/sebastian-upgrade-x7dl17",
+  "summary": "4 commit(s): feat: bound agent context with tool-result caps and oldest-first elision (B13); feat: eval harness with capability and prompt-injection suites (B8, B9); feat: planning phase and replan nudge; fix tool_result ordering for Anthropic (B14); Merge pull request #11 from jonnysteedman683-wq/claude/tier1-context-evals-planner",
   "changes": [
     {
-      "category": "NEW_FEATURE",
-      "title": "New CLI command traces",
-      "description": "Detected automatically from code: New CLI command traces.",
+      "category": "ABILITY_CHANGE",
+      "title": "19 file(s) changed",
+      "description": "Detected automatically from code: 19 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "15cbe622ae8e67155a6f2612288abb885622ddd9",
-          "path": "src/sebastian/cli.py"
+          "sha": "a1f0dd627a74f83c06a0286b8c269a3d393b99aa",
+          "path": "CHANGELOG.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 6,
+  "seq": 7,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "0246a33c7f798df4fd93f5fd63d7b1155fa55e44",
-    "to_sha": "15cbe622ae8e67155a6f2612288abb885622ddd9"
+    "from_sha": "15cbe622ae8e67155a6f2612288abb885622ddd9",
+    "to_sha": "a1f0dd627a74f83c06a0286b8c269a3d393b99aa"
   },
-  "generated_at": "2026-10-18T14:56:40Z",
+  "generated_at": "2026-10-18T15:19:25Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -61,14 +61,12 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [
-      "cli: traces"
-    ],
+    "added": [],
     "removed": [],
     "changed": []
   },
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "a397789ec983001c3417bfaecfc71f91453c26d72d3c13b6e5d3eb89c857209b"
+  "signature": "29e247d87c8cef4ab22660bc0b535610b13cbe70ba0c6da67286cb2eefd5680b"
 }
