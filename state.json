@@ -1,0 +1,8 @@
+{
+  "last_reported_sha": "1f36b16b91796a7def8be5d446cd41d8302028c4",
+  "seq": 1,
+  "last_run_at": "2026-10-18T11:27:58Z",
+  "delivery_failures": 0,
+  "grok_failures": 0,
+  "coordinator_down_since": null
+}
