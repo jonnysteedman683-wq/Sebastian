@@ -1,14 +1,14 @@
 {
-  "summary": "3 commit(s): feat: checkpoint file writes per run and add sebastian undo (B23); Merge remote-tracking branch 'origin/main' into claude/undo-writes; Merge pull request #16 from jonnysteedman683-wq/claude/undo-writes",
+  "summary": "2 commit(s): feat: scar tissue - turn failed runs into permanent eval cases (B24); Merge pull request #17 from jonnysteedman683-wq/claude/scar-tissue",
   "changes": [
     {
       "category": "NEW_FEATURE",
-      "title": "New CLI command undo",
-      "description": "Detected automatically from code: New CLI command undo.",
+      "title": "New CLI command scar",
+      "description": "Detected automatically from code: New CLI command scar.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "fe4001629b79646d181628e15bf004aeb532df3e",
+          "sha": "a914c02d56baecfd6e3d90cec7059e897413cbd5",
           "path": "src/sebastian/cli.py"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 10,
+  "seq": 11,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "eb749682fa37e9f1ba0914c4181037cb24f86074",
-    "to_sha": "fe4001629b79646d181628e15bf004aeb532df3e"
+    "from_sha": "fe4001629b79646d181628e15bf004aeb532df3e",
+    "to_sha": "a914c02d56baecfd6e3d90cec7059e897413cbd5"
   },
-  "generated_at": "2026-10-18T17:15:53Z",
+  "generated_at": "2026-10-18T17:54:26Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -52,6 +52,7 @@
     "cli_commands": [
       "demo",
       "run",
+      "scar",
       "traces",
       "undo",
       "version"
@@ -64,7 +65,7 @@
   },
   "capability_diff": {
     "added": [
-      "cli: undo"
+      "cli: scar"
     ],
     "removed": [],
     "changed": []
@@ -72,5 +73,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "88f78aca1b86ce8543294b663badbb1cc7512a4822f255f05638ce784348927c"
+  "signature": "18b2618323d489fdd2320f21f459492e0ed0bb8f798871237676d184179fc1f2"
 }
