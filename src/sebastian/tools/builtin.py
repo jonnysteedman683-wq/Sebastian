@@ -6,8 +6,10 @@ import os
 import shlex
 import shutil
 import signal
+import site
 import subprocess
 import sys
+import sysconfig
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -289,3 +291,35 @@ def bwrap_usable(bwrap: str) -> bool:
         return subprocess.run(probe, check=False, capture_output=True, timeout=10).returncode == 0
     except (OSError, subprocess.TimeoutExpired):
         return False
+
+
+def python_roots() -> list[str]:
+    """Read-only paths the interpreter and installed tools (ruff, mypy, pytest) live under."""
+    roots = {sys.prefix, sys.base_prefix, sys.exec_prefix}
+    roots.update(site.getsitepackages())
+    roots.add(site.getusersitepackages())
+    roots.add(sysconfig.get_path("scripts"))  # console scripts: pytest, ruff, mypy
+    roots.add(os.path.join(site.getuserbase(), "bin"))  # pip install --user scripts
+    roots.add(str(Path(os.path.realpath(sys.executable)).parent))
+    return sorted(r for r in roots if r and r != "/")
+
+
+def resolve_command_sandbox(mode: str) -> tuple[str, str]:
+    """Turn ``auto | bwrap | none`` into the sandbox ``run_command`` will use.
+
+    Returns ``(sandbox, note)``: ``auto`` picks ``bwrap`` when it works here and otherwise
+    falls back to ``none`` with a warning note; ``bwrap`` raises if it is unusable.
+    """
+    if mode not in {"auto", "bwrap", "none"}:
+        raise ValueError(f"unknown sandbox mode {mode!r}")
+    if mode == "none":
+        return "none", ""
+    exe = shutil.which("bwrap")
+    if exe is not None and bwrap_usable(exe):
+        return "bwrap", ""
+    if mode == "bwrap":
+        raise ToolError("sandbox 'bwrap' required but bubblewrap is missing or blocked here")
+    return "none", (
+        "warning: run_command is NOT sandboxed (bubblewrap missing or blocked); "
+        "install bubblewrap or pass --sandbox none to silence this"
+    )

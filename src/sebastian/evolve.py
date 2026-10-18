@@ -21,10 +21,8 @@ from __future__ import annotations
 import os
 import re
 import shutil
-import site
 import subprocess
 import sys
-import sysconfig
 import tempfile
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -45,7 +43,7 @@ from sebastian.tools import (
     command_tool,
     file_tools,
 )
-from sebastian.tools.builtin import SANDBOX_WORKDIR, bwrap_argv, bwrap_usable
+from sebastian.tools.builtin import SANDBOX_WORKDIR, bwrap_argv, bwrap_usable, python_roots
 from sebastian.trace import NullTracer, Tracer
 from sebastian.types import StopReason, ToolCall
 
@@ -213,17 +211,6 @@ def resolve_sandbox(mode: str) -> str | None:
     if mode == "bwrap":
         raise EvolveError("sandbox 'bwrap' required but bubblewrap is missing or blocked here")
     return None
-
-
-def python_roots() -> list[str]:
-    """Read-only paths the interpreter and installed tools (ruff, mypy, pytest) live under."""
-    roots = {sys.prefix, sys.base_prefix, sys.exec_prefix}
-    roots.update(site.getsitepackages())
-    roots.add(site.getusersitepackages())
-    roots.add(sysconfig.get_path("scripts"))  # console scripts: pytest, ruff, mypy
-    roots.add(os.path.join(site.getuserbase(), "bin"))  # pip install --user scripts
-    roots.add(str(Path(os.path.realpath(sys.executable)).parent))
-    return sorted(r for r in roots if r and r != "/")
 
 
 def _run(

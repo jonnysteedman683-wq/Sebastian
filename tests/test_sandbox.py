@@ -113,3 +113,79 @@ def test_extra_ro_makes_tools_visible(tmp_path: Path, monkeypatch: pytest.Monkey
     out = seen.invoke({"command": "mytool x"}).splitlines()
     assert f"--ro-bind-try\n{venv}\n{venv}" in "\n".join(out)
     assert out[-3:] == ["--", str(tool), "x"]
+
+
+# --- sandbox by default (B19) ------------------------------------------------------------
+
+from sebastian.tools.builtin import python_roots, resolve_command_sandbox  # noqa: E402
+
+
+def _usable(monkeypatch: pytest.MonkeyPatch, ok: bool) -> None:
+    import sebastian.tools.builtin as b
+
+    monkeypatch.setattr("shutil.which", lambda n, *a, **k: "/usr/bin/bwrap" if ok else None)
+    monkeypatch.setattr(b, "bwrap_usable", lambda exe: ok)
+
+
+def test_resolve_command_sandbox(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert resolve_command_sandbox("none") == ("none", "")
+    with pytest.raises(ValueError, match="unknown sandbox"):
+        resolve_command_sandbox("docker")
+    _usable(monkeypatch, True)
+    assert resolve_command_sandbox("auto") == ("bwrap", "")
+    assert resolve_command_sandbox("bwrap") == ("bwrap", "")
+    _usable(monkeypatch, False)
+    mode, note = resolve_command_sandbox("auto")
+    assert mode == "none"
+    assert "NOT sandboxed" in note
+    with pytest.raises(ToolError, match="missing or blocked"):
+        resolve_command_sandbox("bwrap")
+
+
+def test_python_roots_cover_this_interpreter() -> None:
+    import sys
+
+    roots = python_roots()
+    assert sys.prefix in roots
+    assert "/" not in roots
+
+
+def test_cli_defaults_to_sandboxed_commands(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import io
+    import sys
+
+    from sebastian import cli
+    from sebastian.llm import ScriptedLLM
+    from sebastian.types import LLMResponse
+
+    monkeypatch.setenv("SEBASTIAN_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(sys, "stdin", io.StringIO(""))
+    seen: list[CommandPolicy] = []
+    from sebastian.tools import command_tool as real
+
+    def spy(ws: Workspace, policy: CommandPolicy) -> object:
+        seen.append(policy)
+        return real(ws, policy)
+
+    monkeypatch.setattr(cli, "command_tool", spy)
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    base = ["run", "t", "-w", str(ws), "--no-memory", "--allow-cmd", "pytest"]
+
+    def go(*extra: str) -> int:
+        return cli.main([*base, *extra], llm_factory=lambda m: ScriptedLLM([LLMResponse("ok")]))
+
+    _usable(monkeypatch, True)
+    assert go() == 0
+    assert seen[-1].sandbox == "bwrap"
+    assert sys.prefix in seen[-1].extra_ro
+    _usable(monkeypatch, False)
+    assert go() == 0
+    assert seen[-1].sandbox == "none"
+    assert "NOT sandboxed" in capsys.readouterr().err
+    assert go("--sandbox", "none") == 0
+    assert "NOT sandboxed" not in capsys.readouterr().err
+    assert go("--sandbox", "bwrap") == 2
+    assert "required" in capsys.readouterr().err
