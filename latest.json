@@ -1,18 +1,18 @@
 {
-  "summary": "4 commit(s): fix: trace step and plan usage under a key redaction keeps (B20); docs: docstrings across src and enforce ruff D1 (B7); feat: edit_file tool for exact-text edits (B22); Merge pull request #15 from jonnysteedman683-wq/claude/tier4-upgrades",
+  "summary": "3 commit(s): feat: checkpoint file writes per run and add sebastian undo (B23); Merge remote-tracking branch 'origin/main' into claude/undo-writes; Merge pull request #16 from jonnysteedman683-wq/claude/undo-writes",
   "changes": [
     {
-      "category": "NEW_CAPABILITY",
-      "title": "New tool edit_file (WRITE)",
-      "description": "Detected automatically from code: New tool edit_file (WRITE).",
+      "category": "NEW_FEATURE",
+      "title": "New CLI command undo",
+      "description": "Detected automatically from code: New CLI command undo.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "eb749682fa37e9f1ba0914c4181037cb24f86074",
-          "path": "src/sebastian/tools/"
+          "sha": "fe4001629b79646d181628e15bf004aeb532df3e",
+          "path": "src/sebastian/cli.py"
         }
       ],
-      "permission": "WRITE",
+      "permission": "n/a",
       "flags": []
     }
   ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 9,
+  "seq": 10,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "1b34da97c28d202a4acbd0de71c15efef4cc5457",
-    "to_sha": "eb749682fa37e9f1ba0914c4181037cb24f86074"
+    "from_sha": "eb749682fa37e9f1ba0914c4181037cb24f86074",
+    "to_sha": "fe4001629b79646d181628e15bf004aeb532df3e"
   },
-  "generated_at": "2026-10-18T17:05:35Z",
+  "generated_at": "2026-10-18T17:15:53Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -53,6 +53,7 @@
       "demo",
       "run",
       "traces",
+      "undo",
       "version"
     ],
     "llm_backends": [
@@ -63,7 +64,7 @@
   },
   "capability_diff": {
     "added": [
-      "tool: edit_file (WRITE)"
+      "cli: undo"
     ],
     "removed": [],
     "changed": []
@@ -71,5 +72,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "399e4cef880694e9510bba08ffd45028dc20eff12ca747315d7ebbc51142769d"
+  "signature": "88f78aca1b86ce8543294b663badbb1cc7512a4822f255f05638ce784348927c"
 }

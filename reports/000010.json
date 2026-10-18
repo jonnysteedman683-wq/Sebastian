@@ -1,0 +1,76 @@
+{
+  "summary": "3 commit(s): feat: checkpoint file writes per run and add sebastian undo (B23); Merge remote-tracking branch 'origin/main' into claude/undo-writes; Merge pull request #16 from jonnysteedman683-wq/claude/undo-writes",
+  "changes": [
+    {
+      "category": "NEW_FEATURE",
+      "title": "New CLI command undo",
+      "description": "Detected automatically from code: New CLI command undo.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "fe4001629b79646d181628e15bf004aeb532df3e",
+          "path": "src/sebastian/cli.py"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 10,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "eb749682fa37e9f1ba0914c4181037cb24f86074",
+    "to_sha": "fe4001629b79646d181628e15bf004aeb532df3e"
+  },
+  "generated_at": "2026-10-18T17:15:53Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "demo",
+      "run",
+      "traces",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [
+      "cli: undo"
+    ],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "88f78aca1b86ce8543294b663badbb1cc7512a4822f255f05638ce784348927c"
+}
