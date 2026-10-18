@@ -31,6 +31,8 @@
 
 ## 2. Each Run — Steps
 
+> **Automated:** `.github/workflows/watch.yml` runs these steps on schedule (see [`RUNBOOK.md`](RUNBOOK.md)). In that setup your only job is step 4: answer `POST GROK_DRAFT_URL` with a draft. Run the steps yourself only if you operate outside the workflow.
+
 Use `sebastian-watch` (watchkit, in the Sebastian repo: `pip install 'sebastian[watch]'`). It does every deterministic step, so the format, risk floor, escalation rules and signature are always right. Your job is the judgement: describing and classifying changes.
 
 1. Load state: `last_reported_sha`, `seq`, `last_run_at`.

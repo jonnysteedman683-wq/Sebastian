@@ -29,6 +29,9 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 | Force-push hides history | `history_rewritten` detection adds +3 risk and escalates | `test_history_rewrite_detected_and_escalated` |
 | Forged / replayed reports | HMAC-SHA256 (constant-time compare), `seq` and `from_sha` continuity in `verify` | `test_verify_catches_tampering_seq_and_gaps` |
 | Key leakage | Key read from env only, never printed or logged | `test_cli_full_flow` asserts key absent from output |
+| Watcher tampered via a merged commit | Changes to `src/sebastian/watch/`, `.github/workflows/watch.yml`, `schemas/` add +3 risk and always escalate | `test_watch_tooling_change_is_flagged_and_escalated` |
+| Plaintext endpoints | `Endpoints` rejects non-https URLs | `test_endpoints_require_https` |
+| Secrets exposed to forks | Watch workflow triggers only on `main` push, schedule and manual dispatch (never `pull_request`) | `.github/workflows/watch.yml` |
 
 ## Residual risks (escalated, not fixed)
 
@@ -36,6 +39,7 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 2. **No network egress control** for subprocesses. Same upgrade as above.
 3. **Prompt injection is mitigated, not prevented.** Needs a hostile-input eval suite (U12).
 4. **RLIMIT_AS** can break some runtimes (e.g. JVM). Tunable via `CommandPolicy.max_memory_bytes`.
+5. **The watcher runs from `main`.** Whoever can merge to `main` can change the watcher and its workflow together. Mitigated by always-escalated tooling changes and the coordinator's heartbeat/canary; fully fixed only by branch protection + CODEOWNERS on `.github/`, `src/sebastian/watch/`, `schemas/` (owner action).
 
 ## Reporting
 Raise a private issue to the owner (Jonny). Never include keys or memory contents.

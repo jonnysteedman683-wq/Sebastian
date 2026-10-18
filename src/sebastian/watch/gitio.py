@@ -82,6 +82,15 @@ class Git:
             commits.append(Commit(sha, subject))
         return commits
 
+    def diff_text(self, from_sha: str | None, to_sha: str, max_bytes: int = 200_000) -> str:
+        """Unified diff for the range, truncated to ``max_bytes`` (for the watcher to read)."""
+        args = ["diff", from_sha, to_sha] if from_sha else ["show", "--format=", to_sha]
+        out = self._run(*args)
+        if len(out.encode()) <= max_bytes:
+            return out
+        cut = out.encode()[:max_bytes].decode(errors="ignore")
+        return cut + f"\n...[diff truncated at {max_bytes} bytes]\n"
+
     def changed_files(self, from_sha: str | None, to_sha: str) -> list[str]:
         if from_sha is None:
             return self.files(to_sha, ".")

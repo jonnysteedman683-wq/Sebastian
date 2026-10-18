@@ -22,6 +22,8 @@
 
 On every incoming message from `GROK-WATCHER`:
 
+**Transport:** reports arrive as `POST COORDINATOR_URL` from the Watch workflow with headers `X-Watcher-Seq` and `Authorization: Bearer <COORDINATOR_TOKEN>`; reply `2xx` only after a report is verified and stored (see [`RUNBOOK.md`](RUNBOOK.md)).
+
 **Tooling:** `sebastian-watch --repo <clone> verify report.json --expect-seq <last_seq+1> --expect-from <last_accepted_sha>` performs steps 1-3 (schema, signature, seq, continuity) in one call. Exit 0 = accept, 1 = reject (problems listed in the JSON output), 2 = environment error (do not ack; retry). A `seq` gap is reported as a problem: accept the report only after escalating `REPORT_GAP` per §7.2.
 
 1. **Authenticate.** Confirm it arrived on the watcher's configured channel with valid credentials **and** a valid HMAC signature (§7.1). Unauthenticated → discard, log, and escalate `FORGED_REPORT` (§4).
