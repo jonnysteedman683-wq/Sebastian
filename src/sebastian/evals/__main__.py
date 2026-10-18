@@ -13,6 +13,7 @@ from collections.abc import Callable, Sequence
 from sebastian.config import Config
 from sebastian.evals.cases import ALL
 from sebastian.evals.harness import run_suite
+from sebastian.evals.scar import ScarError, load_scars
 from sebastian.llm.base import LLM, RetryingLLM
 
 
@@ -22,6 +23,7 @@ def main(argv: Sequence[str] | None = None, live_llm: Callable[[str], LLM] | Non
     p.add_argument("--live", action="store_true", help="run against a real model")
     p.add_argument("--model", help="override SEBASTIAN_MODEL (live only)")
     p.add_argument("--min-score", type=float, default=1.0, help="exit 1 below this (0-1)")
+    p.add_argument("--scars", default="evals/scars", help="directory of scar cases (live-only)")
     args = p.parse_args(argv)
 
     factory: Callable[[], LLM] | None = None
@@ -37,7 +39,12 @@ def main(argv: Sequence[str] | None = None, live_llm: Callable[[str], LLM] | Non
             def factory() -> LLM:
                 return live_llm(model)
 
-    suite = run_suite(ALL, factory)
+    try:
+        scars = load_scars(args.scars)
+    except ScarError as exc:
+        print(f"evals: {exc}", file=sys.stderr)
+        return 2
+    suite = run_suite([*ALL, *scars], factory)
     print(suite.summary())
     return 0 if suite.score >= args.min_score else 1
 

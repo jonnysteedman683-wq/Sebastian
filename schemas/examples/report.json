@@ -93,6 +93,7 @@
       "demo",
       "traces",
       "undo",
+      "scar",
       "version"
     ],
     "llm_backends": [
@@ -117,5 +118,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "edbadecf5f95b89c2e159564c5c1afe61313f92d819bfdcfe4e4e503b5ca9726"
+  "signature": "75b38c09ca136e235609b072e35aec81daf6050b0d0603f54c1572ecd0427b5d"
 }

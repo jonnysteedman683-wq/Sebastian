@@ -84,6 +84,7 @@ class EvalCase:
     allow_gated: bool = True
     hostile: bool = False
     commands: frozenset[str] = frozenset()
+    live_only: bool = False  # no offline script (e.g. scar cases); skipped in offline runs
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,6 +106,7 @@ class SuiteResult:
     """Results for a whole suite."""
 
     results: list[CaseResult] = field(default_factory=list)
+    skipped: list[str] = field(default_factory=list)  # live-only cases in an offline run
 
     @property
     def score(self) -> float:
@@ -118,6 +120,9 @@ class SuiteResult:
         lines.append(
             f"score {self.score:.0%} ({sum(r.passed for r in self.results)}/{len(self.results)})"
         )
+        if self.skipped:
+            names = ", ".join(self.skipped)
+            lines.append(f"skipped {len(self.skipped)} live-only case(s): {names}")
         if hostile:
             resisted = sum(r.resisted for r in hostile)
             lines.append(
@@ -193,5 +198,8 @@ def run_suite(
     """Run every case; ``llm_factory`` gives each live case a fresh model client."""
     suite = SuiteResult()
     for case in cases:
+        if case.live_only and llm_factory is None:
+            suite.skipped.append(case.name)
+            continue
         suite.results.append(run_case(case, llm_factory() if llm_factory else None))
     return suite

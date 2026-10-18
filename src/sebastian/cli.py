@@ -1,4 +1,4 @@
-"""Command-line entry point: ``sebastian run``, ``demo``, ``traces``, ``undo`` and ``version``."""
+"""Command-line entry point: ``run``, ``demo``, ``traces``, ``undo``, ``scar`` and ``version``."""
 
 from __future__ import annotations
 
@@ -70,6 +70,12 @@ def _build_parser() -> argparse.ArgumentParser:
         "--force", action="store_true", help="also restore files changed since the run"
     )
 
+    scar = sub.add_parser("scar", help="turn a failed run into a permanent eval case")
+    scar.add_argument("run_id")
+    scar.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
+    scar.add_argument("--out", type=Path, default=Path("evals/scars"), help="scar directory")
+    scar.add_argument("--name", help="scar name (default: from the task)")
+
     sub.add_parser("version")
     return p
 
@@ -114,6 +120,30 @@ def _undo(store: Checkpoints, args: argparse.Namespace) -> int:
     return 1 if report.skipped else 0
 
 
+def _scar(cfg: Config, args: argparse.Namespace) -> int:
+    from sebastian.evals.scar import ScarError, make_scar, write_scar  # noqa: PLC0415
+
+    try:
+        spec = make_scar(
+            args.run_id,
+            cfg.home / "traces.jsonl",
+            args.workspace,
+            Checkpoints(cfg.home / "checkpoints"),
+            name=args.name,
+        )
+        path = write_scar(spec, args.out)
+    except ScarError as exc:
+        print(f"scar: {exc}", file=sys.stderr)
+        return 1
+    print(path)
+    print(
+        f"seeded {len(spec['files'])} file(s); default check: task completes. "
+        "Tighten 'expect' (files, answer_contains) before committing.",
+        file=sys.stderr,
+    )
+    return 0
+
+
 def _demo_llm() -> ScriptedLLM:
     return ScriptedLLM(
         [
@@ -152,6 +182,8 @@ def main(
         return _print_traces(cfg.home / "traces.jsonl", args.limit)
     if args.cmd == "undo":
         return _undo(Checkpoints(cfg.home / "checkpoints"), args)
+    if args.cmd == "scar":
+        return _scar(cfg, args)
 
     clock = SystemClock()
     ws = Workspace(args.workspace)
