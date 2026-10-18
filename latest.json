@@ -1,14 +1,14 @@
 {
-  "summary": "3 commit(s): feat: Ouroboros - gated self-improvement cycle, sebastian evolve (B25); test: cover evolve's gh PR opener (B25); Merge pull request #18 from jonnysteedman683-wq/claude/ouroboros",
+  "summary": "2 commit(s): feat: save run conversations and add sebastian resume (B28); Merge pull request #19 from jonnysteedman683-wq/claude/resume",
   "changes": [
     {
       "category": "NEW_FEATURE",
-      "title": "New CLI command evolve",
-      "description": "Detected automatically from code: New CLI command evolve.",
+      "title": "New CLI command resume",
+      "description": "Detected automatically from code: New CLI command resume.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "d938720300a4da7b3c5adbdf59941672191eedc2",
+          "sha": "373183943062a67bc37a63dc58796bfb67b9e69c",
           "path": "src/sebastian/cli.py"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 12,
+  "seq": 13,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "a914c02d56baecfd6e3d90cec7059e897413cbd5",
-    "to_sha": "d938720300a4da7b3c5adbdf59941672191eedc2"
+    "from_sha": "d938720300a4da7b3c5adbdf59941672191eedc2",
+    "to_sha": "373183943062a67bc37a63dc58796bfb67b9e69c"
   },
-  "generated_at": "2026-10-18T17:54:42Z",
+  "generated_at": "2026-10-18T18:04:13Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -52,6 +52,7 @@
     "cli_commands": [
       "demo",
       "evolve",
+      "resume",
       "run",
       "scar",
       "traces",
@@ -66,7 +67,7 @@
   },
   "capability_diff": {
     "added": [
-      "cli: evolve"
+      "cli: resume"
     ],
     "removed": [],
     "changed": []
@@ -74,5 +75,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "165bee3824cb72cbd4fbc69e08aff3a6acfcfa826c0b199a2b667eebf3008b59"
+  "signature": "0a8f4d813769bbcafb3933a835c9e4e6b2315f9a8ce583637b3c8b571ed9802e"
 }
