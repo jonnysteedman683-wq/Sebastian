@@ -1,0 +1,75 @@
+{
+  "summary": "4 commit(s): fix: trace step and plan usage under a key redaction keeps (B20); docs: docstrings across src and enforce ruff D1 (B7); feat: edit_file tool for exact-text edits (B22); Merge pull request #15 from jonnysteedman683-wq/claude/tier4-upgrades",
+  "changes": [
+    {
+      "category": "NEW_CAPABILITY",
+      "title": "New tool edit_file (WRITE)",
+      "description": "Detected automatically from code: New tool edit_file (WRITE).",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "eb749682fa37e9f1ba0914c4181037cb24f86074",
+          "path": "src/sebastian/tools/"
+        }
+      ],
+      "permission": "WRITE",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 9,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "1b34da97c28d202a4acbd0de71c15efef4cc5457",
+    "to_sha": "eb749682fa37e9f1ba0914c4181037cb24f86074"
+  },
+  "generated_at": "2026-10-18T17:05:35Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "demo",
+      "run",
+      "traces",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [
+      "tool: edit_file (WRITE)"
+    ],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "399e4cef880694e9510bba08ffd45028dc20eff12ca747315d7ebbc51142769d"
+}

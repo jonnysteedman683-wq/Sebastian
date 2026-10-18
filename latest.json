@@ -1,18 +1,18 @@
 {
-  "summary": "6 commit(s): feat: memory dedup by task and BM25 recall (B6, B15); feat: run READ-only tool calls concurrently within a turn (B16); feat: route planning and post-failure recovery to separate models (B17); feat: bubblewrap sandbox for run_command and live eval workflow (B10, B18); Merge pull request #13 from jonnysteedman683-wq/claude/tier3-sandbox-live-evals; Merge pull request #14 from jonnysteedman683-wq/claude/tier2-memory-parallel-routing",
+  "summary": "4 commit(s): fix: trace step and plan usage under a key redaction keeps (B20); docs: docstrings across src and enforce ruff D1 (B7); feat: edit_file tool for exact-text edits (B22); Merge pull request #15 from jonnysteedman683-wq/claude/tier4-upgrades",
   "changes": [
     {
-      "category": "ABILITY_CHANGE",
-      "title": "15 file(s) changed",
-      "description": "Detected automatically from code: 15 file(s) changed.",
+      "category": "NEW_CAPABILITY",
+      "title": "New tool edit_file (WRITE)",
+      "description": "Detected automatically from code: New tool edit_file (WRITE).",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "1b34da97c28d202a4acbd0de71c15efef4cc5457",
-          "path": ".github/workflows/ci.yml"
+          "sha": "eb749682fa37e9f1ba0914c4181037cb24f86074",
+          "path": "src/sebastian/tools/"
         }
       ],
-      "permission": "n/a",
+      "permission": "WRITE",
       "flags": []
     }
   ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 8,
+  "seq": 9,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "a1f0dd627a74f83c06a0286b8c269a3d393b99aa",
-    "to_sha": "1b34da97c28d202a4acbd0de71c15efef4cc5457"
+    "from_sha": "1b34da97c28d202a4acbd0de71c15efef4cc5457",
+    "to_sha": "eb749682fa37e9f1ba0914c4181037cb24f86074"
   },
-  "generated_at": "2026-10-18T15:26:41Z",
+  "generated_at": "2026-10-18T17:05:35Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -42,6 +42,7 @@
   "ci_status": "unknown",
   "capability_inventory": {
     "tools": [
+      "edit_file",
       "list_dir",
       "read_file",
       "run_command",
@@ -61,12 +62,14 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [],
+    "added": [
+      "tool: edit_file (WRITE)"
+    ],
     "removed": [],
     "changed": []
   },
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "0a19f002d3094d82f3ae915e181daa021025bbd0df3d352798787a32b3ac9e2f"
+  "signature": "399e4cef880694e9510bba08ffd45028dc20eff12ca747315d7ebbc51142769d"
 }
