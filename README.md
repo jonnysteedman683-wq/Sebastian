@@ -17,6 +17,8 @@ Enable command execution per executable (no shell, sandboxed):
 
 ```bash
 sebastian run "Run the tests and fix any failure" -w ./project --allow-cmd pytest
+# Stronger isolation (Linux, needs bubblewrap): no network, only the workspace is visible
+sebastian run "Run the tests and fix any failure" -w ./project --allow-cmd pytest --sandbox bwrap
 ```
 
 Plan before acting, and run the eval suite:

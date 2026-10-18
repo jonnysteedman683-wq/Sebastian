@@ -22,6 +22,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install
         run: |
+          sudo apt-get install -y -q bubblewrap || true  # sandbox tests skip if unusable
           python -m pip install --upgrade pip setuptools
           python -m pip install -e ".[dev,anthropic,watch]" pip-audit
       - name: Lint
@@ -30,6 +31,8 @@ jobs:
         run: mypy
       - name: Test (coverage gate 90%)
         run: pytest --cov --cov-report=term-missing
+      - name: Offline evals (capability + prompt injection)
+        run: python -m sebastian.evals
       - name: Offline end-to-end demo
         run: mkdir -p /tmp/ws && python -m sebastian demo -w /tmp/ws
       - name: watchkit smoke (canary from this checkout)
