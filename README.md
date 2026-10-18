@@ -56,6 +56,8 @@ Full map: [`docs/SEBASTIAN_MAP.md`](docs/SEBASTIAN_MAP.md). Threat model: [`docs
 |---|---|---|
 | `ANTHROPIC_API_KEY` | (none) | Read by the SDK only; never logged. |
 | `SEBASTIAN_MODEL` | `claude-sonnet-5-5` | Also `--model`. |
+| `SEBASTIAN_PLAN_MODEL` | (main model) | Planning model; also `--plan-model` (implies `--plan`). |
+| `SEBASTIAN_ESCALATION_MODEL` | (main model) | Used for the step after repeated tool failures; also `--escalation-model`. |
 | `SEBASTIAN_MAX_STEPS` | `25` | |
 | `SEBASTIAN_MAX_TOKENS` | `200000` | |
 | `SEBASTIAN_MAX_SECONDS` | `600` | |

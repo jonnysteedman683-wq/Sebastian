@@ -4,6 +4,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B17)
+- Model routing: `planner_llm` for the planning phase and `escalation_llm` for the one step after a replan nudge (both default to the main model). CLI `--plan-model` (implies `--plan`) and `--escalation-model`; env `SEBASTIAN_PLAN_MODEL`, `SEBASTIAN_ESCALATION_MODEL`. A routed model equal to the main model reuses its client. Emits `escalated`.
+
 ### Added (B16)
 - Parallel read tools: when every call in a turn is READ-only (after the unknown-tool, repeat-failure and approval checks, which stay sequential), the tool bodies run concurrently (up to 8 threads); results keep call order. Any WRITE/EXEC call in the turn keeps the whole turn sequential. Tracing stays on the main thread. Emits `tools_parallel`; `Sebastian(parallel_reads=False)` disables it.
 

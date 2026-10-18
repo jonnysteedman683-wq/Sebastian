@@ -57,6 +57,8 @@ class Sebastian:
     plan: bool = False
     replan_after_errors: int = 3
     parallel_reads: bool = True
+    planner_llm: LLM | None = None  # planning phase; defaults to ``llm``
+    escalation_llm: LLM | None = None  # the step right after a replan nudge; defaults to ``llm``
 
     def run(self, task: str) -> RunResult:
         if not task.strip():
@@ -75,6 +77,7 @@ class Sebastian:
             plan, result = self._make_plan(run_id, task, governor)
         system = build_system_prompt(recalled, plan)
         error_streak = 0
+        escalate = False
         while result is None:
             self._warn(run_id, governor)
             reason = governor.exhausted()
@@ -85,7 +88,8 @@ class Sebastian:
             if elided:
                 self.tracer.emit(run_id, "context_compacted", elided=elided)
             try:
-                resp = self.llm.complete(system, messages, tool_list)
+                model, escalate = self._pick_llm(run_id, escalate, governor.steps + 1), False
+                resp = model.complete(system, messages, tool_list)
             except LLMError as exc:
                 result = self._finish(run_id, StopReason.ERROR, "", governor, str(exc))
                 break
@@ -113,17 +117,24 @@ class Sebastian:
                 nudge = REPLAN_NUDGE.format(n=error_streak)
                 self.tracer.emit(run_id, "replan_nudge", errors=error_streak)
                 error_streak = 0
+                escalate = True
             messages.append(Message(Role.USER, text=nudge, tool_results=results))
 
         self._remember(task, result)
         return result
+
+    def _pick_llm(self, run_id: str, escalate: bool, step: int) -> LLM:
+        if escalate and self.escalation_llm is not None:
+            self.tracer.emit(run_id, "escalated", step=step)
+            return self.escalation_llm
+        return self.llm
 
     def _make_plan(
         self, run_id: str, task: str, governor: Governor
     ) -> tuple[str, RunResult | None]:
         """Planning phase: one tool-free model call. Returns ``(plan, early_result)``."""
         try:
-            resp = self.llm.complete(
+            resp = (self.planner_llm or self.llm).complete(
                 SYSTEM_PROMPT + PLAN_INSTRUCTION, [Message(Role.USER, text=task)], []
             )
         except LLMError as exc:

@@ -45,6 +45,9 @@ Rules:
 - [x] **B16 Parallel read tools.** Run a turn's READ-only tool calls concurrently, preserving result order.
   *Done when:* a 3-way barrier test proves concurrency; a turn with a WRITE stays in order.
 
+- [x] **B17 Model routing.** Separate planner and escalation models (e.g. `claude-opus-5-5`) over a cheaper main model.
+  *Done when:* tests show the planner gets only the plan call and the escalation model only the step after a nudge.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [ ] **B13 Un-redact `llm_step` token counts.** Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
