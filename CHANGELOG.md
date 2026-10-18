@@ -10,6 +10,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 - `.github/workflows/guard.yml`: fails PRs touching the watcher, CI, the report contract or agent rules unless labelled `owner-approved`.
 - `scripts/resign_examples.py`: re-signs schema examples and updates `schemas/examples/VECTORS.md` (test vectors moved there, so routine capability changes don't touch guarded files).
 
+### Added (B2)
+- `read_file` takes optional `start_line` (0-based) and `max_lines` (0 = all) to read a slice of a file; out-of-range or negative values return a tool error.
+
 ### Changed
 - **Watch pipeline is keyless by default.** Reports are published to the `watch-state` branch (`latest.json`, `reports/NNNNNN.json`, `state.json` in one commit) and read from GitHub's public raw URLs. Reports carry a SHA-256 fingerprint; GitHub provides provenance. Push mode (endpoints + HMAC) remains optional.
 - First run starts from the previous commit automatically; no baseline or secrets needed.

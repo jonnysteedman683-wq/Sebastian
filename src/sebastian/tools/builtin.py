@@ -24,14 +24,26 @@ def _truncate(text: str, limit: int = MAX_OUTPUT_CHARS) -> str:
 
 
 def file_tools(ws: Workspace) -> list[Tool]:
-    def read_file(path: str) -> str:
-        """Read a UTF-8 text file inside the workspace. `path` is relative to the workspace."""
+    def read_file(path: str, start_line: int = 0, max_lines: int = 0) -> str:
+        """Read a UTF-8 text file inside the workspace. `path` is relative to the workspace.
+
+        `start_line` is the 0-based first line to return; `max_lines` caps the count (0 = all).
+        """
+        if start_line < 0 or max_lines < 0:
+            raise ToolError("start_line and max_lines must be >= 0")
         target = ws.resolve(path)
         if not target.is_file():
             raise ToolError(f"not a file: {path}")
         if target.stat().st_size > MAX_READ_BYTES:
             raise ToolError(f"file larger than {MAX_READ_BYTES} bytes: {path}")
-        return target.read_text(encoding="utf-8", errors="replace")
+        text = target.read_text(encoding="utf-8", errors="replace")
+        if start_line == 0 and max_lines == 0:
+            return text
+        lines = text.splitlines(keepends=True)
+        if start_line >= len(lines):
+            raise ToolError(f"start_line {start_line} out of range: {path} has {len(lines)} lines")
+        end = start_line + max_lines if max_lines else len(lines)
+        return "".join(lines[start_line:end])
 
     def write_file(path: str, content: str) -> str:
         """Create or overwrite a UTF-8 text file inside the workspace."""
