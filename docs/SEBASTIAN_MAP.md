@@ -37,10 +37,11 @@ flowchart TD
 | Memory/state | `memory.py` (JSON, schema v1) |
 | LLM backends | `llm/anthropic.py`, `llm/scripted.py`, `llm/base.py` |
 | Schedulers / servers | None (deliberately). See PROPOSALS. |
+| External contracts | `schemas/repo_change_report.schema.json`: report format for the repo watcher and coordinator bots (`docs/watch/`) |
 
 ## Dependencies
 
-Runtime: none. Optional `anthropic>=1.15` (verified against 1.15.0; uses `httpx2`). Dev: ruff, mypy, pytest, pytest-cov.
+Runtime: none. Optional `anthropic>=1.15` (verified against 1.15.0; uses `httpx2`). Dev: ruff, mypy, pytest, pytest-cov, jsonschema, types-jsonschema.
 
 ## Model / provider usage
 
@@ -55,7 +56,7 @@ See README table. Only secret is `ANTHROPIC_API_KEY`, read by the SDK; never sto
 
 ## Tests
 
-pytest, 85 tests, 99.6% branch coverage (gate 90%). No network or real LLM in tests.
+pytest, 112 tests (incl. 27 schema contract tests), 99.6% branch coverage (gate 90%). No network or real LLM in tests.
 
 ## Runtime check
 

@@ -2,6 +2,14 @@
 
 All notable changes follow [Keep a Changelog](https://keepachangelog.com) and SemVer.
 
+## [Unreleased]
+
+### Added
+- `schemas/repo_change_report.schema.json`: JSON Schema (2020-12) contract for GROK-WATCHER -> CO-ORDINATOR-BOT reports, with signed examples, HMAC test vectors and signing spec in `schemas/README.md`.
+- Work orders for both bots in `docs/watch/`, pointing at the schema as the authoritative contract.
+- Contract tests (`tests/test_report_schema.py`): schema validity, examples, signatures, 20 invalid-report cases, and a check that the example capability inventory matches what Sebastian actually ships.
+- Dev dependencies: `jsonschema`, `types-jsonschema`.
+
 ## [0.1.0] - 2026-10-18
 
 ### Added

@@ -1,0 +1,55 @@
+{
+  "report_type": "canary",
+  "seq": 2,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "9b1bbe7",
+    "to_sha": "9b1bbe7"
+  },
+  "generated_at": "2026-10-19T22:15:00Z",
+  "priority": "HIGH",
+  "escalate": true,
+  "escalation_reasons": [
+    "CANARY - test only, no action needed"
+  ],
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "success",
+  "summary": "Weekly canary.",
+  "changes": [],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "capability_inventory": {
+    "tools": [
+      "read_file",
+      "write_file",
+      "list_dir",
+      "run_command"
+    ],
+    "cli_commands": [
+      "run",
+      "demo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "open_questions": [],
+  "risk_score": 0,
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "pr_previews": [],
+  "signature": "e1ba60f076bd8a164ff43f95e4777ab55341be20241d96b21afcccf037c234fe"
+}

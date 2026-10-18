@@ -13,7 +13,7 @@ dependencies = []
 
 [project.optional-dependencies]
 anthropic = ["anthropic>=1.15"]
-dev = ["ruff>=0.17", "mypy>=2.4", "pytest>=9.0", "pytest-cov>=6.0"]
+dev = ["ruff>=0.17", "mypy>=2.4", "pytest>=9.0", "pytest-cov>=6.0", "jsonschema>=4.26", "types-jsonschema"]
 
 [project.scripts]
 sebastian = "sebastian.cli:main"
