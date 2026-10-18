@@ -78,6 +78,9 @@ Rules:
 - [x] **B31 Evolve resume.** A budget-stopped agent run inside `evolve` is resumed (up to `--resumes`, default 1) before gating.
   *Done when:* a cycle whose work needs a second budget is accepted with one resume and rejected with `--resumes 0`.
 
+- [x] **B32 Dashboard.** Score history from live evals and red-team rounds; `sebastian dashboard` renders a static HTML page.
+  *Done when:* the page shows trends, tiles, runs and scars from local files, escapes all values, and does not overflow at phone width.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).

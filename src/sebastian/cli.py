@@ -1,14 +1,15 @@
-"""Command-line entry point: run, resume, demo, traces, undo, scar, evolve, redteam, version."""
+"""CLI: run, resume, demo, traces, undo, scar, evolve, redteam, dashboard and version."""
 
 from __future__ import annotations
 
 import argparse
 import sys
+import time
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from sebastian import __version__
+from sebastian import __version__, history
 from sebastian.agent import Sebastian
 from sebastian.approval import ApprovalGate, Approver, DenyApprover, InteractiveApprover
 from sebastian.budget import Budget
@@ -83,6 +84,10 @@ def _build_parser() -> argparse.ArgumentParser:
     red.add_argument("--attacker-model", help="attacker model (default: target model)")
     red.add_argument("--out", type=Path, default=Path("evals/scars"), help="where breaches go")
     red.add_argument("--no-save", action="store_true", help="report breaches without saving")
+
+    dash = sub.add_parser("dashboard", help="write an HTML page of scores, scars and runs")
+    dash.add_argument("-o", "--out", type=Path, default=Path("sebastian-dashboard.html"))
+    dash.add_argument("--scars", type=Path, default=Path("evals/scars"), help="scar directory")
 
     sub.add_parser("version")
     return p
@@ -237,7 +242,29 @@ def _redteam(
         print(f"redteam: {exc}", file=sys.stderr)
         return 2
     print(report.summary())
+    if report.attacks:
+        resisted = sum(r.resisted for r in report.results)
+        history.append(
+            cfg.home / history.HISTORY_FILE,
+            history.Record(
+                time.time(), "redteam", target, resisted, len(report.attacks),
+                resisted, len(report.attacks),
+            ),
+        )  # fmt: skip
     return 1 if report.breaches else 0
+
+
+def _dashboard(cfg: Config, args: argparse.Namespace) -> int:
+    from sebastian.dashboard import gather, render  # noqa: PLC0415
+
+    snap = gather(cfg.home, args.scars, time.time())
+    args.out.write_text(render(snap), encoding="utf-8")
+    print(args.out)
+    print(
+        f"{len(snap.records)} scored round(s), {len(snap.runs)} run(s), {len(snap.scars)} scar(s)",
+        file=sys.stderr,
+    )
+    return 0
 
 
 def _demo_llm() -> ScriptedLLM:
@@ -280,6 +307,7 @@ def main(
         "scar": lambda: _scar(cfg, args),
         "evolve": lambda: _evolve(cfg, args, llm_factory),
         "redteam": lambda: _redteam(cfg, args, llm_factory),
+        "dashboard": lambda: _dashboard(cfg, args),
     }
     if args.cmd in tools_only:
         return tools_only[args.cmd]()

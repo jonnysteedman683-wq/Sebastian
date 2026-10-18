@@ -37,6 +37,7 @@
     "cli_commands": [
       "run",
       "resume",
+      "dashboard",
       "demo",
       "traces",
       "undo",
@@ -59,5 +60,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "7b2fa05fb37465af0e1df969ce59cd550f91248ab8437298ccbbf6c7673afa3d"
+  "signature": "571490abedc0a02c863b3fd307083dc2707b786508b374ed67f5a7c1c2b25a8f"
 }
