@@ -1,0 +1,70 @@
+{
+  "summary": "2 commit(s): feat: add line ranges to read_file (B2); Merge pull request #7 from jonnysteedman683-wq/claude/sebastian-upgrade-x7dl17",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "4 file(s) changed",
+      "description": "Detected automatically from code: 4 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "4cb669ba8751568e441902525b05d0de191099c5",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 3,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "9f9139fb63b99ab2599d41e07a5f553d5d12d990",
+    "to_sha": "4cb669ba8751568e441902525b05d0de191099c5"
+  },
+  "generated_at": "2026-10-18T12:50:58Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "list_dir",
+      "read_file",
+      "run_command",
+      "write_file"
+    ],
+    "cli_commands": [
+      "demo",
+      "run",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "80155fe9150b136327b7dbea0d4d33caf6f2b1a13e951a3d561a71b9d3ab3880"
+}
