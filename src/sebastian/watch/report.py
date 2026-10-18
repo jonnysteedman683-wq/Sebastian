@@ -70,19 +70,25 @@ def canonical(report: Mapping[str, Any]) -> bytes:
     return json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
 
-def sign(report: dict[str, Any], key: bytes) -> dict[str, Any]:
-    if not key:
-        raise ReportError("signing key is empty")
-    report["signature"] = hmac.new(key, canonical(report), hashlib.sha256).hexdigest()
+def _expected(report: Mapping[str, Any], key: bytes | None) -> str:
+    if key is None:  # keyless: content fingerprint; authenticity comes from GitHub provenance
+        return hashlib.sha256(canonical(report)).hexdigest()
+    return hmac.new(key, canonical(report), hashlib.sha256).hexdigest()
+
+
+def sign(report: dict[str, Any], key: bytes | None) -> dict[str, Any]:
+    """HMAC-SHA256 with ``key``, or a plain SHA-256 fingerprint when ``key`` is None (keyless)."""
+    if key is not None and not key:
+        raise ReportError("signing key is empty (pass None for keyless mode)")
+    report["signature"] = _expected(report, key)
     return report
 
 
-def signature_ok(report: Mapping[str, Any], key: bytes) -> bool:
+def signature_ok(report: Mapping[str, Any], key: bytes | None) -> bool:
     given = report.get("signature")
-    if not isinstance(given, str) or not key:
+    if not isinstance(given, str) or (key is not None and not key):
         return False
-    expected = hmac.new(key, canonical(report), hashlib.sha256).hexdigest()
-    return hmac.compare_digest(given, expected)
+    return hmac.compare_digest(given, _expected(report, key))
 
 
 # --- schema --------------------------------------------------------------------
@@ -151,7 +157,8 @@ def _computed_priority(report: Mapping[str, Any]) -> str:
     }
     high_alert = any(a.get("severity") == "HIGH" for a in report["security_alerts"])
     if (
-        {"SECURITY", "BREAKING"} & cats
+        report["escalate"]
+        or {"SECURITY", "BREAKING"} & cats
         or high_alert
         or report["breaking_changes"]
         or report["ci_status"] == "failure"
@@ -168,7 +175,7 @@ def finalize(
     facts: Mapping[str, Any],
     *,
     seq: int,
-    key: bytes,
+    key: bytes | None,
     schema: Mapping[str, Any],
     branch: str = "main",
     generated_at: str | None = None,
@@ -233,7 +240,7 @@ def canary(
     git: Git,
     *,
     seq: int,
-    key: bytes,
+    key: bytes | None,
     schema: Mapping[str, Any],
     ref: str = "main",
     generated_at: str | None = None,
@@ -275,7 +282,7 @@ def canary(
 def verify(
     report: Mapping[str, Any],
     *,
-    key: bytes,
+    key: bytes | None,
     schema: Mapping[str, Any],
     expected_seq: int | None = None,
     expected_from_sha: str | None = None,

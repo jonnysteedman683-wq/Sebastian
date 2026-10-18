@@ -6,8 +6,9 @@
     verify    coordinator check: schema, signature, seq, continuity
     run       full unattended run (scan, draft, finalize, deliver, state) for CI schedules
 
-The signing key is read from an environment variable (default WATCHER_HMAC_KEY) and is never
-printed. Exit code 0 = ok, 1 = rejected/invalid, 2 = usage or environment error.
+Keys are optional. With WATCHER_HMAC_KEY set, reports carry an HMAC-SHA256 signature (key never
+printed); without it they carry a SHA-256 fingerprint (keyless mode, trust from GitHub).
+Exit code 0 = ok, 1 = rejected/invalid, 2 = usage or environment error.
 """
 
 from __future__ import annotations
@@ -60,6 +61,12 @@ def _parser() -> argparse.ArgumentParser:
     r.add_argument("--ref", default="origin/main")
     r.add_argument("--baseline", help="start SHA when no state exists yet")
     r.add_argument("--out", type=Path, help="also write the report here")
+    r.add_argument(
+        "--publish-dir",
+        type=Path,
+        help="keyless publish: write latest.json and reports/<seq>.json here",
+    )
+    r.add_argument("--dry-run", action="store_true", help="build only; send and save nothing")
 
     v = sub.add_parser("verify")
     v.add_argument("report", type=Path)
@@ -72,11 +79,9 @@ class ConfigError(Exception):
     pass
 
 
-def _key(env_name: str) -> bytes:
-    value = os.environ.get(env_name, "")
-    if not value:
-        raise ConfigError(f"signing key not set: export {env_name}")
-    return value.encode()
+def _key(env_name: str) -> bytes | None:
+    """The HMAC key from the environment, or None for keyless mode."""
+    return os.environ.get(env_name, "").encode() or None
 
 
 def _read_json(path: Path) -> Any:
@@ -87,8 +92,15 @@ def _emit(obj: Any) -> None:
     sys.stdout.write(json.dumps(obj, indent=2, ensure_ascii=False) + "\n")
 
 
+def _publish(directory: Path, report: dict[str, Any]) -> None:
+    body = json.dumps(report, indent=2, ensure_ascii=False) + "\n"
+    (directory / "reports").mkdir(parents=True, exist_ok=True)
+    (directory / "reports" / f"{report['seq']:06d}.json").write_text(body, encoding="utf-8")
+    (directory / "latest.json").write_text(body, encoding="utf-8")
+
+
 def _run(args: argparse.Namespace, git: Git, schema: dict[str, Any]) -> int:
-    key = os.environ.get(args.key_env, "").encode() or None
+    key = _key(args.key_env)
     url = os.environ.get("COORDINATOR_URL", "")
     endpoints = (
         Endpoints(
@@ -110,9 +122,12 @@ def _run(args: argparse.Namespace, git: Git, schema: dict[str, Any]) -> int:
         endpoints=endpoints,
         ref=args.ref,
         baseline=args.baseline,
+        dry_run=args.dry_run,
     )
-    if result.action in ("sent", "failed"):
+    if result.action in ("sent", "failed", "published"):
         result.state.save(args.state)
+    if args.publish_dir and result.action == "published" and result.report is not None:
+        _publish(args.publish_dir, result.report)
     if args.out and result.report is not None:
         args.out.write_text(json.dumps(result.report, indent=2, ensure_ascii=False) + "\n")
     report = result.report or {}

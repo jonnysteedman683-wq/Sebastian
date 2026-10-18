@@ -249,7 +249,7 @@ def test_finalize_never_lowers_watcher_judgement(repo: Path) -> None:
     r = finalize(
         draft(priority="NORMAL", risk_score=3, escalate=True), facts, seq=1, key=KEY, schema=SCHEMA
     )
-    assert (r["priority"], r["risk_score"], r["escalate"]) == ("NORMAL", 3, True)
+    assert (r["priority"], r["risk_score"], r["escalate"]) == ("HIGH", 3, True)  # escalated => HIGH
     assert r["escalation_reasons"] == ["escalated by watcher judgement"]
     r2 = finalize(
         draft(
@@ -353,7 +353,7 @@ def test_cli_full_flow(
     (tmp_path / "facts.json").write_text(out)
     (tmp_path / "draft.json").write_text(json.dumps(draft()))
 
-    code, _, err = run_cli(
+    code, keyless_out, err = run_cli(
         [
             *common,
             "finalize",
@@ -366,8 +366,11 @@ def test_cli_full_flow(
         ],
         capsys,
     )
-    assert code == 2
-    assert "WATCHER_HMAC_KEY" in err
+    assert code == 0  # keyless: SHA-256 fingerprint instead of HMAC
+    keyless = json.loads(keyless_out)
+    assert signature_ok(keyless, None)
+    assert not signature_ok(keyless, b"cli-key")
+    assert err == ""
 
     monkeypatch.setenv("WATCHER_HMAC_KEY", "cli-key")
     code, out, _ = run_cli(

@@ -92,6 +92,7 @@ DELETE = object()
         ("canary", {"escalate": False, "escalation_reasons": []}),
         ("report", {"risk_score": 6, "escalate": False, "escalation_reasons": []}),
         ("report", {"escalate": True, "escalation_reasons": []}),
+        ("report", {"priority": "NORMAL"}),  # escalated report must be HIGH
         ("report", {"risk_score": 11}),
         ("report", {"seq": 0}),
         ("report", {"signature": "not-hex"}),
