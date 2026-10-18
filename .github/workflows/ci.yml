@@ -23,7 +23,7 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip setuptools
-          python -m pip install -e ".[dev,anthropic]" pip-audit
+          python -m pip install -e ".[dev,anthropic,watch]" pip-audit
       - name: Lint
         run: ruff check . && ruff format --check .
       - name: Type-check
@@ -32,5 +32,9 @@ jobs:
         run: pytest --cov --cov-report=term-missing
       - name: Offline end-to-end demo
         run: mkdir -p /tmp/ws && python -m sebastian demo -w /tmp/ws
+      - name: watchkit smoke (canary from this checkout)
+        env:
+          WATCHER_HMAC_KEY: ci-smoke-key-not-a-secret
+        run: sebastian-watch canary --seq 1 --ref HEAD > /tmp/canary.json && sebastian-watch verify /tmp/canary.json --expect-seq 1
       - name: Dependency audit
         run: pip-audit --skip-editable

@@ -8,6 +8,7 @@ The contract between **GROK-WATCHER** (producer) and **CO-ORDINATOR-BOT** (consu
 - The coordinator validates every report **on receipt** and rejects anything invalid.
 - Work orders: [`docs/watch/GROK_WATCHER_WORK_ORDER.md`](../docs/watch/GROK_WATCHER_WORK_ORDER.md), [`docs/watch/COORDINATOR_WATCHER_WORK_ORDER.md`](../docs/watch/COORDINATOR_WATCHER_WORK_ORDER.md).
 - Contract tests: `tests/test_report_schema.py` (run in CI).
+- Tooling: `sebastian-watch finalize` builds valid signed reports; `sebastian-watch verify` checks them. Prefer these over hand-rolled signing.
 
 ### Rules the schema enforces
 
