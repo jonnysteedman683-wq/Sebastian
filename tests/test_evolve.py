@@ -276,3 +276,28 @@ def test_cli_evolve(repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
     llm2 = agent()
     assert main(["evolve", "--repo", str(repo), "--no-evals"], llm_factory=lambda m: llm2) == 1
     assert main(["evolve", "--repo", str(tmp_path)], llm_factory=lambda m: agent()) == 2
+
+
+def test_open_pr_uses_gh(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from sebastian.evolve import BacklogItem, open_pr
+
+    log = tmp_path / "gh.log"
+    fake = tmp_path / "gh"
+    fake.write_text(
+        f'#!/bin/sh\nprintf "%s\\n" "$@" > {log}\n[ "$4" = "fail" ] && exit 1\nexit 0\n'
+    )
+    fake.chmod(0o755)
+    real = shutil.which
+    monkeypatch.setattr("shutil.which", lambda n: str(fake) if n == "gh" else real(n))
+    item = BacklogItem("B3", "Add greeting", "- [ ] **B3 Add greeting.**")
+    open_pr(tmp_path, "sebastian/evolve-b3-1", item)
+    args = log.read_text().splitlines()
+    assert args[:4] == ["pr", "create", "--head", "sebastian/evolve-b3-1"]
+    assert "feat: Add greeting (B3)" in args
+    with pytest.raises(EvolveError, match="gh pr create failed"):
+        open_pr(tmp_path, "fail", item)
+    monkeypatch.setattr("shutil.which", lambda n: None)
+    with pytest.raises(EvolveError, match="gh is not installed"):
+        open_pr(tmp_path, "x", item)
+    with pytest.raises(EvolveError, match="git is not installed"):
+        evolve_once(tmp_path, agent(), cfg(tmp_path))
