@@ -1,40 +1,23 @@
 {
-  "summary": "2 commit(s): feat: score history and sebastian dashboard (B32); Merge pull request #24 from jonnysteedman683-wq/claude/dashboard",
-  "changes": [
-    {
-      "category": "NEW_FEATURE",
-      "title": "New CLI command dashboard",
-      "description": "Detected automatically from code: New CLI command dashboard.",
-      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
-      "evidence": [
-        {
-          "sha": "095f60dd92dc9e73143e6ddc494e003730a22011",
-          "path": "src/sebastian/cli.py"
-        }
-      ],
-      "permission": "n/a",
-      "flags": []
-    }
-  ],
+  "summary": "No changes in last 24h; head = 095f60d",
+  "changes": [],
   "prs": [],
   "security_alerts": [],
   "breaking_changes": [],
-  "open_questions": [
-    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
-  ],
+  "open_questions": [],
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 18,
+  "seq": 19,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "905b9c761f7acd6c3691c76628dc4d79a6e3ac88",
+    "from_sha": "095f60dd92dc9e73143e6ddc494e003730a22011",
     "to_sha": "095f60dd92dc9e73143e6ddc494e003730a22011"
   },
-  "generated_at": "2026-10-18T20:46:02Z",
+  "generated_at": "2026-10-18T23:49:48Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -68,14 +51,12 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [
-      "cli: dashboard"
-    ],
+    "added": [],
     "removed": [],
     "changed": []
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "NORMAL",
-  "signature": "b81a8606f6c397a2ccec0ab3699d3abc4befe5a8dbbf60cd8f3d50a7fd1a9f4a"
+  "priority": "LOW",
+  "signature": "e37b4c8d7e2bc3131b3e7e9ea1f3297ca0037a7de80f29b116ce1ac37ecc25e3"
 }
