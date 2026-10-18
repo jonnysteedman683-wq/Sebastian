@@ -1,18 +1,18 @@
 {
-  "summary": "2 commit(s): feat: add line ranges to read_file (B2); Merge pull request #7 from jonnysteedman683-wq/claude/sebastian-upgrade-x7dl17",
+  "summary": "2 commit(s): feat: add search_files tool (B3); Merge pull request #8 from jonnysteedman683-wq/claude/sebastian-upgrade-x7dl17",
   "changes": [
     {
-      "category": "ABILITY_CHANGE",
-      "title": "4 file(s) changed",
-      "description": "Detected automatically from code: 4 file(s) changed.",
+      "category": "NEW_CAPABILITY",
+      "title": "New tool search_files (READ)",
+      "description": "Detected automatically from code: New tool search_files (READ).",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "4cb669ba8751568e441902525b05d0de191099c5",
-          "path": "CHANGELOG.md"
+          "sha": "fa37f7ed6eba18025b5949d97cbf42856ff8326f",
+          "path": "src/sebastian/tools/"
         }
       ],
-      "permission": "n/a",
+      "permission": "READ",
       "flags": []
     }
   ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 3,
+  "seq": 4,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "9f9139fb63b99ab2599d41e07a5f553d5d12d990",
-    "to_sha": "4cb669ba8751568e441902525b05d0de191099c5"
+    "from_sha": "4cb669ba8751568e441902525b05d0de191099c5",
+    "to_sha": "fa37f7ed6eba18025b5949d97cbf42856ff8326f"
   },
-  "generated_at": "2026-10-18T12:50:58Z",
+  "generated_at": "2026-10-18T12:55:39Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -45,6 +45,7 @@
       "list_dir",
       "read_file",
       "run_command",
+      "search_files",
       "write_file"
     ],
     "cli_commands": [
@@ -59,12 +60,14 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [],
+    "added": [
+      "tool: search_files (READ)"
+    ],
     "removed": [],
     "changed": []
   },
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "80155fe9150b136327b7dbea0d4d33caf6f2b1a13e951a3d561a71b9d3ab3880"
+  "signature": "814b5322bb79de1ea87befecabc061f6e396e36622c2cf8fd8b3c6c4c355dd2e"
 }
