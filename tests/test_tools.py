@@ -88,6 +88,30 @@ def test_read_rejects_large_file(ws: Workspace) -> None:
         t["read_file"].invoke({"path": "big"})
 
 
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    [
+        ({"start_line": 0, "max_lines": 2}, "l0\nl1\n"),
+        ({"start_line": 2, "max_lines": 2}, "l2\nl3\n"),
+        ({"start_line": 3}, "l3\nl4"),
+        ({"start_line": 4, "max_lines": 10}, "l4"),
+        ({"max_lines": 0}, "l0\nl1\nl2\nl3\nl4"),
+    ],
+)
+def test_read_line_ranges(ws: Workspace, args: dict[str, int], expected: str) -> None:
+    (ws.root / "f.txt").write_text("l0\nl1\nl2\nl3\nl4")
+    t = {tool.name: tool for tool in file_tools(ws)}
+    assert t["read_file"].invoke({"path": "f.txt", **args}) == expected
+
+
+@pytest.mark.parametrize("args", [{"start_line": 5}, {"start_line": -1}, {"max_lines": -1}])
+def test_read_line_range_out_of_range(ws: Workspace, args: dict[str, int]) -> None:
+    (ws.root / "f.txt").write_text("l0\nl1\nl2\nl3\nl4")
+    t = {tool.name: tool for tool in file_tools(ws)}
+    with pytest.raises(ToolError, match=r"out of range|must be >= 0"):
+        t["read_file"].invoke({"path": "f.txt", **args})
+
+
 def test_permissions(ws: Workspace) -> None:
     t = {tool.name: tool for tool in file_tools(ws)}
     assert t["read_file"].permission is Permission.READ
