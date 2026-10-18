@@ -57,7 +57,7 @@ See README table. Only secret is `ANTHROPIC_API_KEY`, read by the SDK; never sto
 
 ## Tests
 
-pytest, 131 tests (incl. 27 schema contract and 19 watchkit tests), 99.6% branch coverage (gate 90%). No network or real LLM in tests.
+pytest, 131 tests (incl. 27 schema contract and 19 watchkit tests), 98.6% branch coverage (gate 90%). No network or real LLM in tests.
 
 ## Runtime check
 
