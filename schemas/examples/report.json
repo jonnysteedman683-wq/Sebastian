@@ -1,0 +1,117 @@
+{
+  "report_type": "repo_change_report",
+  "seq": 1,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": null,
+    "to_sha": "9b1bbe7"
+  },
+  "generated_at": "2026-10-18T09:00:00Z",
+  "priority": "HIGH",
+  "escalate": true,
+  "escalation_reasons": [
+    "New tool run_command with EXEC permission"
+  ],
+  "version": {
+    "before": null,
+    "after": "0.1.0"
+  },
+  "ci_status": "success",
+  "summary": "Initial scaffold of Sebastian v0.1.0: agent loop, sandboxed tools, approval gate, memory, tracing and CLI.",
+  "changes": [
+    {
+      "category": "NEW_CAPABILITY",
+      "title": "Agent can read, write and list files in a jailed workspace",
+      "description": "Three file tools confined to the workspace root; path and symlink escapes are rejected.",
+      "impact": "Sebastian can complete file-based tasks. Writes need approval.",
+      "evidence": [
+        {
+          "sha": "035cf8f",
+          "path": "src/sebastian/tools/builtin.py",
+          "lines": "26-57"
+        }
+      ],
+      "permission": "WRITE",
+      "flags": []
+    },
+    {
+      "category": "NEW_CAPABILITY",
+      "title": "Opt-in sandboxed command execution",
+      "description": "run_command executes allowlisted executables without a shell, with scrubbed env, rlimits and timeout.",
+      "impact": "Off by default; enabled per executable with --allow-cmd. Arguments are not path-jailed.",
+      "evidence": [
+        {
+          "sha": "035cf8f",
+          "path": "src/sebastian/tools/builtin.py",
+          "lines": "82-118"
+        }
+      ],
+      "permission": "EXEC",
+      "flags": [
+        "SECURITY"
+      ]
+    },
+    {
+      "category": "NEW_FEATURE",
+      "title": "CLI with run, demo and version",
+      "description": "sebastian run executes a task with a real model; demo runs offline.",
+      "impact": "Users can run Sebastian from the terminal.",
+      "evidence": [
+        {
+          "sha": "035cf8f",
+          "path": "src/sebastian/cli.py"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [
+    {
+      "number": 1,
+      "title": "feat: Sebastian v0.1.0 initial scaffold",
+      "state": "merged",
+      "url": "https://github.com/jonnysteedman683-wq/Sebastian/pull/1"
+    }
+  ],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "capability_inventory": {
+    "tools": [
+      "read_file",
+      "write_file",
+      "list_dir",
+      "run_command"
+    ],
+    "cli_commands": [
+      "run",
+      "demo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "open_questions": [],
+  "risk_score": 6,
+  "capability_diff": {
+    "added": [
+      "tool: read_file (READ)",
+      "tool: write_file (WRITE)",
+      "tool: list_dir (READ)",
+      "tool: run_command (EXEC)",
+      "cli: run",
+      "cli: demo",
+      "cli: version"
+    ],
+    "removed": [],
+    "changed": []
+  },
+  "pr_previews": [],
+  "signature": "0965a1d08e818df5b823eb004b0f8a4880a96cc0f15ac7b3b43c8b0dcbbca594"
+}

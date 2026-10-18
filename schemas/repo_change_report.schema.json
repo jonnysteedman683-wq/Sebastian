@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jonnysteedman683-wq/Sebastian/schemas/repo_change_report.schema.json",
+  "title": "Sebastian repo change report",
+  "description": "Contract between GROK-WATCHER (producer) and CO-ORDINATOR-BOT (consumer). Version 1. Changes to this file require a reviewed PR and an update to both work orders in docs/watch/.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "report_type", "seq", "source_bot", "target_bot", "repo", "branch", "range",
+    "generated_at", "priority", "escalate", "escalation_reasons", "version", "ci_status",
+    "summary", "changes", "prs", "security_alerts", "breaking_changes",
+    "capability_inventory", "open_questions", "risk_score", "capability_diff",
+    "pr_previews", "signature"
+  ],
+  "properties": {
+    "report_type": { "enum": ["repo_change_report", "canary"] },
+    "seq": { "type": "integer", "minimum": 1, "description": "+1 per report sent; never reused." },
+    "source_bot": { "const": "GROK-WATCHER" },
+    "target_bot": { "const": "CO-ORDINATOR-BOT" },
+    "repo": { "const": "jonnysteedman683-wq/Sebastian" },
+    "branch": { "type": "string", "minLength": 1 },
+    "range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from_sha", "to_sha"],
+      "properties": {
+        "from_sha": { "anyOf": [{ "$ref": "#/$defs/sha" }, { "type": "null" }], "description": "null only on the first-ever report." },
+        "to_sha": { "$ref": "#/$defs/sha" }
+      }
+    },
+    "generated_at": { "$ref": "#/$defs/timestamp" },
+    "priority": { "enum": ["HIGH", "NORMAL", "LOW"] },
+    "escalate": { "type": "boolean" },
+    "escalation_reasons": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "version": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["before", "after"],
+      "properties": {
+        "before": { "anyOf": [{ "$ref": "#/$defs/semver" }, { "type": "null" }] },
+        "after": { "anyOf": [{ "$ref": "#/$defs/semver" }, { "type": "null" }] }
+      }
+    },
+    "ci_status": { "enum": ["success", "failure", "pending", "unknown"] },
+    "summary": { "type": "string", "maxLength": 600 },
+    "summary_markdown": { "type": "string", "maxLength": 4000 },
+    "changes": { "type": "array", "items": { "$ref": "#/$defs/change" } },
+    "prs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["number", "title", "state", "url"],
+        "properties": {
+          "number": { "type": "integer", "minimum": 1 },
+          "title": { "type": "string" },
+          "state": { "enum": ["merged", "open", "closed"] },
+          "url": { "type": "string", "format": "uri" }
+        }
+      }
+    },
+    "security_alerts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "description", "evidence"],
+        "properties": {
+          "severity": { "enum": ["HIGH", "MEDIUM", "LOW"] },
+          "description": { "type": "string", "minLength": 1 },
+          "evidence": { "$ref": "#/$defs/evidenceList" }
+        }
+      }
+    },
+    "breaking_changes": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "capability_inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tools", "cli_commands", "llm_backends", "default_model"],
+      "properties": {
+        "tools": { "$ref": "#/$defs/nameList" },
+        "cli_commands": { "$ref": "#/$defs/nameList" },
+        "llm_backends": { "$ref": "#/$defs/nameList" },
+        "default_model": { "type": "string", "minLength": 1 }
+      }
+    },
+    "open_questions": { "type": "array", "items": { "type": "string" } },
+    "risk_score": { "type": "integer", "minimum": 0, "maximum": 10 },
+    "capability_diff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "removed", "changed"],
+      "properties": {
+        "added": { "type": "array", "items": { "type": "string" } },
+        "removed": { "type": "array", "items": { "type": "string" } },
+        "changed": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "pr_previews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["number", "title", "url", "head_sha", "would_add", "risk_score"],
+        "properties": {
+          "number": { "type": "integer", "minimum": 1 },
+          "title": { "type": "string" },
+          "url": { "type": "string", "format": "uri" },
+          "head_sha": { "$ref": "#/$defs/sha" },
+          "would_add": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "risk_score": { "type": "integer", "minimum": 0, "maximum": 10 }
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "HMAC-SHA256 hex over the canonical JSON of the report without this field. See schemas/README.md."
+    }
+  },
+  "allOf": [
+    {
+      "description": "Canary: test alert only, always HIGH, always escalated, never carries changes.",
+      "if": { "properties": { "report_type": { "const": "canary" } }, "required": ["report_type"] },
+      "then": {
+        "properties": {
+          "priority": { "const": "HIGH" },
+          "escalate": { "const": true },
+          "escalation_reasons": { "minItems": 1 },
+          "changes": { "maxItems": 0 },
+          "security_alerts": { "maxItems": 0 },
+          "pr_previews": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "description": "risk_score >= 6 forces escalation.",
+      "if": { "properties": { "risk_score": { "minimum": 6 } }, "required": ["risk_score"] },
+      "then": { "properties": { "escalate": { "const": true } } }
+    },
+    {
+      "description": "A HIGH security alert forces HIGH priority.",
+      "if": {
+        "properties": { "security_alerts": { "contains": { "properties": { "severity": { "const": "HIGH" } } } } },
+        "required": ["security_alerts"]
+      },
+      "then": { "properties": { "priority": { "const": "HIGH" } } }
+    },
+    {
+      "description": "escalate=true needs at least one reason.",
+      "if": { "properties": { "escalate": { "const": true } }, "required": ["escalate"] },
+      "then": { "properties": { "escalation_reasons": { "minItems": 1 } } }
+    }
+  ],
+  "$defs": {
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+    "semver": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+([-+][0-9A-Za-z.\\-+]+)?$" },
+    "timestamp": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$", "description": "ISO-8601 UTC with Z suffix." },
+    "nameList": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha", "path"],
+      "properties": {
+        "sha": { "$ref": "#/$defs/sha" },
+        "path": { "type": "string", "minLength": 1, "not": { "pattern": "^/" } },
+        "lines": { "type": "string", "pattern": "^\\d+(-\\d+)?$" }
+      }
+    },
+    "evidenceList": { "type": "array", "items": { "$ref": "#/$defs/evidence" }, "minItems": 1 },
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["category", "title", "description", "impact", "evidence", "permission", "flags"],
+      "properties": {
+        "category": { "$ref": "#/$defs/category" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "description": { "type": "string", "minLength": 1 },
+        "impact": { "type": "string", "minLength": 1 },
+        "evidence": { "$ref": "#/$defs/evidenceList" },
+        "permission": { "enum": ["READ", "WRITE", "EXEC", "NETWORK", "n/a"] },
+        "flags": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "anyOf": [{ "$ref": "#/$defs/category" }, { "const": "MISMATCH" }] }
+        }
+      }
+    },
+    "category": {
+      "enum": [
+        "NEW_FEATURE", "NEW_CAPABILITY", "ABILITY_CHANGE", "PERMISSION_CHANGE", "SECURITY",
+        "MODEL_CHANGE", "DEPENDENCY", "CONFIG", "BREAKING", "QUALITY", "DOCS", "RELEASE"
+      ]
+    }
+  }
+}
