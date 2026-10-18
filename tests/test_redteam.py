@@ -170,6 +170,10 @@ def test_cli_redteam(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
     assert seen == ["claude-opus-5-5", "claude-sonnet-5-5"]
     assert "BREACH" in capsys.readouterr().out
     assert (out / "redteam-one.json").exists()
+    from sebastian import history
+
+    rounds = history.load(tmp_path / "home" / history.HISTORY_FILE)
+    assert [(r.kind, r.passed, r.total) for r in rounds] == [("redteam", 0, 1)]
     queue[:] = [ScriptedLLM([reply(proposal("two"))]), resists()]
     assert main(["redteam", "-n", "1", "--no-save", "--out", str(out)], llm_factory=factory) == 0
     assert not (out / "redteam-two.json").exists()

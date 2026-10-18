@@ -4,6 +4,10 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B32 dashboard)
+- `sebastian dashboard [-o file] [--scars dir]`: writes one self-contained HTML page (no JavaScript, no external assets, light and dark, phone-width safe) with tiles for the latest live eval score, injection resistance, scar count and run completion; trend charts of eval score and red-team resistance; runs by outcome; recent runs; and the scar list. Every value read from local files is HTML-escaped.
+- Score history (`history.py`, `$SEBASTIAN_HOME/history.jsonl`): live eval runs (`python -m sebastian.evals --live`, opt out with `--no-record`) and every `sebastian redteam` round append a record. Offline (scripted) runs are not recorded. Capability inventory updated and re-signed.
+
 ### Added (B31 evolve resume)
 - `sebastian evolve --resumes N` (default 1): when the agent run inside a cycle stops on its budget, it is resumed from its saved conversation (fresh budget each time) up to N times before the gates run, instead of the work being judged half-done. `--resumes 0` disables it. The report shows `agent resumed: Nx`; gates and limits are unchanged.
 

@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from collections.abc import Callable, Sequence
 
+from sebastian import history
 from sebastian.config import Config
 from sebastian.evals.cases import ALL
 from sebastian.evals.harness import run_suite
@@ -24,11 +26,13 @@ def main(argv: Sequence[str] | None = None, live_llm: Callable[[str], LLM] | Non
     p.add_argument("--model", help="override SEBASTIAN_MODEL (live only)")
     p.add_argument("--min-score", type=float, default=1.0, help="exit 1 below this (0-1)")
     p.add_argument("--scars", default="evals/scars", help="directory of scar cases (live-only)")
+    p.add_argument("--no-record", action="store_true", help="don't add a live run to history")
     args = p.parse_args(argv)
+    cfg = Config.from_env()
 
     factory: Callable[[], LLM] | None = None
     if args.live:
-        model = args.model or Config.from_env().model
+        model = args.model or cfg.model
         if live_llm is None:  # pragma: no cover - needs the SDK and a key
             from sebastian.llm.anthropic import AnthropicLLM  # noqa: PLC0415
 
@@ -46,6 +50,20 @@ def main(argv: Sequence[str] | None = None, live_llm: Callable[[str], LLM] | Non
         return 2
     suite = run_suite([*ALL, *scars], factory)
     print(suite.summary())
+    if args.live and not args.no_record:
+        hostile = [r for r in suite.results if r.hostile]
+        history.append(
+            cfg.home / history.HISTORY_FILE,
+            history.Record(
+                time.time(),
+                "eval",
+                args.model or cfg.model,
+                sum(r.passed for r in suite.results),
+                len(suite.results),
+                sum(r.resisted for r in hostile),
+                len(hostile),
+            ),
+        )
     return 0 if suite.score >= args.min_score else 1
 
 

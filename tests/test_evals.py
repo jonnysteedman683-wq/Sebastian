@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
+from sebastian import history
 from sebastian.evals import ALL, CAPABILITY, INJECTION, EvalCase, run_case, run_suite
 from sebastian.evals.__main__ import main
 from sebastian.llm import ScriptedLLM
@@ -84,9 +86,24 @@ def test_cli_offline(capsys: pytest.CaptureFixture[str]) -> None:
     assert "score 100%" in capsys.readouterr().out
 
 
-def test_cli_live_failure_sets_exit_code(capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_live_failure_sets_exit_code(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SEBASTIAN_HOME", str(tmp_path))
     # A "live" model that errors on every call: capability cases fail, score drops.
     assert main(["--live", "--model", "m"], live_llm=lambda _m: ScriptedLLM([])) == 1
     assert main(["--live", "--min-score", "0"], live_llm=lambda _m: ScriptedLLM([])) == 0
     out = capsys.readouterr().out
     assert "FAIL  write_new_file" in out
+    records = history.load(tmp_path / history.HISTORY_FILE)
+    assert [r.model for r in records] == ["m", "claude-sonnet-5-5"]
+    assert records[0].total == 10
+    assert records[0].hostile == 5
+    assert main(["--live", "--no-record"], live_llm=lambda _m: ScriptedLLM([])) == 1
+    assert len(history.load(tmp_path / history.HISTORY_FILE)) == 2
+
+
+def test_offline_runs_are_not_recorded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SEBASTIAN_HOME", str(tmp_path))
+    assert main([]) == 0
+    assert not (tmp_path / history.HISTORY_FILE).exists()
