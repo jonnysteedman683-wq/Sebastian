@@ -4,7 +4,7 @@ The examples in this folder are signed with the published test key below. Use th
 
 | Key | File | Expected signature |
 |---|---|---|
-| `TEST-VECTOR-KEY-NOT-A-SECRET` | `report.json` | `0965a1d08e818df5b823eb004b0f8a4880a96cc0f15ac7b3b43c8b0dcbbca594` |
-| `TEST-VECTOR-KEY-NOT-A-SECRET` | `canary.json` | `e1ba60f076bd8a164ff43f95e4777ab55341be20241d96b21afcccf037c234fe` |
+| `TEST-VECTOR-KEY-NOT-A-SECRET` | `report.json` | `e920e8f76c98b03372bc616c7ee6de45a47159269ba89a5909f909de7c80b385` |
+| `TEST-VECTOR-KEY-NOT-A-SECRET` | `canary.json` | `c93ff9b879abb2c437f7cfd67ee404424ca52403e1e420c2bc7362fd30d98a6f` |
 
 Updating an example (e.g. after adding a tool or CLI command, so `capability_inventory` matches what Sebastian ships): edit the JSON, re-sign it with the key above using the canonical form in [`../README.md`](../README.md#signing), and update the signature here. `tests/test_report_schema.py` checks all three stay in step.

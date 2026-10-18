@@ -107,7 +107,7 @@ def test_build_system_prompt() -> None:
 
 
 def test_approval_gate_threshold(tmp_path: Path) -> None:
-    read, write, _ = file_tools(Workspace(tmp_path))
+    read, write, *_ = file_tools(Workspace(tmp_path))
     c = ToolCall("1", "x", {})
     deny = ApprovalGate(DenyApprover())
     assert deny.check(read, c)
@@ -118,7 +118,7 @@ def test_approval_gate_threshold(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(("answer", "ok"), [("y", True), ("YES ", True), ("n", False), ("", False)])
 def test_interactive_approver(tmp_path: Path, answer: str, ok: bool) -> None:
-    _, write, _ = file_tools(Workspace(tmp_path))
+    _, write, *_ = file_tools(Workspace(tmp_path))
     out = io.StringIO()
     approver = InteractiveApprover(ask=lambda _p: answer, out=out)
     assert approver.approve(write, ToolCall("1", "write_file", {"path": "a"})) is ok
@@ -126,7 +126,7 @@ def test_interactive_approver(tmp_path: Path, answer: str, ok: bool) -> None:
 
 
 def test_interactive_approver_eof_denies(tmp_path: Path) -> None:
-    _, write, _ = file_tools(Workspace(tmp_path))
+    _, write, *_ = file_tools(Workspace(tmp_path))
 
     def eof(_: str) -> str:
         raise EOFError

@@ -8,6 +8,7 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 | Threat | Control | Evidence |
 |---|---|---|
 | Path escape (`..`, absolute, symlink) | `Workspace.resolve` resolves symlinks, rejects anything outside root | `tests/test_tools.py::test_workspace_rejects_*` |
+| Search walking out of the jail | `search_files` never follows directory symlinks and re-resolves every file through `Workspace.resolve`, skipping escapes; skips `.git/`, binary and oversized files; capped at 200 matches | `test_search_stays_in_jail`, `test_search_skips_binary_large_and_git`, `test_search_caps_matches` |
 | Shell injection | No shell; `shlex.split` + exec of allowlisted basename only | `test_command_no_shell_injection`, `test_command_rejections` |
 | Env/secret leakage to subprocess | Env scrubbed to `PATH`, `LANG`, `LC_ALL`; `HOME` = workspace | `test_command_runs_in_workspace_with_scrubbed_env` |
 | Runaway processes | Timeout + process-group SIGKILL; RLIMIT_CPU, RLIMIT_AS | `test_command_timeout_kills` |

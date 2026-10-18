@@ -68,7 +68,12 @@ def test_anthropic_maps_request_and_response(tmp_path: Path) -> None:
     }
     assert kw["messages"][2]["content"][0]["type"] == "tool_result"
     assert kw["messages"][2]["content"][0]["tool_use_id"] == "t0"
-    assert {t["name"] for t in kw["tools"]} == {"read_file", "write_file", "list_dir"}
+    assert {t["name"] for t in kw["tools"]} == {
+        "read_file",
+        "write_file",
+        "list_dir",
+        "search_files",
+    }
 
 
 def _status_error(code: int) -> Exception:

@@ -13,7 +13,7 @@ Rules:
   *Done when:* a test with 2 commits produces 2 changes with the right SHAs; existing tests pass. 🔒 guarded path (`src/sebastian/watch/`); needs `owner-approved`.
 - [x] **B2 `read_file` line ranges.** Add optional `start_line: int = 0` and `max_lines: int = 0` (0 = all) to `read_file` in `tools/builtin.py`.
   *Done when:* tests cover first/middle/last ranges and out-of-range; schema example in `schemas/examples/` re-checked (`tests/test_report_schema.py` passes).
-- [ ] **B3 `search_files` tool (READ).** Substring search across workspace files, returning `path:line: text`, capped at 200 matches, skipping files over `MAX_READ_BYTES` and binary files.
+- [x] **B3 `search_files` tool (READ).** Substring search across workspace files, returning `path:line: text`, capped at 200 matches, skipping files over `MAX_READ_BYTES` and binary files.
   *Done when:* tests cover match, no match, cap, binary skip, jail escape. Update `schemas/examples/` inventory and re-sign per `schemas/README.md`.
 - [ ] **B4 Token budget warning.** When a run passes 80% of any budget limit, emit a `budget_warning` trace event once per limit.
   *Done when:* tests with `FakeClock` and `ScriptedLLM` show exactly one warning per limit.
