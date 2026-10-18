@@ -4,6 +4,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B16)
+- Parallel read tools: when every call in a turn is READ-only (after the unknown-tool, repeat-failure and approval checks, which stay sequential), the tool bodies run concurrently (up to 8 threads); results keep call order. Any WRITE/EXEC call in the turn keeps the whole turn sequential. Tracing stays on the main thread. Emits `tools_parallel`; `Sebastian(parallel_reads=False)` disables it.
+
 ### Changed (B6, B15)
 - Memory: recording the same task again (case/whitespace-insensitive) replaces the old episode, so the newest outcome wins. Recall is now BM25 over task + summary with stopwords removed (rare terms outweigh common ones; shorter matching episodes rank higher; ties go to the most recent). Still pure Python.
 

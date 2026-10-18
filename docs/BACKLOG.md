@@ -42,6 +42,9 @@ Rules:
 - [x] **B15 BM25 recall.** Replace keyword-overlap recall with BM25 (no dependencies).
   *Done when:* rare terms outrank common ones; existing recall tests pass unchanged.
 
+- [x] **B16 Parallel read tools.** Run a turn's READ-only tool calls concurrently, preserving result order.
+  *Done when:* a 3-way barrier test proves concurrency; a turn with a WRITE stays in order.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [ ] **B13 Un-redact `llm_step` token counts.** Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
