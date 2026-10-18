@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from sebastian.approval import ApprovalGate, DenyApprover
 from sebastian.budget import Budget, Governor
@@ -14,6 +14,7 @@ from sebastian.context import ContextPolicy, cap_result, compact
 from sebastian.llm.base import LLM, LLMError
 from sebastian.memory import Episode, MemoryStore
 from sebastian.prompts import PLAN_INSTRUCTION, REPLAN_NUDGE, SYSTEM_PROMPT, build_system_prompt
+from sebastian.session import Session, SessionError, SessionStore
 from sebastian.tools.base import Permission, Tool, ToolError, ToolRegistry
 from sebastian.tools.workspace import WorkspaceError
 from sebastian.trace import NullTracer, Tracer
@@ -45,6 +46,36 @@ def _usage(u: Usage) -> dict[str, int]:
     return {"input": u.input_tokens, "output": u.output_tokens}
 
 
+RESUME_NOTE = (
+    "<resumed>This run stopped early ({reason}) and has been resumed with a fresh budget. "
+    "Continue from where you left off; do not redo finished work.</resumed>"
+)
+
+
+def _close_open_turn(messages: list[Message]) -> list[Message]:
+    """Copy of ``messages`` that ends on a user turn, so the model can continue.
+
+    A run killed mid-turn may end on assistant tool calls with no results; those calls are
+    answered with an "interrupted" error. A final assistant turn without tool calls means the
+    run was answered, which ``resume`` refuses earlier.
+    """
+    out = list(messages)
+    last = out[-1]
+    if last.role is Role.ASSISTANT:
+        if not last.tool_calls:
+            raise SessionError("the saved conversation already ends with a final answer")
+        out.append(
+            Message(
+                Role.USER,
+                tool_results=tuple(
+                    ToolResult(c.id, "ERROR: interrupted before this call ran", is_error=True)
+                    for c in last.tool_calls
+                ),
+            )
+        )
+    return out
+
+
 def _call_key(call: ToolCall) -> str:
     return call.name + "\x00" + json.dumps(call.arguments, sort_keys=True, default=str)
 
@@ -69,6 +100,8 @@ class Sebastian:
     planner_llm: LLM | None = None  # planning phase; defaults to ``llm``
     escalation_llm: LLM | None = None  # the step right after a replan nudge; defaults to ``llm``
     checkpoints: Checkpoints | None = None  # shared with the file tools, enables ``undo``
+    sessions: SessionStore | None = None  # saves each step's conversation, enables ``resume``
+    workspace: str = ""  # recorded in sessions so a resume targets the same directory
 
     def run(self, task: str) -> RunResult:
         """Run ``task`` and return how it ended. Always terminates (budget-bounded)."""
@@ -77,18 +110,52 @@ class Sebastian:
         run_id = self._new_run()
         governor = Governor(self.budget, self.clock)
         recalled = self.memory.recall(task, self.recall_k) if self.memory else []
-        messages: list[Message] = [Message(Role.USER, text=task)]
-        failed: set[str] = set()
-        tool_list = list(self.tools)
         self.tracer.emit(run_id, "run_start", task=task, recalled=len(recalled))
-
         result: RunResult | None = None
         plan = ""
         if self.plan:
             plan, result = self._make_plan(run_id, task, governor)
-        system = build_system_prompt(recalled, plan)
+        session = Session(
+            run_id, task, build_system_prompt(recalled, plan), workspace=self.workspace
+        )
+        session.messages = [Message(Role.USER, text=task)]
+        return self._drive(session, governor, result)
+
+    def resume(self, run_id: str) -> RunResult:
+        """Continue a stopped run from its saved conversation, under a fresh budget.
+
+        The continuation is a new run (new id, own trace and checkpoints) that records
+        ``resumed_from``. Completed runs, and runs saved for another workspace, are refused.
+        """
+        if self.sessions is None:
+            raise SessionError("resume needs a session store")
+        old = self.sessions.load(run_id)
+        if old.status == StopReason.COMPLETED.value:
+            raise SessionError(f"run {run_id} already completed; start a new run instead")
+        if self.workspace and old.workspace and old.workspace != self.workspace:
+            raise SessionError(f"run {run_id} used workspace {old.workspace}, not {self.workspace}")
+        messages = _close_open_turn(old.messages)
+        why = old.detail or old.status
+        messages[-1] = replace(
+            messages[-1],
+            text=(messages[-1].text + "\n" if messages[-1].text else "")
+            + RESUME_NOTE.format(reason=why),
+        )
+        new_id = self._new_run()
+        self.tracer.emit(new_id, "run_start", task=old.task, recalled=0, resumed_from=run_id)
+        session = Session(
+            new_id, old.task, old.system, messages, workspace=old.workspace, resumed_from=run_id
+        )
+        return self._drive(session, Governor(self.budget, self.clock), None)
+
+    def _drive(self, session: Session, governor: Governor, result: RunResult | None) -> RunResult:
+        """The think -> act -> observe loop shared by ``run`` and ``resume``."""
+        run_id, system, messages = session.run_id, session.system, session.messages
+        failed: set[str] = set()
+        tool_list = list(self.tools)
         error_streak = 0
         escalate = False
+        self._save(session, messages, result)
         while result is None:
             self._warn(run_id, governor)
             reason = governor.exhausted()
@@ -130,9 +197,19 @@ class Sebastian:
                 error_streak = 0
                 escalate = True
             messages.append(Message(Role.USER, text=nudge, tool_results=results))
+            self._save(session, messages, None)
 
-        self._remember(task, result)
+        self._save(session, messages, result)
+        self._remember(session.task, result)
         return result
+
+    def _save(self, session: Session, messages: list[Message], result: RunResult | None) -> None:
+        if self.sessions is None:
+            return
+        session.messages = messages
+        if result is not None:
+            session.status, session.detail = result.stop_reason.value, result.detail
+        self.sessions.save(session)
 
     def _new_run(self) -> str:
         run_id = self.ids.new_id()

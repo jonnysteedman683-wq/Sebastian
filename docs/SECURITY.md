@@ -52,6 +52,12 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
   just wrote. Run `evolve` in a disposable environment (container, CI runner or VM), not on a
   machine holding secrets; a bwrap-sandboxed gate runner is a follow-up (B27).
 
+## Sessions (`session.py`)
+
+Saved sessions hold the full conversation, including file contents the agent read. They live in
+`$SEBASTIAN_HOME/sessions/` with the traces and memory; treat that directory as sensitive.
+Trace redaction does not apply to sessions, because resuming needs the exact history.
+
 ## Undo (`checkpoint.py`)
 
 Every file a run changes through the file tools is checkpointed first, so a bad or hijacked run
