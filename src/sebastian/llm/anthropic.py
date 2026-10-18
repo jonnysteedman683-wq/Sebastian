@@ -43,9 +43,9 @@ class AnthropicLLM:
         wire: list[dict[str, Any]] = []
         for m in messages:
             blocks: list[dict[str, Any]] = []
-            if m.text:
-                blocks.append({"type": "text", "text": m.text})
+            text = [{"type": "text", "text": m.text}] if m.text else []
             if m.role is Role.ASSISTANT:
+                blocks += text
                 blocks += [
                     {"type": "tool_use", "id": c.id, "name": c.name, "input": c.arguments}
                     for c in m.tool_calls
@@ -60,6 +60,7 @@ class AnthropicLLM:
                     }
                     for r in m.tool_results
                 ]
+                blocks += text  # the API requires tool_result blocks before any text
             wire.append({"role": m.role.value, "content": blocks})
         return wire
 
@@ -68,18 +69,20 @@ class AnthropicLLM:
     ) -> LLMResponse:
         import anthropic  # noqa: PLC0415
 
+        kwargs: dict[str, Any] = {
+            "model": self.model,
+            "max_tokens": self.max_tokens,
+            # Cache the static system prompt across steps (work order U8).
+            "system": [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+            "messages": self._to_wire(messages),
+        }
+        if tools:  # the planning call has none; omit rather than send an empty list
+            kwargs["tools"] = [
+                {"name": t.name, "description": t.description, "input_schema": t.schema}
+                for t in tools
+            ]
         try:
-            resp = self._client.messages.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                # Cache the static system prompt across steps (work order U8).
-                system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-                messages=self._to_wire(messages),
-                tools=[
-                    {"name": t.name, "description": t.description, "input_schema": t.schema}
-                    for t in tools
-                ],
-            )
+            resp = self._client.messages.create(**kwargs)
         except (anthropic.APIConnectionError, anthropic.APITimeoutError) as exc:
             raise TransientLLMError(str(exc)) from exc
         except anthropic.APIStatusError as exc:

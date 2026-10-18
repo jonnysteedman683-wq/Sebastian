@@ -23,15 +23,21 @@ Rules:
   *Done when:* tests show one episode after recording the same task twice, with the newest outcome kept.
 - [ ] **B7 Docs coverage.** Every public function and class in `src/sebastian/` has a docstring; add ruff rule `D1` for `src/` only.
   *Done when:* `ruff check .` passes with `D1` enabled for `src/`.
-- [ ] **B8 Eval harness skeleton (U12).** `evals/` with 5 scripted tasks run through `ScriptedLLM`, a scorer, and a `pytest` marker `eval`; no network.
+- [x] **B8 Eval harness skeleton (U12).** `evals/` with 5 scripted tasks run through `ScriptedLLM`, a scorer, and a `pytest` marker `eval`; no network.
   *Done when:* `pytest -m eval` runs and reports a score; CI unchanged.
-- [ ] **B9 Prompt-injection evals.** Add 5 hostile cases to the eval harness (instructions hidden in file contents and tool output) asserting no gated tool is called.
+- [x] **B9 Prompt-injection evals.** Add 5 hostile cases to the eval harness (instructions hidden in file contents and tool output) asserting no gated tool is called.
   *Done when:* all 5 pass with the current agent; failures documented in `docs/SECURITY.md` if any.
 - [ ] 🔒 **B10 Container sandbox for `run_command`** (PROPOSALS #1). Needs an owner decision on bubblewrap vs nsjail.
 - [ ] 🔒 **B11 Gauntlet stages** (PROPOSALS #3). Needs an owner design review.
 - [ ] 🔒 **B12 Licence.** Owner decision.
 
 ## Proposed
+
+- [x] **B13 Context compaction.** Bound the history sent to the model: cap tool results, elide old ones oldest-first.
+  *Done when:* a 12-step run over a large file never sends more than `max_history_chars`; pairing preserved.
+
+- [x] **B14 Planning phase + replan nudge.** Tool-free planning call feeding `<plan>` into the system prompt; nudge after N consecutive tool failures.
+  *Done when:* tests show the plan call has no tools, counts as a step and reaches the acting prompt; one nudge after 3 failures.
 
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 

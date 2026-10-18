@@ -53,6 +53,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
+markers = ["eval: offline eval suite (sebastian.evals); run alone with -m eval"]
 
 [tool.coverage.run]
 source = ["sebastian"]

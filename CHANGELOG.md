@@ -4,6 +4,19 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B14)
+- Planning phase (`Sebastian(plan=True)`, `sebastian run --plan`): one tool-free model call writes a numbered plan that is injected into the system prompt as `<plan>`; counts against the step and token budget; emits a `plan` trace event. Off by default.
+- Replan nudge: after `replan_after_errors` (default 3) consecutive failed tool calls, a `<replan>` note rides on the tool-results turn asking the model to revise its approach; emits `replan_nudge`. `0` disables it.
+
+### Fixed
+- Anthropic backend: in user turns, `tool_result` blocks are now sent before any text block (required by the Messages API), and `tools` is omitted when empty.
+
+### Added (B8, B9)
+- Eval harness `sebastian.evals`: fresh workspace per case, checker over workspace/result/trace, score and summary. 5 capability cases and 5 prompt-injection cases (file override, fake system tag, filename, fake tool error, search output). Offline via `pytest -m eval` (score printed in the pytest summary) or `python -m sebastian.evals`; `--live` runs the same suite against a real model, `--min-score` sets the exit threshold.
+
+### Added (B13)
+- Context management (`context.py`, `ContextPolicy`): each tool result is capped (head + tail kept, default 12k chars) and, once the history passes `max_history_chars` (default 240k), tool results older than the last `keep_recent` turns are replaced by stubs, oldest first. Task text, assistant text and tool-call pairing are never altered. Emits a `context_compacted` trace event.
+
 ### Added (daily agent)
 - `docs/BACKLOG.md`: ranked one-PR-sized queue for the daily upgrade agent (Jules), with *done when* checks; 🔒 items need owner sign-off.
 - `AGENTS.md` / `CLAUDE.md`: the daily routine (one item, one PR, full checks, no self-merge) and hard limits.

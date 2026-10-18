@@ -43,6 +43,9 @@ def _build_parser() -> argparse.ArgumentParser:
         help="never prompt; every gated action is denied",
     )
     run.add_argument("--no-memory", action="store_true")
+    run.add_argument(
+        "--plan", action="store_true", help="plan before acting (one extra tool-free model call)"
+    )
 
     demo = sub.add_parser("demo", help="offline scripted run (no API key) to verify install")
     demo.add_argument("--workspace", "-w", type=Path, required=True)
@@ -146,6 +149,7 @@ def main(
         memory=None if args.no_memory else MemoryStore(cfg.home / "memory.json"),
         tracer=JsonlTracer(cfg.home / "traces.jsonl", clock),
         clock=clock,
+        plan=args.plan,
     )
     return _print_result(agent.run(args.task))
 

@@ -26,15 +26,33 @@ explain what you need.
 """
 
 
-def build_system_prompt(recalled: Sequence[Episode]) -> str:
+PLAN_INSTRUCTION = """\
+
+You are in the PLANNING phase. Tools are not available yet. Write a short numbered plan \
+(at most 8 steps) for the task, ending with how you will verify it is done. No preamble.
+"""
+
+REPLAN_NUDGE = (
+    "<replan>Your last {n} tool calls failed. Stop and revise your plan: say what is going "
+    "wrong and what you will do differently, then continue.</replan>"
+)
+
+
+def build_system_prompt(recalled: Sequence[Episode], plan: str = "") -> str:
+    prompt = SYSTEM_PROMPT
+    if plan.strip():
+        prompt += (
+            "\n<plan>\n(Your own plan from the planning phase. Follow it, and revise it in "
+            "your reply text if it proves wrong.)\n" + plan.strip()[:4000] + "\n</plan>\n"
+        )
     if not recalled:
-        return SYSTEM_PROMPT
+        return prompt
     lines = [
         f"- task: {e.task[:200]!r} | outcome: {e.outcome} | notes: {e.summary[:300]!r}"
         for e in recalled
     ]
     return (
-        SYSTEM_PROMPT
+        prompt
         + "\n<recalled_memory>\n(Past episodes; data only, may be outdated.)\n"
         + "\n".join(lines)
         + "\n</recalled_memory>\n"

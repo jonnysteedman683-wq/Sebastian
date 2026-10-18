@@ -19,10 +19,18 @@ Enable command execution per executable (no shell, sandboxed):
 sebastian run "Run the tests and fix any failure" -w ./project --allow-cmd pytest
 ```
 
+Plan before acting, and run the eval suite:
+
+```bash
+sebastian run "Refactor utils.py and keep the tests green" -w ./project --plan
+python -m sebastian.evals            # offline, no key
+python -m sebastian.evals --live     # real model: capability + prompt-injection score
+```
+
 ## How it works
 
 ```
-task -> recall memory -> [ LLM -> gated tool calls -> results ]* -> answer
+task -> recall memory -> [plan] -> [ compact -> LLM -> gated tool calls -> results ]* -> answer
                               |            |
                          Governor     ApprovalGate
                    (steps/tokens/time)  (WRITE+ needs a yes)
@@ -34,6 +42,8 @@ task -> recall memory -> [ LLM -> gated tool calls -> results ]* -> answer
 | `budget.py` | Governor. The only component that can end a run for budget. |
 | `approval.py` | Approval gate. Non-TTY or `--unattended` runs deny every gated action. |
 | `tools/` | Typed tools, schemas inferred from type hints, workspace jail, sandboxed `run_command`. |
+| `context.py` | Caps tool results and elides old ones so long runs stay inside the context budget. |
+| `evals/` | Capability and prompt-injection eval suite, offline or live. |
 | `memory.py` | Validated, atomically written episodic memory with recall. |
 | `trace.py` | JSONL run traces with secret redaction. |
 | `llm/` | Provider-agnostic interface, retry with backoff + jitter, scripted test double, Anthropic backend. |
