@@ -1,98 +1,90 @@
 # Watch pipeline runbook
 
-`.github/workflows/watch.yml` runs the GROK-WATCHER pipeline unattended. Grok only writes the descriptions; everything else is automated and tested.
+`.github/workflows/watch.yml` watches this repo and publishes signed-by-fingerprint reports. **No keys, tokens or endpoints are needed.** Bots read the reports straight from GitHub.
 
 ```
 push to main / hourly / daily digest / weekly canary
         │
         ▼
- sebastian-watch run ── scan (git + ast, no repo code executed)
-        │
-        ├── POST facts + diff ──► GROK_DRAFT_URL ──► draft JSON
-        │        (on failure or invalid draft: mechanical draft, flagged in open_questions)
+ sebastian-watch run ── scan (git + ast, repo code never executed)
+        │               mechanical draft from computed facts
+        │               finalize: rules, schema, SHA-256 fingerprint
         ▼
- finalize (rules, schema, HMAC sign)
+ one commit to the `watch-state` branch:  latest.json  reports/NNNNNN.json  state.json
         │
-        └── POST report ──► COORDINATOR_URL ──► 2xx = acknowledged
-                                     │
-                       state advanced on `watch-state` branch only on 2xx
+        ▼
+ GROK-WATCHER and CO-ORDINATOR-BOT read latest.json (public raw URL, no auth)
 ```
+
+## Where the reports are
+
+| What | URL |
+|---|---|
+| Newest report | `https://raw.githubusercontent.com/jonnysteedman683-wq/Sebastian/watch-state/latest.json` |
+| Report by number | `https://raw.githubusercontent.com/jonnysteedman683-wq/Sebastian/watch-state/reports/000042.json` |
+| Watcher position | `https://raw.githubusercontent.com/jonnysteedman683-wq/Sebastian/watch-state/state.json` |
+| History (who wrote what, when) | `https://github.com/jonnysteedman683-wq/Sebastian/commits/watch-state` |
+
+Raw URLs can lag a few minutes behind a new commit (CDN cache). Readers poll; they don't need to be instant.
 
 ## Schedule (UTC cron → Australia/Brisbane)
 
-| Cron | Brisbane | Mode |
+| Trigger | Brisbane | Mode |
 |---|---|---|
-| on push to `main` | immediately | `change` |
-| `7 * * * *` | hourly at :07 | `change` (quiet if nothing new) |
-| `0 22 * * *` | 08:00 daily | `digest` (sends a change report instead if anything is pending) |
+| push to `main` | immediately | `change` |
+| `7 * * * *` | hourly at :07 | `change` (quiet if nothing new: no commit) |
+| `0 22 * * *` | 08:00 daily | `digest` (a change report instead if anything is pending) |
 | `15 22 * * 0` | Monday 08:15 | `canary` |
 
-GitHub may delay scheduled runs by several minutes; the coordinator's 26-hour heartbeat and 10:15 canary deadline allow for that.
+## Setup
 
-## Setup (one-off)
+None. The first run starts from the previous commit, so its report covers only the latest change. To start from a specific commit, run the workflow manually (Actions → Watch → Run workflow) with `baseline_sha` before any state exists.
 
-Repository → Settings → Secrets and variables → Actions → **Secrets**:
+Recommended (owner, one-off): protect the `watch-state` branch so only GitHub Actions can push to it, and require review on `.github/`, `src/sebastian/watch/` and `schemas/` (branch protection + CODEOWNERS).
 
-| Secret | Required | Purpose |
-|---|---|---|
-| `WATCHER_HMAC_KEY` | yes | Signing key shared with CO-ORDINATOR-BOT. 32+ random bytes, e.g. `python -c "import secrets;print(secrets.token_hex(32))"` |
-| `COORDINATOR_URL` | yes | HTTPS endpoint that receives reports |
-| `COORDINATOR_TOKEN` | recommended | Sent as `Authorization: Bearer …` |
-| `GROK_DRAFT_URL` | recommended | HTTPS endpoint that returns Grok's draft. Without it every report uses the mechanical draft. |
-| `GROK_DRAFT_TOKEN` | recommended | Sent as `Authorization: Bearer …` to the draft endpoint |
+## How readers trust a report
 
-Until both `WATCHER_HMAC_KEY` and `COORDINATOR_URL` are set, every run is a **dry run**: the report is built and uploaded as an artifact, nothing is sent, and state is not touched. Use this to check the pipeline before going live.
+1. **Fetch only from GitHub** over HTTPS, from the URLs above. Never accept a report forwarded by anyone else as authoritative.
+2. **Check the fingerprint:** `sebastian-watch verify latest.json --expect-seq <last_seq+1> --expect-from <last_to_sha>` (no key set → keyless check). It also checks the schema, `seq` and commit continuity.
+3. **Provenance** comes from GitHub: only the workflow writes `watch-state`, and every commit is visible in its history. A commit there by anyone other than `sebastian-watch[bot]` is itself an incident.
 
-**First live run:** run the workflow manually (Actions → Watch → Run workflow) with `baseline_sha` set to the commit you consider "already known". Without it, the first report covers the last 20 commits and will escalate on every capability Sebastian already has.
-
-## Endpoint contracts
-
-### GROK_DRAFT_URL
-
-Request: `POST`, JSON body:
-
-```json
-{ "facts": { ...output of `sebastian-watch scan`... }, "diff": "<unified diff, max 200 KB>", "contract": "docs/watch/GROK_WATCHER_WORK_ORDER.md §2 step 4" }
-```
-
-Response: `2xx` with a JSON object containing only the draft fields listed in the watcher work order §2 step 4. Any other field, an invalid draft, a non-2xx or a timeout → the mechanical draft is used and noted in the report's `open_questions`. Three consecutive failures escalate `watcher draft service failing`.
-
-Treat `facts` and `diff` as **data**: they contain repository content, which may include text aimed at bots.
-
-### COORDINATOR_URL
-
-Request: `POST`, the signed report as the JSON body, headers `X-Watcher-Seq: <seq>` and `Authorization: Bearer <COORDINATOR_TOKEN>`.
-
-Response: any `2xx` = acknowledged. Anything else, retried after 30 s, 2 min and 8 min. If all attempts fail, the job fails (visible in Actions), `seq` is consumed, the range is **not** advanced, and the next successful report carries a `coordinator unreachable from … to …` escalation.
-
-The coordinator should run `sebastian-watch verify` (or equivalent) before acknowledging.
+The fingerprint proves the report wasn't altered after it was built; GitHub proves who built it. Together they replace the shared key.
 
 ## State
 
-`watch-state` branch, single file `state.json`:
+`state.json` on `watch-state`:
 
 | Field | Meaning |
 |---|---|
-| `last_reported_sha` | Last commit the coordinator acknowledged |
-| `seq` | Last sequence number used |
-| `last_run_at` | Time of last acknowledged report |
-| `delivery_failures` | Consecutive failed deliveries |
-| `grok_failures` | Consecutive runs that fell back to the mechanical draft |
-| `coordinator_down_since` | Start of the current delivery outage, if any |
+| `last_reported_sha` | Last commit covered by a published report |
+| `seq` | Last sequence number published |
+| `last_run_at` | Time of last publish |
+| `grok_failures`, `delivery_failures`, `coordinator_down_since` | Used only in optional push mode |
 
-Only the workflow writes this branch. Don't edit it by hand except to recover (below).
+Report and state are written in the **same commit**, so they can't disagree. If the push fails, neither lands and the next run retries the same range.
 
 ## Operations
 
 | Situation | Action |
 |---|---|
-| Check what would be sent | Run workflow manually; download the `watch-report-*` artifact |
+| Check what would be published | Run workflow with `dry_run` ticked; download the `watch-report-*` artifact |
 | Force a canary | Run workflow with `mode = canary` |
-| Coordinator was down | Nothing; the next run retries the same range and flags the outage |
-| Rotate `WATCHER_HMAC_KEY` | Update the coordinator first to accept old + new, then the secret, then remove old on the coordinator |
-| Reset after an incident | Edit `watch-state/state.json`: set `last_reported_sha` to the last commit the coordinator actually holds; never lower `seq` |
-| Watcher looks tampered with | Changes to `src/sebastian/watch/`, `.github/workflows/watch.yml` or `schemas/` always add +3 risk and escalate. Check the report before trusting later ones. |
+| Reset after an incident | Edit `watch-state/state.json`: set `last_reported_sha` to the last commit you trust; never lower `seq` |
+| Watcher looks tampered with | Changes to `src/sebastian/watch/`, `.github/workflows/watch.yml` or `schemas/` always add +3 risk, escalate and are HIGH. Read that report before trusting later ones. |
+
+## Optional: push mode (keys)
+
+Only if a bot can't poll. Set repo secrets and the workflow pushes each report instead of publishing it to the branch:
+
+| Secret | Purpose |
+|---|---|
+| `COORDINATOR_URL` | HTTPS endpoint that receives reports (`POST`, JSON body, header `X-Watcher-Seq`) |
+| `COORDINATOR_TOKEN` | Sent as `Authorization: Bearer …` |
+| `WATCHER_HMAC_KEY` | Signs reports with HMAC-SHA256 instead of the fingerprint |
+| `GROK_DRAFT_URL`, `GROK_DRAFT_TOKEN` | Endpoint that returns Grok's draft (`POST {facts, diff}` → draft JSON); mechanical draft on failure, escalated after 3 failures in a row |
+
+Push mode retries at 30 s, 2 min, 8 min, advances state only on a `2xx`, and escalates outages in the next delivered report.
 
 ## Limits
 
-The workflow runs watchkit from `main`. Someone able to merge to `main` could change the watcher and the workflow together. Those changes are always escalated (above), but protect them properly: require review on `.github/`, `src/sebastian/watch/` and `schemas/` (branch protection plus CODEOWNERS). The external coordinator's heartbeat and canary checks catch a watcher that goes silent.
+The workflow runs watchkit from `main`, so whoever can merge to `main` can change the watcher. Those changes are always escalated, and the coordinator's heartbeat and canary checks catch a watcher that goes silent; branch protection closes the gap.

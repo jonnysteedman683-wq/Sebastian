@@ -4,6 +4,12 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Changed
+- **Watch pipeline is keyless by default.** Reports are published to the `watch-state` branch (`latest.json`, `reports/NNNNNN.json`, `state.json` in one commit) and read from GitHub's public raw URLs. Reports carry a SHA-256 fingerprint; GitHub provides provenance. Push mode (endpoints + HMAC) remains optional.
+- First run starts from the previous commit automatically; no baseline or secrets needed.
+- An escalated report is always `priority: HIGH` (schema + `finalize`).
+- No draft service configured is no longer counted as a draft failure.
+
 ### Added
 - `schemas/repo_change_report.schema.json`: JSON Schema (2020-12) contract for GROK-WATCHER -> CO-ORDINATOR-BOT reports, with signed examples, HMAC test vectors and signing spec in `schemas/README.md`.
 - Work orders for both bots in `docs/watch/`, pointing at the schema as the authoritative contract.
