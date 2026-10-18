@@ -264,3 +264,29 @@ def test_summarize_runs_tolerates_partial_records(tmp_path: Path) -> None:
         + "\n"
     )
     assert summarize_runs(path, 5) == [RunSummary("a", None, "unknown", 0, 0)]
+
+
+def test_memory_dedups_same_task_keeping_newest(tmp_path: Path) -> None:
+    store = MemoryStore(tmp_path / "m.json")
+    store.record(Episode("Deploy the API", "error", "old failure", 1))
+    store.record(ep("other task", "", 2))
+    store.record(Episode("  deploy   the api ", "completed", "worked with docker", 3))
+    reloaded = MemoryStore(tmp_path / "m.json")
+    assert len(reloaded) == 2
+    hits = reloaded.recall("deploy api")
+    assert [(h.outcome, h.summary) for h in hits] == [("completed", "worked with docker")]
+
+
+def test_memory_recall_prefers_rare_terms(tmp_path: Path) -> None:
+    store = MemoryStore(tmp_path / "m.json")
+    for i in range(5):
+        store.record(ep(f"update python deps batch {i}", "", float(i)))
+    store.record(ep("fix kubernetes ingress", "python script", 9))
+    hits = store.recall("kubernetes python", k=2)
+    assert hits[0].task == "fix kubernetes ingress"
+
+
+def test_memory_recall_ignores_stopwords(tmp_path: Path) -> None:
+    store = MemoryStore(tmp_path / "m.json")
+    store.record(ep("the and with", "", 1))
+    assert store.recall("the and with") == []

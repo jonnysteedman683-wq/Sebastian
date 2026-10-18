@@ -2,12 +2,14 @@
 
 JSON on disk, validated on every load, written atomically. Corrupt files raise rather than
 being silently discarded, because deleting stored state is an escalation-level decision.
-Retrieval is keyword overlap for now; embeddings are planned (work order U5).
+Retrieval is BM25 over task + summary (pure Python, no dependencies); recording the same task
+again replaces the old episode. Embeddings remain an option (work order U5).
 """
 
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import tempfile
@@ -50,8 +52,56 @@ class Episode:
         return cls(task, outcome, summary, float(ts))
 
 
+_STOP = frozenset(
+    {
+        "the",
+        "and",
+        "for",
+        "with",
+        "that",
+        "this",
+        "from",
+        "into",
+        "onto",
+        "are",
+        "was",
+        "were",
+        "has",
+        "have",
+        "had",
+        "not",
+        "but",
+        "you",
+        "your",
+        "its",
+        "our",
+        "all",
+        "any",
+        "can",
+        "will",
+        "then",
+        "than",
+        "when",
+        "what",
+        "which",
+        "who",
+        "how",
+    }
+)
+BM25_K1 = 1.2
+BM25_B = 0.75
+
+
+def _tokens(text: str) -> list[str]:
+    return [t for t in _WORD.findall(text.lower()) if t not in _STOP]
+
+
 def _terms(text: str) -> set[str]:
-    return set(_WORD.findall(text.lower()))
+    return set(_tokens(text))
+
+
+def _task_key(task: str) -> str:
+    return " ".join(task.lower().split())
 
 
 class MemoryStore:
@@ -87,19 +137,36 @@ class MemoryStore:
             raise
 
     def record(self, episode: Episode) -> None:
+        """Store an episode. A previous episode for the same task (case/space-insensitive) is
+        replaced, so the newest outcome wins and recall is not flooded by repeats."""
+        key = _task_key(episode.task)
+        self._episodes = [e for e in self._episodes if _task_key(e.task) != key]
         self._episodes.append(episode)
         self._episodes = self._episodes[-self.max_episodes :]
         self._save()
 
     def recall(self, query: str, k: int = 3) -> list[Episode]:
+        """Top-``k`` episodes by BM25 relevance to ``query``; ties go to the most recent."""
         q = _terms(query)
-        if not q:
+        if not q or not self._episodes:
             return []
-        scored = [
-            (len(q & _terms(e.task + " " + e.summary)), i, e) for i, e in enumerate(self._episodes)
-        ]
-        scored = [s for s in scored if s[0] > 0]
-        scored.sort(key=lambda s: (-s[0], -s[1]))  # best overlap, then most recent
+        docs = [_tokens(e.task + " " + e.summary) for e in self._episodes]
+        n = len(docs)
+        avg = sum(len(d) for d in docs) / n or 1.0
+        df = {t: sum(1 for d in docs if t in d) for t in q}
+        scored: list[tuple[float, int, Episode]] = []
+        for i, (doc, ep) in enumerate(zip(docs, self._episodes, strict=True)):
+            score = 0.0
+            for t in q:
+                tf = doc.count(t)
+                if not tf:
+                    continue
+                idf = math.log(1 + (n - df[t] + 0.5) / (df[t] + 0.5))
+                norm = tf + BM25_K1 * (1 - BM25_B + BM25_B * len(doc) / avg)
+                score += idf * tf * (BM25_K1 + 1) / norm
+            if score > 0:
+                scored.append((score, i, ep))
+        scored.sort(key=lambda s: (-s[0], -s[1]))
         return [e for _, _, e in scored[:k]]
 
     def __len__(self) -> int:

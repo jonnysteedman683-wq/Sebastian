@@ -48,8 +48,8 @@ All five pass offline; live results depend on the model and are not part of CI.
 
 ## Residual risks (escalated, not fixed)
 
-1. **`run_command` arguments are not jailed.** An allowlisted `cat /etc/passwd` reads outside the workspace, and allowlisting an interpreter (`python`) is equivalent to arbitrary code. Mitigation today: approval gate (EXEC needs a yes) and an explicit allowlist. Upgrade: run commands in a container or Linux namespace (bubblewrap/nsjail) with no network.
-2. **No network egress control** for subprocesses. Same upgrade as above.
+1. **`run_command` arguments are not jailed by default.** Without a sandbox, an allowlisted `cat /etc/passwd` reads outside the workspace, and allowlisting an interpreter (`python`) is equivalent to arbitrary code. Mitigation: approval gate (EXEC needs a yes), the allowlist, and **`--sandbox bwrap`** (`CommandPolicy(sandbox="bwrap")`): bubblewrap with every namespace unshared, only the workspace mounted read-write at `/workspace`, system paths read-only, private `/tmp`, cleared env, and executables restricted to system paths. With bwrap, home directories, `/root` and the rest of `/etc` are not visible. Still opt-in; consider making it the default once tested on your hosts.
+2. **No network egress control** for unsandboxed subprocesses. `--sandbox bwrap` unshares the network namespace, so sandboxed commands have no network at all.
 3. **Prompt injection is mitigated, not prevented.** Needs a hostile-input eval suite (U12).
 4. **RLIMIT_AS** can break some runtimes (e.g. JVM). Tunable via `CommandPolicy.max_memory_bytes`.
 5. **The watcher runs from `main`.** Whoever can merge to `main` can change the watcher and its workflow together. Mitigated by always-escalated tooling changes and the coordinator's heartbeat/canary; fully fixed only by branch protection + CODEOWNERS on `.github/`, `src/sebastian/watch/`, `schemas/` (owner action).

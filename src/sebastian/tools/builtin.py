@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import shlex
+import shutil
 import signal
 import subprocess
 import sys
@@ -118,10 +119,48 @@ class CommandPolicy:
     max_memory_bytes: int = 1_073_741_824  # 1 GiB address space
     max_cpu_seconds: int = 60
     env_passthrough: frozenset[str] = frozenset({"PATH", "LANG", "LC_ALL"})
+    sandbox: str = "none"  # "none" | "bwrap" (Linux namespaces, no network, workspace-only)
+
+    def __post_init__(self) -> None:
+        if self.sandbox not in SANDBOXES:
+            raise ValueError(f"unknown sandbox {self.sandbox!r}; choose from {sorted(SANDBOXES)}")
 
     @classmethod
     def of(cls, allowed: Iterable[str], **kwargs: object) -> CommandPolicy:
         return cls(allowed=frozenset(allowed), **kwargs)  # type: ignore[arg-type]
+
+
+SANDBOXES = frozenset({"none", "bwrap"})
+SANDBOX_WORKDIR = "/workspace"
+# Read-only system paths visible inside the bwrap sandbox. Nothing else from the host is
+# mounted: no /home, no /root, no /etc beyond what the dynamic loader needs.
+_RO_SYSTEM = (
+    "/usr",
+    "/bin",
+    "/sbin",
+    "/lib",
+    "/lib32",
+    "/lib64",
+    "/etc/alternatives",
+    "/etc/ld.so.cache",
+    "/etc/ld.so.conf",
+    "/etc/ld.so.conf.d",
+)
+
+
+def bwrap_argv(bwrap: str, root: Path, exe: str, args: list[str], env: dict[str, str]) -> list[str]:
+    """Wrap a command for bubblewrap: every namespace unshared (so no network), the workspace
+    bind-mounted read-write at ``/workspace``, system paths read-only, a private /tmp, and a
+    cleared environment. ``exe`` must be an absolute path from the host's system paths."""
+    argv = [bwrap, "--unshare-all", "--die-with-parent", "--new-session"]
+    for path in _RO_SYSTEM:
+        argv += ["--ro-bind-try", path, path]
+    # A fresh, private tmpfs inside the sandbox; nothing is shared with the host /tmp.
+    argv += ["--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp"]  # noqa: S108
+    argv += ["--bind", str(root), SANDBOX_WORKDIR, "--chdir", SANDBOX_WORKDIR, "--clearenv"]
+    for key, value in sorted(env.items()):
+        argv += ["--setenv", key, value]
+    return [*argv, "--", exe, *args]
 
 
 def _limits(policy: CommandPolicy) -> None:  # pragma: no cover - runs in the child process
@@ -148,6 +187,8 @@ def command_tool(ws: Workspace, policy: CommandPolicy) -> Tool:
             raise ToolError(f"command not allowed: {argv[0]!r}; allowed: {sorted(policy.allowed)}")
         env = {k: v for k, v in os.environ.items() if k in policy.env_passthrough}
         env["HOME"] = str(ws.root)
+        if policy.sandbox == "bwrap":
+            argv = _sandboxed(ws, argv, env)
         proc = subprocess.Popen(
             argv,
             cwd=ws.root,
@@ -168,3 +209,14 @@ def command_tool(ws: Workspace, policy: CommandPolicy) -> Tool:
         return f"exit_code={proc.returncode}\n{_truncate(out)}"
 
     return make_tool(run_command, permission=Permission.EXEC)
+
+
+def _sandboxed(ws: Workspace, argv: list[str], env: dict[str, str]) -> list[str]:
+    bwrap = shutil.which("bwrap")
+    if bwrap is None:
+        raise ToolError("sandbox 'bwrap' requested but bubblewrap is not installed")
+    exe = shutil.which(argv[0], path=env.get("PATH", ""))
+    if exe is None or not exe.startswith(tuple(p + "/" for p in _RO_SYSTEM)):
+        raise ToolError(f"{argv[0]!r} is not available inside the sandbox")
+    inner = dict(env, HOME=SANDBOX_WORKDIR)
+    return bwrap_argv(bwrap, ws.root, exe, argv[1:], inner)

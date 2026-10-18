@@ -4,6 +4,22 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B10, owner-approved)
+- `run_command` sandbox: `--sandbox bwrap` / `CommandPolicy(sandbox="bwrap")` runs each command under bubblewrap with all namespaces unshared (no network), only the workspace bind-mounted read-write at `/workspace`, read-only system paths, private `/tmp` and a cleared environment. Executables must resolve under system paths. Missing bubblewrap is a tool error, never a silent fallback.
+
+### Added (B18, owner-approved)
+- `.github/workflows/live-evals.yml`: manual and weekly (Mon 07:30 Brisbane) live eval run against the real model; skipped when the `ANTHROPIC_API_KEY` secret is absent; score posted to the job summary.
+- CI runs the offline eval suite and installs bubblewrap so the real sandbox test runs where namespaces are permitted.
+
+### Added (B17)
+- Model routing: `planner_llm` for the planning phase and `escalation_llm` for the one step after a replan nudge (both default to the main model). CLI `--plan-model` (implies `--plan`) and `--escalation-model`; env `SEBASTIAN_PLAN_MODEL`, `SEBASTIAN_ESCALATION_MODEL`. A routed model equal to the main model reuses its client. Emits `escalated`.
+
+### Added (B16)
+- Parallel read tools: when every call in a turn is READ-only (after the unknown-tool, repeat-failure and approval checks, which stay sequential), the tool bodies run concurrently (up to 8 threads); results keep call order. Any WRITE/EXEC call in the turn keeps the whole turn sequential. Tracing stays on the main thread. Emits `tools_parallel`; `Sebastian(parallel_reads=False)` disables it.
+
+### Changed (B6, B15)
+- Memory: recording the same task again (case/whitespace-insensitive) replaces the old episode, so the newest outcome wins. Recall is now BM25 over task + summary with stopwords removed (rare terms outweigh common ones; shorter matching episodes rank higher; ties go to the most recent). Still pure Python.
+
 ### Added (B14)
 - Planning phase (`Sebastian(plan=True)`, `sebastian run --plan`): one tool-free model call writes a numbered plan that is injected into the system prompt as `<plan>`; counts against the step and token budget; emits a `plan` trace event. Off by default.
 - Replan nudge: after `replan_after_errors` (default 3) consecutive failed tool calls, a `<replan>` note rides on the tool-results turn asking the model to revise its approach; emits `replan_nudge`. `0` disables it.
