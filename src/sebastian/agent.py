@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 from sebastian.approval import ApprovalGate, DenyApprover
 from sebastian.budget import Budget, Governor
+from sebastian.checkpoint import Checkpoints
 from sebastian.clock import Clock, IdSource, SystemClock, UuidSource
 from sebastian.context import ContextPolicy, cap_result, compact
 from sebastian.llm.base import LLM, LLMError
@@ -67,12 +68,13 @@ class Sebastian:
     parallel_reads: bool = True
     planner_llm: LLM | None = None  # planning phase; defaults to ``llm``
     escalation_llm: LLM | None = None  # the step right after a replan nudge; defaults to ``llm``
+    checkpoints: Checkpoints | None = None  # shared with the file tools, enables ``undo``
 
     def run(self, task: str) -> RunResult:
         """Run ``task`` and return how it ended. Always terminates (budget-bounded)."""
         if not task.strip():
             raise ValueError("task must not be empty")
-        run_id = self.ids.new_id()
+        run_id = self._new_run()
         governor = Governor(self.budget, self.clock)
         recalled = self.memory.recall(task, self.recall_k) if self.memory else []
         messages: list[Message] = [Message(Role.USER, text=task)]
@@ -131,6 +133,12 @@ class Sebastian:
 
         self._remember(task, result)
         return result
+
+    def _new_run(self) -> str:
+        run_id = self.ids.new_id()
+        if self.checkpoints is not None:
+            self.checkpoints.begin(run_id)
+        return run_id
 
     def _pick_llm(self, run_id: str, escalate: bool, step: int) -> LLM:
         if escalate and self.escalation_llm is not None:

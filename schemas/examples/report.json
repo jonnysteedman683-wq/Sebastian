@@ -92,6 +92,7 @@
       "run",
       "demo",
       "traces",
+      "undo",
       "version"
     ],
     "llm_backends": [
@@ -116,5 +117,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "d2a663239e9b46a4eaa66d9f5512d573ee083801a8aa29d28d3da42391a2c15e"
+  "signature": "edbadecf5f95b89c2e159564c5c1afe61313f92d819bfdcfe4e4e503b5ca9726"
 }

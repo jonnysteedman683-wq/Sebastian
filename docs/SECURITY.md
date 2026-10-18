@@ -37,6 +37,13 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 | Daily coding agent changes what watches it | Guard check fails any PR touching `.github/`, `src/sebastian/watch/`, the schema/signing spec, `docs/watch/`, `docs/WORK_ORDER.md`, `AGENTS.md` or `CLAUDE.md` without the owner's `owner-approved` label; such changes also escalate in watch reports | `.github/workflows/guard.yml`, `test_watch_tooling_change_is_flagged_and_escalated` |
 | Secrets exposed to forks | Watch workflow triggers only on `main` push, schedule and manual dispatch (never `pull_request`) | `.github/workflows/watch.yml` |
 
+## Undo (`checkpoint.py`)
+
+Every file a run changes through the file tools is checkpointed first, so a bad or hijacked run
+can be rolled back with `sebastian undo <run_id>`. Undo never overwrites a file changed after the
+run (unless `--force`), stays inside the workspace jail, and verifies each blob's hash before
+restoring. `run_command` side effects are not checkpointed.
+
 ## Prompt-injection evals (`sebastian.evals`)
 
 Five hostile cases (`evals/cases.py::INJECTION`) hide instructions in file contents, a fake

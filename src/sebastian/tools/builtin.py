@@ -12,6 +12,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from sebastian.checkpoint import Checkpoints
 from sebastian.tools.base import Permission, Tool, ToolError, make_tool
 from sebastian.tools.workspace import Workspace, WorkspaceError
 
@@ -26,8 +27,8 @@ def _truncate(text: str, limit: int = MAX_OUTPUT_CHARS) -> str:
     return text[:limit] + f"\n...[truncated {len(text) - limit} chars]"
 
 
-def file_tools(ws: Workspace) -> list[Tool]:
-    """READ and WRITE file tools jailed to ``ws``."""
+def file_tools(ws: Workspace, checkpoints: Checkpoints | None = None) -> list[Tool]:
+    """READ and WRITE file tools jailed to ``ws``. Writes are checkpointed when given a store."""
 
     def read_file(path: str, start_line: int = 0, max_lines: int = 0) -> str:
         """Read a UTF-8 text file inside the workspace. `path` is relative to the workspace.
@@ -56,7 +57,11 @@ def file_tools(ws: Workspace) -> list[Tool]:
         if target.is_dir():
             raise ToolError(f"path is a directory: {path}")
         target.parent.mkdir(parents=True, exist_ok=True)
+        if checkpoints is not None:
+            checkpoints.before_write(ws, target)
         target.write_text(content, encoding="utf-8")
+        if checkpoints is not None:
+            checkpoints.after_write(ws, target)
         return f"wrote {len(content)} chars to {ws.display(target)}"
 
     def edit_file(path: str, old: str, new: str, replace_all: bool = False) -> str:
@@ -65,7 +70,7 @@ def file_tools(ws: Workspace) -> list[Tool]:
         `old` must occur exactly once unless `replace_all` is true; include surrounding lines
         to make it unique. Prefer this to write_file for small changes to existing files.
         """
-        return _edit(ws, path, old, new, replace_all)
+        return _edit(ws, path, old, new, replace_all, checkpoints)
 
     def list_dir(path: str = ".") -> str:
         """List entries of a directory inside the workspace. Directories end with '/'."""
@@ -98,7 +103,14 @@ def file_tools(ws: Workspace) -> list[Tool]:
     ]
 
 
-def _edit(ws: Workspace, path: str, old: str, new: str, replace_all: bool) -> str:
+def _edit(
+    ws: Workspace,
+    path: str,
+    old: str,
+    new: str,
+    replace_all: bool,
+    checkpoints: Checkpoints | None,
+) -> str:
     if not old:
         raise ToolError("old must not be empty")
     target = ws.resolve(path)
@@ -112,7 +124,11 @@ def _edit(ws: Workspace, path: str, old: str, new: str, replace_all: bool) -> st
         raise ToolError(f"old text not found in {path}; read the file and copy it exactly")
     if count > 1 and not replace_all:
         raise ToolError(f"old text occurs {count} times in {path}; add context or set replace_all")
+    if checkpoints is not None:
+        checkpoints.before_write(ws, target)
     target.write_text(text.replace(old, new), encoding="utf-8")
+    if checkpoints is not None:
+        checkpoints.after_write(ws, target)
     return f"replaced {count} occurrence(s) in {ws.display(target)}"
 
 

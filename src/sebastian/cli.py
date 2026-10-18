@@ -1,4 +1,4 @@
-"""Command-line entry point: ``sebastian run``, ``demo``, ``traces`` and ``version``."""
+"""Command-line entry point: ``sebastian run``, ``demo``, ``traces``, ``undo`` and ``version``."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from sebastian import __version__
 from sebastian.agent import Sebastian
 from sebastian.approval import ApprovalGate, Approver, DenyApprover, InteractiveApprover
 from sebastian.budget import Budget
+from sebastian.checkpoint import CheckpointError, Checkpoints
 from sebastian.clock import SystemClock
 from sebastian.config import Config
 from sebastian.llm.base import LLM, RetryingLLM
@@ -61,6 +62,14 @@ def _build_parser() -> argparse.ArgumentParser:
     traces = sub.add_parser("traces", help="list recent runs from traces.jsonl")
     traces.add_argument("-n", "--limit", type=_positive_int, default=10, help="runs to show")
 
+    undo = sub.add_parser("undo", help="restore the files a run changed")
+    undo.add_argument("run_id")
+    undo.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
+    undo.add_argument("--list", action="store_true", help="only show the files the run changed")
+    undo.add_argument(
+        "--force", action="store_true", help="also restore files changed since the run"
+    )
+
     sub.add_parser("version")
     return p
 
@@ -84,6 +93,25 @@ def _print_traces(path: Path, limit: int) -> int:
         )
         print(f"{r.run_id}  {started}  {r.stop}  steps={r.steps}  tokens={r.tokens}")
     return 0
+
+
+def _undo(store: Checkpoints, args: argparse.Namespace) -> int:
+    try:
+        if args.list:
+            for rel in store.files(args.run_id):
+                print(rel)
+            return 0
+        report = store.undo(args.run_id, Workspace(args.workspace), force=args.force)
+    except CheckpointError as exc:
+        print(f"undo: {exc}", file=sys.stderr)
+        return 1
+    for rel in report.restored:
+        print(f"restored  {rel}")
+    for rel in report.deleted:
+        print(f"deleted   {rel}")
+    for rel in report.skipped:
+        print(f"skipped   {rel} (changed since the run; use --force)")
+    return 1 if report.skipped else 0
 
 
 def _demo_llm() -> ScriptedLLM:
@@ -122,10 +150,13 @@ def main(
     cfg = Config.from_env()
     if args.cmd == "traces":
         return _print_traces(cfg.home / "traces.jsonl", args.limit)
+    if args.cmd == "undo":
+        return _undo(Checkpoints(cfg.home / "checkpoints"), args)
 
     clock = SystemClock()
     ws = Workspace(args.workspace)
-    registry = ToolRegistry(file_tools(ws))
+    checkpoints = Checkpoints(cfg.home / "checkpoints") if args.cmd == "run" else None
+    registry = ToolRegistry(file_tools(ws, checkpoints))
 
     if args.cmd == "demo":
         from sebastian.approval import AllowApprover  # noqa: PLC0415
@@ -165,6 +196,7 @@ def main(
         memory=None if args.no_memory else MemoryStore(cfg.home / "memory.json"),
         tracer=JsonlTracer(cfg.home / "traces.jsonl", clock),
         clock=clock,
+        checkpoints=checkpoints,
         plan=args.plan or bool(args.plan_model),
         planner_llm=make(plan_model) if plan_model and plan_model != model else None,
         escalation_llm=(

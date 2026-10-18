@@ -54,6 +54,8 @@ Rules:
 
 - [x] **B22 `edit_file` tool.** Exact-text replace in an existing file (WRITE).
   *Done when:* tests cover unique, ambiguous, replace_all, not found, empty, oversize and jail escape.
+- [x] **B23 Undo for writes.** Checkpoint files before a run changes them; `sebastian undo <run_id>`.
+  *Done when:* tests cover restore, delete-created, skip-if-changed, `--force`, wrong workspace, corrupt manifest and tampered blob.
 - [ ] 🔒 **B21 Docstrings for `watch/`.** B7 excluded `src/sebastian/watch/` (guarded). Add docstrings there and drop its `D1` ignore in `pyproject.toml`.
   *Done when:* `ruff check .` passes with no `D1` ignore for `watch/`.
 
