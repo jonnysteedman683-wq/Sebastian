@@ -1,4 +1,4 @@
-"""Command-line entry point: ``run``, ``demo``, ``traces``, ``undo``, ``scar`` and ``version``."""
+"""Command-line entry point: run, demo, traces, undo, scar, evolve and version."""
 
 from __future__ import annotations
 
@@ -76,6 +76,15 @@ def _build_parser() -> argparse.ArgumentParser:
     scar.add_argument("--out", type=Path, default=Path("evals/scars"), help="scar directory")
     scar.add_argument("--name", help="scar name (default: from the task)")
 
+    evo = sub.add_parser("evolve", help="improve Sebastian's own repo: one backlog item, gated")
+    evo.add_argument("--repo", type=Path, default=Path.cwd(), help="Sebastian git checkout")
+    evo.add_argument("--item", help="backlog id to attempt (default: first unlocked)")
+    evo.add_argument("--base", default="HEAD", help="ref to branch from")
+    evo.add_argument("--model", help="override SEBASTIAN_MODEL")
+    evo.add_argument("--no-evals", action="store_true", help="skip the eval-regression gate")
+    evo.add_argument("--push", action="store_true", help="push an accepted branch to origin")
+    evo.add_argument("--pr", action="store_true", help="also open a PR with gh (implies --push)")
+
     sub.add_parser("version")
     return p
 
@@ -144,6 +153,36 @@ def _scar(cfg: Config, args: argparse.Namespace) -> int:
     return 0
 
 
+def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], LLM] | None) -> int:
+    from sebastian.evolve import EvolveConfig, EvolveError, evolve_once, open_pr  # noqa: PLC0415
+
+    model = args.model or cfg.model
+    if llm_factory is None:  # pragma: no cover - needs the SDK and a key
+        from sebastian.llm.anthropic import AnthropicLLM  # noqa: PLC0415
+
+        llm: LLM = RetryingLLM(AnthropicLLM(model))
+    else:
+        llm = llm_factory(model)
+    config = EvolveConfig(
+        base=args.base, item_id=args.item, push=args.push or args.pr, home=cfg.home
+    )
+    if args.no_evals:
+        config.eval_cmd = None
+    try:
+        report = evolve_once(
+            args.repo,
+            llm,
+            config,
+            tracer=JsonlTracer(cfg.home / "traces.jsonl", SystemClock()),
+            opener=open_pr if args.pr else None,
+        )
+    except EvolveError as exc:
+        print(f"evolve: {exc}", file=sys.stderr)
+        return 2
+    print(report.summary())
+    return 0 if report.accepted else 1
+
+
 def _demo_llm() -> ScriptedLLM:
     return ScriptedLLM(
         [
@@ -178,12 +217,14 @@ def main(
         return 0
 
     cfg = Config.from_env()
-    if args.cmd == "traces":
-        return _print_traces(cfg.home / "traces.jsonl", args.limit)
-    if args.cmd == "undo":
-        return _undo(Checkpoints(cfg.home / "checkpoints"), args)
-    if args.cmd == "scar":
-        return _scar(cfg, args)
+    tools_only: dict[str, Callable[[], int]] = {
+        "traces": lambda: _print_traces(cfg.home / "traces.jsonl", args.limit),
+        "undo": lambda: _undo(Checkpoints(cfg.home / "checkpoints"), args),
+        "scar": lambda: _scar(cfg, args),
+        "evolve": lambda: _evolve(cfg, args, llm_factory),
+    }
+    if args.cmd in tools_only:
+        return tools_only[args.cmd]()
 
     clock = SystemClock()
     ws = Workspace(args.workspace)

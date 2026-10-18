@@ -34,6 +34,7 @@ flowchart TD
 | Entry points | `sebastian` console script, `python -m sebastian` -> `cli.main`; `sebastian-watch` -> `watch.cli.main` |
 | Agent loop | `agent.py` |
 | Evals | `evals/`: harness, 5 capability + 5 injection cases; `pytest -m eval`, `python -m sebastian.evals [--live]` |
+| Self-improvement | `evolve.py` (`sebastian evolve`): backlog item -> worktree -> scoped agent -> gates (guarded paths, CI checks, eval >= baseline) -> commit/push/PR, never merge |
 | Scar tissue | `evals/scar.py`, `evals/scars/*.json`: failed runs as live-only eval cases (`sebastian scar`) |
 | Checkpoints / undo | `checkpoint.py`: per-run original file snapshots under `$SEBASTIAN_HOME/checkpoints/`, `sebastian undo` |
 | Context management | `context.py`: per-result cap + oldest-first elision of tool results (`ContextPolicy`) |
