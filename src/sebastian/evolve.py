@@ -24,6 +24,7 @@ import shutil
 import site
 import subprocess
 import sys
+import sysconfig
 import tempfile
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -215,6 +216,8 @@ def python_roots() -> list[str]:
     roots = {sys.prefix, sys.base_prefix, sys.exec_prefix}
     roots.update(site.getsitepackages())
     roots.add(site.getusersitepackages())
+    roots.add(sysconfig.get_path("scripts"))  # console scripts: pytest, ruff, mypy
+    roots.add(os.path.join(site.getuserbase(), "bin"))  # pip install --user scripts
     roots.add(str(Path(os.path.realpath(sys.executable)).parent))
     return sorted(r for r in roots if r and r != "/")
 
@@ -350,6 +353,9 @@ def evolve_once(
                     cfg.agent_commands,
                     timeout_seconds=CHECK_TIMEOUT,
                     env=(("PYTHONPATH", "src"),),
+                    # Same sandbox as the gates: the agent's own commands run its new code too.
+                    sandbox="bwrap" if bwrap else "none",
+                    extra_ro=tuple(python_roots()) if bwrap else (),
                 ),
             )
         )

@@ -166,6 +166,7 @@ class CommandPolicy:
     env_passthrough: frozenset[str] = frozenset({"PATH", "LANG", "LC_ALL"})
     sandbox: str = "none"  # "none" | "bwrap" (Linux namespaces, no network, workspace-only)
     env: tuple[tuple[str, str], ...] = ()  # fixed extra variables, e.g. (("PYTHONPATH", "src"),)
+    extra_ro: tuple[str, ...] = ()  # extra read-only paths in the sandbox (e.g. a venv)
 
     def __post_init__(self) -> None:
         if self.sandbox not in SANDBOXES:
@@ -244,7 +245,7 @@ def command_tool(ws: Workspace, policy: CommandPolicy) -> Tool:
         env["HOME"] = str(ws.root)
         env.update(policy.env)
         if policy.sandbox == "bwrap":
-            argv = _sandboxed(ws, argv, env)
+            argv = _sandboxed(ws, argv, env, policy.extra_ro)
         proc = subprocess.Popen(
             argv,
             cwd=ws.root,
@@ -267,15 +268,18 @@ def command_tool(ws: Workspace, policy: CommandPolicy) -> Tool:
     return make_tool(run_command, permission=Permission.EXEC)
 
 
-def _sandboxed(ws: Workspace, argv: list[str], env: dict[str, str]) -> list[str]:
+def _sandboxed(
+    ws: Workspace, argv: list[str], env: dict[str, str], extra_ro: Sequence[str] = ()
+) -> list[str]:
     bwrap = shutil.which("bwrap")
     if bwrap is None:
         raise ToolError("sandbox 'bwrap' requested but bubblewrap is not installed")
     exe = shutil.which(argv[0], path=env.get("PATH", ""))
-    if exe is None or not exe.startswith(tuple(p + "/" for p in _RO_SYSTEM)):
+    visible = tuple(p.rstrip("/") + "/" for p in (*_RO_SYSTEM, *extra_ro))
+    if exe is None or not exe.startswith(visible):
         raise ToolError(f"{argv[0]!r} is not available inside the sandbox")
     inner = dict(env, HOME=SANDBOX_WORKDIR)
-    return bwrap_argv(bwrap, ws.root, exe, argv[1:], inner)
+    return bwrap_argv(bwrap, ws.root, exe, argv[1:], inner, extra_ro=extra_ro)
 
 
 def bwrap_usable(bwrap: str) -> bool:

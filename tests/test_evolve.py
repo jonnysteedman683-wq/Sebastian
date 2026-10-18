@@ -324,10 +324,12 @@ sys.exit(subprocess.run(cmd, cwd=cwd).returncode)
 def fake_bwrap(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     fake = tmp_path / "bin" / "bwrap"
     fake.parent.mkdir()
-    fake.write_text(FAKE_BWRAP)
-    fake.chmod(0o755)
     log = tmp_path / "bwrap.log"
-    monkeypatch.setenv("FAKE_BWRAP_LOG", str(log))
+    # Log path baked in: run_command scrubs the environment it hands to bwrap.
+    fake.write_text(
+        FAKE_BWRAP.replace('os.environ.get("FAKE_BWRAP_LOG", "/dev/null")', repr(str(log)))
+    )
+    fake.chmod(0o755)
     real = shutil.which
     monkeypatch.setattr("shutil.which", lambda n, *a, **k: str(fake) if n == "bwrap" else real(n))
     return log
@@ -387,3 +389,31 @@ def test_required_sandbox_fails_before_any_work(
     with pytest.raises(EvolveError, match="required"):
         evolve_once(repo, agent(write("1", "greet.txt", "x")), cfg(tmp_path, sandbox="bwrap"))
     assert git(repo, "worktree", "list").count("\n") == 1
+
+
+def test_agent_commands_share_the_gate_sandbox(
+    repo: Path, tmp_path: Path, fake_bwrap: Path
+) -> None:
+    run = ToolCall("9", "run_command", {"command": "pytest --version"})
+    report = evolve_once(
+        repo, agent(run, write("1", "greet.txt", "hello")), cfg(tmp_path, sandbox="bwrap")
+    )
+    assert report.accepted, report.summary()
+    wrapped = [
+        line for line in fake_bwrap.read_text().splitlines()
+        if line.startswith("--unshare-all --die-with-parent") and "pytest --version" in line
+    ]  # fmt: skip
+    assert len(wrapped) == 1
+    assert f"--ro-bind-try {sys.prefix} {sys.prefix}" in wrapped[0]
+    assert "--setenv PYTHONPATH src" in wrapped[0]
+
+
+def test_agent_commands_unsandboxed_when_gates_are(
+    repo: Path, tmp_path: Path, fake_bwrap: Path
+) -> None:
+    run = ToolCall("9", "run_command", {"command": "pytest --version"})
+    report = evolve_once(
+        repo, agent(run, write("1", "greet.txt", "hello")), cfg(tmp_path, sandbox="none")
+    )
+    assert report.accepted
+    assert not fake_bwrap.exists() or "pytest --version" not in fake_bwrap.read_text()

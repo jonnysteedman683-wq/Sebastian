@@ -51,9 +51,11 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 - **Gate sandbox:** the gates run code the agent just wrote. With `--sandbox auto` (default) or
   `bwrap` they run under bubblewrap: no network, only the worktree writable, cleared
   environment. Use `--sandbox bwrap` to refuse to run at all without it.
-- **Residual risk:** with no usable bubblewrap, `auto` runs the gates unsandboxed (the report
-  says `gate sandbox: none`); the agent's own `run_command` calls during the cycle are not yet
-  sandboxed. Prefer a disposable environment (container, CI runner or VM) either way.
+- **Agent commands:** when the gates are sandboxed, the agent's own `run_command` calls during
+  the cycle use the same sandbox, so every piece of agent-written code that runs is jailed.
+- **Residual risk:** with no usable bubblewrap, `auto` runs everything unsandboxed (the report
+  says `gate sandbox: none`). Use `--sandbox bwrap` to forbid that, and prefer a disposable
+  environment (container, CI runner or VM) either way.
 
 ## Sessions (`session.py`)
 
