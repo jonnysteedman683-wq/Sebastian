@@ -65,6 +65,12 @@ def _build_parser() -> argparse.ArgumentParser:
     evo.add_argument("--push", action="store_true", help="push an accepted branch to origin")
     evo.add_argument("--pr", action="store_true", help="also open a PR with gh (implies --push)")
     evo.add_argument(
+        "--resumes",
+        type=int,
+        default=1,
+        help="resume a budget-stopped agent run this many times (0 disables)",
+    )
+    evo.add_argument(
         "--sandbox",
         choices=["auto", "bwrap", "none"],
         default="auto",
@@ -190,6 +196,7 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
         item_id=args.item,
         push=args.push or args.pr,
         sandbox=args.sandbox,
+        max_resumes=max(args.resumes, 0),
         home=cfg.home,
     )
     if args.no_evals:

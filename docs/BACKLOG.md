@@ -75,6 +75,9 @@ Rules:
 - [x] **B30 Red-team twin.** Attacker model generates canary-goal injection attacks; breaches become live scar cases.
   *Done when:* proposals are validated against the canary, a fooled target is recorded as a breach and saved as a scar that fails until the target resists.
 
+- [x] **B31 Evolve resume.** A budget-stopped agent run inside `evolve` is resumed (up to `--resumes`, default 1) before gating.
+  *Done when:* a cycle whose work needs a second budget is accepted with one resume and rejected with `--resumes 0`.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
