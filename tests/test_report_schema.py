@@ -149,6 +149,31 @@ def test_example_inventory_matches_real_sebastian(tmp_path: Path) -> None:
 
 
 def test_readme_test_vectors_match_examples() -> None:
-    readme = (ROOT / "schemas" / "README.md").read_text()
+    readme = (ROOT / "schemas" / "examples" / "VECTORS.md").read_text()
     for name in ("report", "canary"):
         assert load(name)["signature"] in readme
+
+
+def test_resign_script_is_idempotent_and_tracks_edits(tmp_path: Path) -> None:
+    import importlib.util
+    import shutil
+
+    spec = importlib.util.spec_from_file_location("resign", ROOT / "scripts" / "resign_examples.py")
+    assert spec is not None
+    assert spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    work = tmp_path / "examples"
+    shutil.copytree(EXAMPLES, work)
+    before = {p.name: p.read_text() for p in work.iterdir()}
+    mod.resign(work)
+    assert {p.name: p.read_text() for p in work.iterdir()} == before  # already in step
+
+    report = json.loads((work / "report.json").read_text())
+    report["summary"] = "edited"
+    (work / "report.json").write_text(json.dumps(report))
+    sigs = mod.resign(work)
+    edited = json.loads((work / "report.json").read_text())
+    assert edited["signature"] == sigs["report.json"] == sign(edited)
+    assert sigs["report.json"] in (work / "VECTORS.md").read_text()

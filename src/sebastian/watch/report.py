@@ -35,11 +35,16 @@ SENSITIVE_PATHS = (
     "schemas/",
 )
 
-# Changing these could blind or subvert the watcher itself, so any change is risk +3 and escalated.
+# Changing these could blind or subvert the watcher, or rewrite the agents' own rules, so any
+# change is risk +3 and escalated. (schemas/examples/ is test data and deliberately excluded.)
 WATCH_TOOLING_PATHS = (
     "src/sebastian/watch/",
     ".github/workflows/watch.yml",
-    "schemas/",
+    ".github/workflows/guard.yml",
+    "schemas/repo_change_report.schema.json",
+    "schemas/README.md",
+    "AGENTS.md",
+    "CLAUDE.md",
 )
 
 # Fields the watcher (Grok) writes; everything else is computed here.

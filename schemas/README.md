@@ -48,16 +48,11 @@ Compare signatures in constant time. `sebastian-watch verify` uses keyed mode wh
 
 ### Test vectors
 
-The examples in `examples/` are signed with the published test key below. Use them to check your implementation produces identical bytes. **Never use this key in production.**
-
-| Key | File | Expected signature |
-|---|---|---|
-| `TEST-VECTOR-KEY-NOT-A-SECRET` | `examples/report.json` | `0965a1d08e818df5b823eb004b0f8a4880a96cc0f15ac7b3b43c8b0dcbbca594` |
-| `TEST-VECTOR-KEY-NOT-A-SECRET` | `examples/canary.json` | `e1ba60f076bd8a164ff43f95e4777ab55341be20241d96b21afcccf037c234fe` |
+Published in [`examples/VECTORS.md`](examples/VECTORS.md) (kept next to the examples so updating an example and its vector is one unguarded change).
 
 ### Changing the schema
 
 1. Open a PR. Never edit on `main`.
 2. Update both work orders in `docs/watch/` in the same PR.
-3. Regenerate and re-sign the examples; update the test vectors above.
+3. Regenerate and re-sign the examples; update `examples/VECTORS.md`.
 4. Additive, optional fields are non-breaking. Anything else is breaking: bump the schema `$id` to `..._v2.schema.json` and run both versions in parallel until both bots have switched.

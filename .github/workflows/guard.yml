@@ -1,0 +1,40 @@
+name: Guard
+
+# Fails a PR that touches guarded paths unless the owner adds the `owner-approved` label.
+# Guarded: what watches the repo, CI itself, the report contract, and the agents' own rules.
+# Read-only, no secrets, so it is safe on any PR.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check guarded paths
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          guarded='^(\.github/|src/sebastian/watch/|schemas/repo_change_report\.schema\.json$|schemas/README\.md$|docs/watch/|docs/WORK_ORDER\.md$|AGENTS\.md$|CLAUDE\.md$)'
+          hits=$(git diff --name-only "$BASE"..."$HEAD" | grep -E "$guarded" || true)
+          if [ -z "$hits" ]; then
+            echo "No guarded paths touched."
+            exit 0
+          fi
+          echo "Guarded paths touched:"
+          echo "$hits" | sed 's/^/  - /'
+          case ",$LABELS," in
+            *,owner-approved,*) echo "Label owner-approved present: allowed."; exit 0 ;;
+          esac
+          echo "::error title=Guarded paths::This PR changes the watcher, CI, the report contract or agent rules. The owner must review it and add the 'owner-approved' label."
+          exit 1
