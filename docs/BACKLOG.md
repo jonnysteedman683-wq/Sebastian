@@ -36,6 +36,9 @@ Rules:
 - [x] **B13 Context compaction.** Bound the history sent to the model: cap tool results, elide old ones oldest-first.
   *Done when:* a 12-step run over a large file never sends more than `max_history_chars`; pairing preserved.
 
+- [x] **B14 Planning phase + replan nudge.** Tool-free planning call feeding `<plan>` into the system prompt; nudge after N consecutive tool failures.
+  *Done when:* tests show the plan call has no tools, counts as a step and reaches the acting prompt; one nudge after 3 failures.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [ ] **B13 Un-redact `llm_step` token counts.** Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).

@@ -11,7 +11,7 @@ from sebastian.clock import Clock, IdSource, SystemClock, UuidSource
 from sebastian.context import ContextPolicy, cap_result, compact
 from sebastian.llm.base import LLM, LLMError
 from sebastian.memory import Episode, MemoryStore
-from sebastian.prompts import build_system_prompt
+from sebastian.prompts import PLAN_INSTRUCTION, REPLAN_NUDGE, SYSTEM_PROMPT, build_system_prompt
 from sebastian.tools.base import ToolError, ToolRegistry
 from sebastian.tools.workspace import WorkspaceError
 from sebastian.trace import NullTracer, Tracer
@@ -41,6 +41,8 @@ class Sebastian:
     ids: IdSource = field(default_factory=UuidSource)
     recall_k: int = 3
     context: ContextPolicy = field(default_factory=ContextPolicy)
+    plan: bool = False
+    replan_after_errors: int = 3
 
     def run(self, task: str) -> RunResult:
         if not task.strip():
@@ -48,13 +50,17 @@ class Sebastian:
         run_id = self.ids.new_id()
         governor = Governor(self.budget, self.clock)
         recalled = self.memory.recall(task, self.recall_k) if self.memory else []
-        system = build_system_prompt(recalled)
         messages: list[Message] = [Message(Role.USER, text=task)]
         failed: set[str] = set()
         tool_list = list(self.tools)
         self.tracer.emit(run_id, "run_start", task=task, recalled=len(recalled))
 
         result: RunResult | None = None
+        plan = ""
+        if self.plan:
+            plan, result = self._make_plan(run_id, task, governor)
+        system = build_system_prompt(recalled, plan)
+        error_streak = 0
         while result is None:
             self._warn(run_id, governor)
             reason = governor.exhausted()
@@ -87,10 +93,30 @@ class Sebastian:
                 cap_result(self._execute(run_id, call, failed), self.context.max_result_chars)
                 for call in resp.tool_calls
             )
-            messages.append(Message(Role.USER, tool_results=results))
+            error_streak = error_streak + len(results) if all(r.is_error for r in results) else 0
+            nudge = ""
+            if self.replan_after_errors and error_streak >= self.replan_after_errors:
+                nudge = REPLAN_NUDGE.format(n=error_streak)
+                self.tracer.emit(run_id, "replan_nudge", errors=error_streak)
+                error_streak = 0
+            messages.append(Message(Role.USER, text=nudge, tool_results=results))
 
         self._remember(task, result)
         return result
+
+    def _make_plan(
+        self, run_id: str, task: str, governor: Governor
+    ) -> tuple[str, RunResult | None]:
+        """Planning phase: one tool-free model call. Returns ``(plan, early_result)``."""
+        try:
+            resp = self.llm.complete(
+                SYSTEM_PROMPT + PLAN_INSTRUCTION, [Message(Role.USER, text=task)], []
+            )
+        except LLMError as exc:
+            return "", self._finish(run_id, StopReason.ERROR, "", governor, f"planning: {exc}")
+        governor.record_step(resp.usage)
+        self.tracer.emit(run_id, "plan", text=resp.text, tokens=resp.usage.total)
+        return resp.text, None
 
     def _warn(self, run_id: str, governor: Governor) -> None:
         for limit, used, maximum in governor.new_warnings():
