@@ -1,0 +1,72 @@
+{
+  "summary": "6 commit(s): feat: memory dedup by task and BM25 recall (B6, B15); feat: run READ-only tool calls concurrently within a turn (B16); feat: route planning and post-failure recovery to separate models (B17); feat: bubblewrap sandbox for run_command and live eval workflow (B10, B18); Merge pull request #13 from jonnysteedman683-wq/claude/tier3-sandbox-live-evals; Merge pull request #14 from jonnysteedman683-wq/claude/tier2-memory-parallel-routing",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "15 file(s) changed",
+      "description": "Detected automatically from code: 15 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "1b34da97c28d202a4acbd0de71c15efef4cc5457",
+          "path": ".github/workflows/ci.yml"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 8,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "a1f0dd627a74f83c06a0286b8c269a3d393b99aa",
+    "to_sha": "1b34da97c28d202a4acbd0de71c15efef4cc5457"
+  },
+  "generated_at": "2026-10-18T15:26:41Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "demo",
+      "run",
+      "traces",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "0a19f002d3094d82f3ae915e181daa021025bbd0df3d352798787a32b3ac9e2f"
+}

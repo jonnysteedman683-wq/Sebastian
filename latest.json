@@ -1,15 +1,15 @@
 {
-  "summary": "4 commit(s): feat: bound agent context with tool-result caps and oldest-first elision (B13); feat: eval harness with capability and prompt-injection suites (B8, B9); feat: planning phase and replan nudge; fix tool_result ordering for Anthropic (B14); Merge pull request #11 from jonnysteedman683-wq/claude/tier1-context-evals-planner",
+  "summary": "6 commit(s): feat: memory dedup by task and BM25 recall (B6, B15); feat: run READ-only tool calls concurrently within a turn (B16); feat: route planning and post-failure recovery to separate models (B17); feat: bubblewrap sandbox for run_command and live eval workflow (B10, B18); Merge pull request #13 from jonnysteedman683-wq/claude/tier3-sandbox-live-evals; Merge pull request #14 from jonnysteedman683-wq/claude/tier2-memory-parallel-routing",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "19 file(s) changed",
-      "description": "Detected automatically from code: 19 file(s) changed.",
+      "title": "15 file(s) changed",
+      "description": "Detected automatically from code: 15 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "a1f0dd627a74f83c06a0286b8c269a3d393b99aa",
-          "path": "CHANGELOG.md"
+          "sha": "1b34da97c28d202a4acbd0de71c15efef4cc5457",
+          "path": ".github/workflows/ci.yml"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 7,
+  "seq": 8,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "15cbe622ae8e67155a6f2612288abb885622ddd9",
-    "to_sha": "a1f0dd627a74f83c06a0286b8c269a3d393b99aa"
+    "from_sha": "a1f0dd627a74f83c06a0286b8c269a3d393b99aa",
+    "to_sha": "1b34da97c28d202a4acbd0de71c15efef4cc5457"
   },
-  "generated_at": "2026-10-18T15:19:25Z",
+  "generated_at": "2026-10-18T15:26:41Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -68,5 +68,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "29e247d87c8cef4ab22660bc0b535610b13cbe70ba0c6da67286cb2eefd5680b"
+  "signature": "0a19f002d3094d82f3ae915e181daa021025bbd0df3d352798787a32b3ac9e2f"
 }
