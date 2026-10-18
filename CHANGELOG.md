@@ -10,6 +10,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 - `.github/workflows/guard.yml`: fails PRs touching the watcher, CI, the report contract or agent rules unless labelled `owner-approved`.
 - `scripts/resign_examples.py`: re-signs schema examples and updates `schemas/examples/VECTORS.md` (test vectors moved there, so routine capability changes don't touch guarded files).
 
+### Added (B4)
+- `budget_warning` trace event (`limit`, `used`, `max`) emitted once per run for each of steps, tokens and seconds when usage reaches 80% of its limit (`Governor.new_warnings`, `WARN_FRACTION`). Stopping behaviour is unchanged.
+
 ### Added (B3)
 - `search_files` tool (READ): case-sensitive substring search across workspace text files, returning `path:line: text` (1-based), capped at 200 matches; skips binary files, files over `MAX_READ_BYTES`, `.git/` and symlinks that leave the workspace.
 

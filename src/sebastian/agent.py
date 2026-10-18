@@ -54,6 +54,7 @@ class Sebastian:
 
         result: RunResult | None = None
         while result is None:
+            self._warn(run_id, governor)
             reason = governor.exhausted()
             if reason:
                 result = self._finish(run_id, StopReason.BUDGET_EXHAUSTED, "", governor, reason)
@@ -74,6 +75,7 @@ class Sebastian:
             )
             messages.append(Message(Role.ASSISTANT, text=resp.text, tool_calls=resp.tool_calls))
             if not resp.tool_calls:
+                self._warn(run_id, governor)
                 result = self._finish(run_id, StopReason.COMPLETED, resp.text, governor)
                 break
             results = tuple(self._execute(run_id, call, failed) for call in resp.tool_calls)
@@ -81,6 +83,10 @@ class Sebastian:
 
         self._remember(task, result)
         return result
+
+    def _warn(self, run_id: str, governor: Governor) -> None:
+        for limit, used, maximum in governor.new_warnings():
+            self.tracer.emit(run_id, "budget_warning", limit=limit, used=used, max=maximum)
 
     def _execute(self, run_id: str, call: ToolCall, failed: set[str]) -> ToolResult:
         def fail(msg: str) -> ToolResult:

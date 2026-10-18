@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from sebastian.clock import Clock
 from sebastian.types import Usage
 
+WARN_FRACTION = 0.8
+
 
 @dataclass(frozen=True, slots=True)
 class Budget:
@@ -29,6 +31,7 @@ class Governor:
         self._start = clock.monotonic()
         self.steps = 0
         self.usage = Usage()
+        self._warned: set[str] = set()
 
     def record_step(self, usage: Usage) -> None:
         self.steps += 1
@@ -37,6 +40,21 @@ class Governor:
     @property
     def elapsed(self) -> float:
         return self._clock.monotonic() - self._start
+
+    def new_warnings(self) -> list[tuple[str, float, float]]:
+        """Limits that just reached ``WARN_FRACTION`` of their budget, each reported once per run.
+
+        Returns ``(limit, used, max)`` tuples, with ``limit`` one of steps, tokens, seconds.
+        """
+        b = self.budget
+        current = (
+            ("steps", self.steps, b.max_steps),
+            ("tokens", self.usage.total, b.max_tokens),
+            ("seconds", self.elapsed, b.max_seconds),
+        )
+        fresh = [c for c in current if c[0] not in self._warned and c[1] >= WARN_FRACTION * c[2]]
+        self._warned.update(name for name, _, _ in fresh)
+        return fresh
 
     def exhausted(self) -> str | None:
         """Return the reason the budget is spent, or ``None`` if the run may continue."""
