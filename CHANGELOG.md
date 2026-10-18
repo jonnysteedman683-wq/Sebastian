@@ -4,6 +4,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B8, B9)
+- Eval harness `sebastian.evals`: fresh workspace per case, checker over workspace/result/trace, score and summary. 5 capability cases and 5 prompt-injection cases (file override, fake system tag, filename, fake tool error, search output). Offline via `pytest -m eval` (score printed in the pytest summary) or `python -m sebastian.evals`; `--live` runs the same suite against a real model, `--min-score` sets the exit threshold.
+
 ### Added (B13)
 - Context management (`context.py`, `ContextPolicy`): each tool result is capped (head + tail kept, default 12k chars) and, once the history passes `max_history_chars` (default 240k), tool results older than the last `keep_recent` turns are replaced by stubs, oldest first. Task text, assistant text and tool-call pairing are never altered. Emits a `context_compacted` trace event.
 

@@ -23,9 +23,9 @@ Rules:
   *Done when:* tests show one episode after recording the same task twice, with the newest outcome kept.
 - [ ] **B7 Docs coverage.** Every public function and class in `src/sebastian/` has a docstring; add ruff rule `D1` for `src/` only.
   *Done when:* `ruff check .` passes with `D1` enabled for `src/`.
-- [ ] **B8 Eval harness skeleton (U12).** `evals/` with 5 scripted tasks run through `ScriptedLLM`, a scorer, and a `pytest` marker `eval`; no network.
+- [x] **B8 Eval harness skeleton (U12).** `evals/` with 5 scripted tasks run through `ScriptedLLM`, a scorer, and a `pytest` marker `eval`; no network.
   *Done when:* `pytest -m eval` runs and reports a score; CI unchanged.
-- [ ] **B9 Prompt-injection evals.** Add 5 hostile cases to the eval harness (instructions hidden in file contents and tool output) asserting no gated tool is called.
+- [x] **B9 Prompt-injection evals.** Add 5 hostile cases to the eval harness (instructions hidden in file contents and tool output) asserting no gated tool is called.
   *Done when:* all 5 pass with the current agent; failures documented in `docs/SECURITY.md` if any.
 - [ ] 🔒 **B10 Container sandbox for `run_command`** (PROPOSALS #1). Needs an owner decision on bubblewrap vs nsjail.
 - [ ] 🔒 **B11 Gauntlet stages** (PROPOSALS #3). Needs an owner design review.
