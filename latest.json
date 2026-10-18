@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): feat: save run conversations and add sebastian resume (B28); Merge pull request #19 from jonnysteedman683-wq/claude/resume",
+  "summary": "3 commit(s): feat: run evolve gates under bubblewrap (B27); Merge remote-tracking branch 'origin/main' into claude/sandboxed-gates; Merge pull request #20 from jonnysteedman683-wq/claude/sandboxed-gates",
   "changes": [
     {
-      "category": "NEW_FEATURE",
-      "title": "New CLI command resume",
-      "description": "Detected automatically from code: New CLI command resume.",
+      "category": "ABILITY_CHANGE",
+      "title": "8 file(s) changed",
+      "description": "Detected automatically from code: 8 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "373183943062a67bc37a63dc58796bfb67b9e69c",
-          "path": "src/sebastian/cli.py"
+          "sha": "b9b8d0fd6c1ed3be21efdde224abc9f9dadb8b62",
+          "path": "CHANGELOG.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 13,
+  "seq": 14,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "d938720300a4da7b3c5adbdf59941672191eedc2",
-    "to_sha": "373183943062a67bc37a63dc58796bfb67b9e69c"
+    "from_sha": "373183943062a67bc37a63dc58796bfb67b9e69c",
+    "to_sha": "b9b8d0fd6c1ed3be21efdde224abc9f9dadb8b62"
   },
-  "generated_at": "2026-10-18T18:04:13Z",
+  "generated_at": "2026-10-18T18:21:03Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -66,14 +66,12 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [
-      "cli: resume"
-    ],
+    "added": [],
     "removed": [],
     "changed": []
   },
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "0a8f4d813769bbcafb3933a835c9e4e6b2315f9a8ce583637b3c8b571ed9802e"
+  "signature": "50e19b1ad73619c29d39e527c02201b8f7275d7508232309f8b9d0649e374038"
 }
