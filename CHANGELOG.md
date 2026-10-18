@@ -4,6 +4,9 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+### Added (B23)
+- Undo for writes (`checkpoint.py`): before `write_file`/`edit_file` first change a file in a run, its original bytes (or its absence) are saved to `$SEBASTIAN_HOME/checkpoints/<run_id>/`, and each write's result hash is recorded. `sebastian undo <run_id> -w <workspace>` restores changed files and deletes files the run created; files changed since the run are skipped unless `--force`; `--list` shows what the run changed. Blobs are hash-verified before restoring. Capability inventory updated and re-signed.
+
 ### Added (B22)
 - `edit_file` tool (WRITE, gated): replaces exact text in an existing workspace file; the text must be unique unless `replace_all` is set, and the file is untouched on any error. Saves the model rewriting whole files for small changes. Capability inventory in `schemas/examples/` updated and re-signed.
 
