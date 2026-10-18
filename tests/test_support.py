@@ -139,6 +139,23 @@ def test_interactive_approver_eof_denies(tmp_path: Path) -> None:
 # --- budget + clock -------------------------------------------------------
 
 
+def test_governor_warnings_fire_once_per_limit() -> None:
+    clock = FakeClock()
+    gov = Governor(Budget(max_steps=10, max_tokens=100, max_seconds=10), clock)
+    gov.record_step(Usage(39, 40))
+    assert gov.new_warnings() == []
+    gov.record_step(Usage(1, 0))  # 80 tokens = 80%
+    assert gov.new_warnings() == [("tokens", 80, 100)]
+    assert gov.new_warnings() == []
+    clock.advance(8)
+    for _ in range(6):
+        gov.record_step(Usage())
+    assert gov.new_warnings() == [("steps", 8, 10), ("seconds", 8.0, 10)]
+    gov.record_step(Usage(50, 50))
+    clock.advance(5)
+    assert gov.new_warnings() == []
+
+
 @pytest.mark.parametrize("kwargs", [{"max_steps": 0}, {"max_tokens": 0}, {"max_seconds": 0.0}])
 def test_budget_validation(kwargs: dict[str, float]) -> None:
     with pytest.raises(ValueError, match="positive"):

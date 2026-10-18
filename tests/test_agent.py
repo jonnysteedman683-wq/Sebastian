@@ -214,3 +214,39 @@ def test_tools_advertised_to_model(tmp_path: Path) -> None:
     agent, llm, _ = make_agent(tmp_path, [LLMResponse("ok")])
     agent.run("t")
     assert set(llm.calls[0][2]) == {"read_file", "write_file", "list_dir", "search_files"}
+
+
+def test_budget_warning_once_per_limit(tmp_path: Path) -> None:
+    clock = FakeClock()
+
+    def step(_: Sequence[Message]) -> LLMResponse:
+        clock.advance(3)
+        return LLMResponse("", (call("1", "list_dir"),), Usage(10, 10))
+
+    # 5 steps of 20 tokens and 3s: steps cross 80% at step 4, tokens (100) at step 4,
+    # time (15s) at 12s (step 4); the run then ends on the step limit.
+    agent, _, tracer = make_agent(
+        tmp_path,
+        [step] * 5,
+        budget=Budget(max_steps=5, max_tokens=100, max_seconds=15),
+        clock=clock,
+    )
+    result = agent.run("t")
+    assert result.stop_reason is StopReason.BUDGET_EXHAUSTED
+    warnings = [e for e in tracer.events if e["event"] == "budget_warning"]
+    assert sorted(w["limit"] for w in warnings) == ["seconds", "steps", "tokens"]
+    steps_warning = next(w for w in warnings if w["limit"] == "steps")
+    assert steps_warning == {
+        "run_id": result.run_id,
+        "event": "budget_warning",
+        "limit": "steps",
+        "used": 4,
+        "max": 5,
+    }
+    assert tracer.names().index("budget_warning") < tracer.names().index("run_end")
+
+
+def test_no_budget_warning_below_threshold(tmp_path: Path) -> None:
+    agent, _, tracer = make_agent(tmp_path, [LLMResponse("ok", (), Usage(1, 1))])
+    agent.run("t")
+    assert "budget_warning" not in tracer.names()
