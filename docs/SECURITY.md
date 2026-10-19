@@ -96,6 +96,16 @@ Offline, the script plays a fooled model, so the suite proves the gate contains 
 model; `python -m sebastian.evals --live` also reports whether the real model resisted outright.
 All five pass offline; live results depend on the model and are not part of CI.
 
+## Live evals in CI (`.github/workflows/live-evals.yml`, P1-07)
+
+- `ANTHROPIC_API_KEY` is set only on the "Run live evals" step. Checkout, dependency install
+  and the summary step never have it, and nothing gets it job-wide.
+- The eval process needs the key to call the model; the code it runs for checkers and
+  `run_command` does not get it (scrubbed env inside bubblewrap, P1-18). The job requires a
+  usable bubblewrap and stops before any model call without one.
+- `actions/checkout` runs with `persist-credentials: false`, so no `GITHUB_TOKEN` is left in
+  `.git/config`. Permissions stay `contents: read`.
+
 ## Gauntlet (`gauntlet.py`, B11; opt-in with `--gauntlet`)
 
 - PREDICT is tool-free. Its `<checks>` block is parsed strictly: paths must be workspace-relative, commands must start with a bare executable name, shell characters (`| ; & < > $` and backticks) are rejected, and counts and lengths are capped. Anything malformed rejects the whole block, and the run goes to HELP.

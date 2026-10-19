@@ -9,6 +9,8 @@ Rules:
 
 ## Queue
 
+- [x] 🔒 **P1-07 Scope the live-evals key** (upgrade spec; addendum 2026-10-20 pairs it with P1-18). Key on the eval step only; bubblewrap required; no persisted checkout credentials; `pipefail`.
+  *Done when:* `live-evals.yml` has no job-level `env`, the key appears only in the eval step, and the job fails before any model call without a usable bubblewrap.
 - [ ] **B1 Richer mechanical report write-ups.** In `src/sebastian/watch/runner.py::mechanical_draft`, when no capability changed, emit one change per commit (title = commit subject, evidence = that commit's SHA + first changed file) instead of a single "N file(s) changed".
   *Done when:* a test with 2 commits produces 2 changes with the right SHAs; existing tests pass. 🔒 guarded path (`src/sebastian/watch/`); needs `owner-approved`.
 - [x] **B2 `read_file` line ranges.** Add optional `start_line: int = 0` and `max_lines: int = 0` (0 = all) to `read_file` in `tools/builtin.py`.
