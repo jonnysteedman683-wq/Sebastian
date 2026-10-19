@@ -9,6 +9,8 @@ description = "Sebastian: an autonomous, sandboxed, gated tool-using agent."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Jonny" }]
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = []
 
 [project.optional-dependencies]

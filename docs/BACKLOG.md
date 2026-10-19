@@ -34,7 +34,7 @@ Rules:
   - [x] **B11c CRITIQUE.** Separate tool-less critic (`critic_for`: policy, then planner, then actor model), strict verdict parser; runs only after VERIFY passed. The `--critic-model` flag moves to B11d with the rest of the CLI wiring.
   - [ ] **B11d HELP + `needs_help` + `--gauntlet` + `--critic-model`.** *Done when:* `max_loops` exhaustion ends as `needs_help`; inventory examples re-signed.
   - [ ] **B11e Evals.** Gauntlet on/off comparison and red-team attacks aimed at the critic.
-- [ ] 🔒 **B12 Licence.** Owner decision.
+- [x] **B12 Licence.** MIT (owner decision, 19 Oct 2026).
 
 ## Proposed
 

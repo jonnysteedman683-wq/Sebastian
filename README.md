@@ -94,3 +94,7 @@ ruff check . && ruff format --check . && mypy && pytest --cov
 ```
 
 Maintenance and upgrades follow [`docs/WORK_ORDER.md`](docs/WORK_ORDER.md).
+
+## Licence
+
+MIT. See [`LICENSE`](LICENSE).
