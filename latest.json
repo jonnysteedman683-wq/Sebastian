@@ -1,15 +1,15 @@
 {
-  "summary": "1 commit(s): Create codeql.yml",
+  "summary": "2 commit(s): feat: wire the Gauntlet into runs with HELP and needs_help (B11d); Merge pull request #31 from jonnysteedman683-wq/claude/b11d-gauntlet-wiring",
   "changes": [
     {
-      "category": "QUALITY",
-      "title": "1 file(s) changed",
-      "description": "Detected automatically from code: 1 file(s) changed.",
+      "category": "ABILITY_CHANGE",
+      "title": "13 file(s) changed",
+      "description": "Detected automatically from code: 13 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "12360306d8184d1a635b7ca4fedbd86fd98e5847",
-          "path": ".github/workflows/codeql.yml"
+          "sha": "4dfc99502286876488bc1de087ca28e75c00fc55",
+          "path": "CHANGELOG.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 26,
+  "seq": 27,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "f906a1a53426517603db1ee41d1ab99fb5165a66",
-    "to_sha": "12360306d8184d1a635b7ca4fedbd86fd98e5847"
+    "from_sha": "12360306d8184d1a635b7ca4fedbd86fd98e5847",
+    "to_sha": "4dfc99502286876488bc1de087ca28e75c00fc55"
   },
-  "generated_at": "2026-10-19T07:46:24Z",
+  "generated_at": "2026-10-19T11:14:56Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -74,6 +74,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "LOW",
-  "signature": "b4005e3ee39f864c428152a1a7d77230e6840a7fecad5921913de6a0025b1154"
+  "priority": "NORMAL",
+  "signature": "beb404a09397ed22e18cd65e9acaea64200a6cabf22cf57c8017c50c5d97cc75"
 }
