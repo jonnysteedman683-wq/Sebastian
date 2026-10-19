@@ -18,7 +18,8 @@ from sebastian.evals.cases import ALL
 from sebastian.evals.harness import SuiteResult, compare, run_suite
 from sebastian.evals.scar import ScarError, load_scars
 from sebastian.gauntlet import GauntletPolicy
-from sebastian.llm.base import LLM, RetryingLLM
+from sebastian.llm import make_llm
+from sebastian.llm.base import LLM
 
 
 def main(argv: Sequence[str] | None = None, live_llm: Callable[[str], LLM] | None = None) -> int:
@@ -40,11 +41,10 @@ def main(argv: Sequence[str] | None = None, live_llm: Callable[[str], LLM] | Non
     factory: Callable[[], LLM] | None = None
     if args.live:
         model = args.model or cfg.model
-        if live_llm is None:  # pragma: no cover - needs the SDK and a key
-            from sebastian.llm.anthropic import AnthropicLLM  # noqa: PLC0415
+        if live_llm is None:  # pragma: no cover - needs a real backend
 
             def factory() -> LLM:
-                return RetryingLLM(AnthropicLLM(model))
+                return make_llm(model, cfg.backend, cfg.base_url)
         else:
 
             def factory() -> LLM:

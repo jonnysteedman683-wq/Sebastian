@@ -48,6 +48,7 @@
     ],
     "llm_backends": [
       "anthropic",
+      "openai_compat",
       "scripted"
     ],
     "default_model": "claude-sonnet-5-5"
@@ -60,5 +61,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "571490abedc0a02c863b3fd307083dc2707b786508b374ed67f5a7c1c2b25a8f"
+  "signature": "d241a45aca11dde5d9975bc3a015eb50362e3465d54c1da58cc6ccab28633fbb"
 }

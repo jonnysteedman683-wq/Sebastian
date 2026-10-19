@@ -8,6 +8,8 @@ Pure Python, zero runtime dependencies. The Anthropic backend is an optional ext
 
 ```bash
 pip install -e ".[anthropic]"
+# or run on a local / open-weight model, no extra install:
+#   SEBASTIAN_BACKEND=openai SEBASTIAN_BASE_URL=http://localhost:11434/v1 sebastian run "..." --model qwen3
 sebastian demo -w /tmp/ws            # offline check, no API key needed
 export ANTHROPIC_API_KEY=...
 sebastian run "Create notes.md summarising todo.txt" -w ./project
@@ -74,6 +76,9 @@ Full map: [`docs/SEBASTIAN_MAP.md`](docs/SEBASTIAN_MAP.md). Threat model: [`docs
 | `SEBASTIAN_PLAN_MODEL` | (main model) | Planning model; also `--plan-model` (implies `--plan`). |
 | `SEBASTIAN_ESCALATION_MODEL` | (main model) | Used for the step after repeated tool failures; also `--escalation-model`. |
 | `SEBASTIAN_CRITIC_MODEL` | (planning model) | Gauntlet critic; also `--critic-model` (implies `--gauntlet`). |
+| `SEBASTIAN_BACKEND` | `anthropic` | `openai` = any OpenAI-compatible server (OpenAI, Ollama, vLLM, LM Studio, OpenRouter...). No extra install. |
+| `SEBASTIAN_BASE_URL` | `https://api.openai.com/v1` | OpenAI-compatible endpoint. Plain `http://` only for localhost. |
+| `OPENAI_API_KEY` | (none) | Sent as a bearer token by the `openai` backend; never logged. Local servers usually need none. |
 | `SEBASTIAN_MAX_STEPS` | `25` | |
 | `SEBASTIAN_MAX_TOKENS` | `200000` | |
 | `SEBASTIAN_MAX_SECONDS` | `600` | |
