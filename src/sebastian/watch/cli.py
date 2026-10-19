@@ -76,7 +76,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 class ConfigError(Exception):
-    pass
+    """Missing or invalid watcher configuration (paths, keys, endpoints)."""
 
 
 def _key(env_name: str) -> bytes | None:
@@ -146,6 +146,7 @@ def _run(args: argparse.Namespace, git: Git, schema: dict[str, Any]) -> int:
 
 
 def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0911 - one exit per command
+    """Parse ``argv`` and run one ``sebastian-watch`` command. Returns the exit code."""
     args = _parser().parse_args(argv)
     schema_path = args.schema or args.repo / SCHEMA_PATH
     try:

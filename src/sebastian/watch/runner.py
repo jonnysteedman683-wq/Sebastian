@@ -29,11 +29,13 @@ _HIGH_RISK = ("(EXEC)", "(NETWORK)", "-> EXEC", "-> NETWORK")
 
 
 class StateError(ValueError):
-    pass
+    """The watch state file is unreadable or invalid."""
 
 
 @dataclass
 class State:
+    """Watcher state kept between runs: last reported commit, sequence number, failures."""
+
     last_reported_sha: str | None = None
     seq: int = 0
     last_run_at: str | None = None
@@ -43,6 +45,7 @@ class State:
 
     @classmethod
     def load(cls, path: Path) -> State:
+        """Read the state from ``path``; a missing file gives a fresh state."""
         if not path.exists():
             return cls()
         try:
@@ -55,12 +58,18 @@ class State:
         return state
 
     def save(self, path: Path) -> None:
+        """Write the state to ``path`` as JSON."""
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(asdict(self), indent=2) + "\n", encoding="utf-8")
 
 
 @dataclass(frozen=True)
 class Endpoints:
+    """Where a run posts: the coordinator (required) and the optional Grok drafter.
+
+    Both URLs must be https; tokens are sent only as bearer headers.
+    """
+
     coordinator_url: str
     coordinator_token: str = ""
     grok_url: str = ""
@@ -74,6 +83,8 @@ class Endpoints:
 
 @dataclass
 class RunResult:
+    """What one watcher run did: the action, the new state, the report if any, and notes."""
+
     action: Action
     state: State
     report: dict[str, Any] | None = None
@@ -195,6 +206,11 @@ def mechanical_draft(facts: Mapping[str, Any], reason: str) -> dict[str, Any]:
 def request_draft(
     post: Post, endpoints: Endpoints, facts: Mapping[str, Any], diff: str
 ) -> tuple[dict[str, Any] | None, str]:
+    """Ask the Grok draft service for a report draft from ``facts`` and ``diff``.
+
+    Returns ``(draft, "")`` on success or ``(None, reason)``; any failure means the run
+    falls back to a mechanical draft.
+    """
     if not endpoints.grok_url:
         return None, "GROK_DRAFT_URL not configured"
     headers = {"Authorization": f"Bearer {endpoints.grok_token}"} if endpoints.grok_token else {}
