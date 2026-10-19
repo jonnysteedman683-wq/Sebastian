@@ -144,6 +144,11 @@ def _add_run_options(run: argparse.ArgumentParser) -> None:
         "review; ends as needs_help if it cannot",
     )
     run.add_argument(
+        "--gauntlet-revert",
+        action="store_true",
+        help="undo a failed Gauntlet attempt's file changes before retrying (implies --gauntlet)",
+    )
+    run.add_argument(
         "--critic-model", help="model for the Gauntlet critic (implies --gauntlet; default: "
         "the planning model)",
     )  # fmt: skip
@@ -401,9 +406,9 @@ def main(
     escalation_model = args.escalation_model or cfg.escalation_model
     critic_model = args.critic_model or cfg.critic_model
     gauntlet = None
-    if args.gauntlet or args.critic_model:
+    if args.gauntlet or args.critic_model or args.gauntlet_revert:
         critic = make(critic_model) if critic_model and critic_model != model else None
-        gauntlet = GauntletPolicy(critic_llm=critic)
+        gauntlet = GauntletPolicy(critic_llm=critic, revert_on_loop=args.gauntlet_revert)
 
     agent = Sebastian(
         llm=llm,

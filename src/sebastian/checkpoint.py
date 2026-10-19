@@ -103,6 +103,31 @@ class Checkpoints:
             entry.after = _sha(target.read_bytes()) if target.is_file() else None
             self._save()
 
+    def rewind(self) -> UndoReport:
+        """Restore every file the current run changed to its state before the run (B33).
+
+        Used between Gauntlet attempts, so it always restores (the run owns these files) and
+        then records the restored state as the run's latest, so a later ``undo`` stays exact.
+        Files changed some other way (for example by ``run_command``) are not tracked here.
+        """
+        report = UndoReport()
+        if self._run is None or self._workspace is None:
+            return report
+        for rel, entry in sorted(self._entries.items()):
+            target = self._workspace / rel
+            if entry.before is None:
+                target.unlink(missing_ok=True)
+                report.deleted.append(rel)
+            else:
+                data = (self._dir(self._run) / "blobs" / entry.before).read_bytes()
+                if _sha(data) != entry.before:
+                    raise CheckpointError(f"checkpoint blob for {rel} is corrupt")
+                _atomic_write(target, data)
+                report.restored.append(rel)
+            entry.after = entry.before
+        self._save()
+        return report
+
     # --- inspection and undo -----------------------------------------------------------
 
     def files(self, run_id: str) -> list[str]:
