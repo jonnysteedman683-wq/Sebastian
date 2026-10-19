@@ -141,7 +141,7 @@ def test_cli_models(
 ) -> None:
     monkeypatch.setenv("SEBASTIAN_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(sys, "stdin", io.StringIO(""))
-    good = solver(PLAIN)
+    good = solver([PLAIN[0], *PLAIN])  # the first client is the preflight check's (P2-12)
     makers = {"good-model": good, "bad-model": failing}
     args = ["models", "bad-model", "good-model", "--scars", str(tmp_path / "none")]
     assert main(args, llm_factory=lambda name: makers[name]()) == 0

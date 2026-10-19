@@ -8,6 +8,7 @@ import time
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from sebastian import __version__, history
 from sebastian.agent import Sebastian
@@ -34,6 +35,9 @@ from sebastian.tools import (
 from sebastian.tools.builtin import python_roots, resolve_command_sandbox
 from sebastian.trace import JsonlTracer, summarize_runs
 from sebastian.types import LLMResponse, RunResult, StopReason, ToolCall
+
+if TYPE_CHECKING:
+    from sebastian.evals.leaderboard import Row
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -136,6 +140,11 @@ def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser])
     mods.add_argument("--gauntlet", action="store_true", help="also run under the Gauntlet")
     mods.add_argument("--scars", type=Path, default=Path("evals/scars"), help="scar directory")
     mods.add_argument("--no-record", action="store_true", help="don't add results to history")
+    mods.add_argument(
+        "--preflight-ping",
+        action="store_true",
+        help="before running, send each model one tiny request (costs a few tokens)",
+    )
     mods.add_argument(
         "--unsafe-unsandboxed-checkers",
         action="store_true",
@@ -361,6 +370,8 @@ def _models(
         LeaderboardError,
         ModelSpec,
         parse_spec,
+        preflight,
+        rank,
         render,
         run_leaderboard,
     )
@@ -374,9 +385,25 @@ def _models(
             llm = make_llm(spec.model, spec.backend or cfg.backend, spec.base_url or cfg.base_url)
         return priced(llm, spec.model, prices)
 
+    done: list[Row] = []
+    now = time.time()
+
+    def finished(row: Row) -> None:  # print and record each model as soon as it is done
+        done.append(row)
+        status = f"error: {row.error}" if row.error else f"score {row.score:.0%}"
+        print(f"models: [{len(done)}/{len(specs)}] {row.spec.label}: {status}", file=sys.stderr)
+        if not args.no_record and not row.error:
+            _record_row(cfg, now, row)
+
     try:
         specs = [parse_spec(s) for s in args.specs]
         cases = [*ALL, *load_scars(args.scars)]
+        problems = preflight(specs, factory, ping=args.preflight_ping)
+        if problems:
+            print("models: preflight failed; nothing was run:", file=sys.stderr)
+            for line in problems:
+                print(f"  {line}", file=sys.stderr)
+            return 2
         if args.unsafe_unsandboxed_checkers:
             print(UNSAFE_WARNING, file=sys.stderr)
         rows = run_leaderboard(
@@ -385,27 +412,33 @@ def _models(
             cases,
             gauntlet=args.gauntlet,
             unsafe_checkers=args.unsafe_unsandboxed_checkers,
+            on_row=finished,
         )
     except (LeaderboardError, ScarError) as exc:
         print(f"models: {exc}", file=sys.stderr)
         return 2
+    except KeyboardInterrupt:
+        print(render(rank(done)))
+        print(f"models: interrupted after {len(done)}/{len(specs)} model(s)", file=sys.stderr)
+        return 130
     print(render(rows))
-    if not args.no_record:
-        now = time.time()
-        for row in rows:
-            for kind, suite in (("eval", row.plain), ("gauntlet", row.gauntlet)):
-                if suite is None:
-                    continue
-                hostile = [r for r in suite.results if r.hostile]
-                history.append(
-                    cfg.home / history.HISTORY_FILE,
-                    history.Record(
-                        now, kind, row.spec.label,
-                        sum(r.passed for r in suite.results), len(suite.results),
-                        sum(r.resisted for r in hostile), len(hostile),
-                    ),
-                )  # fmt: skip
     return 0
+
+
+def _record_row(cfg: Config, now: float, row: Row) -> None:
+    """Add one leaderboard row's plain and Gauntlet results to history."""
+    for kind, suite in (("eval", row.plain), ("gauntlet", row.gauntlet)):
+        if suite is None:
+            continue
+        hostile = [r for r in suite.results if r.hostile]
+        history.append(
+            cfg.home / history.HISTORY_FILE,
+            history.Record(
+                now, kind, row.spec.label,
+                sum(r.passed for r in suite.results), len(suite.results),
+                sum(r.resisted for r in hostile), len(hostile),
+            ),
+        )  # fmt: skip
 
 
 def _start(agent: Sebastian, args: argparse.Namespace) -> int:

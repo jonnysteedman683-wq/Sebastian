@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from sebastian.evals.harness import EvalCase, SuiteResult, run_suite
 from sebastian.gauntlet import GauntletPolicy
 from sebastian.llm.base import LLM
+from sebastian.types import Message, Role
 
 BACKENDS = ("anthropic", "openai")
 MAX_MODELS = 10
@@ -69,6 +70,7 @@ class Row:
     spec: ModelSpec
     plain: SuiteResult
     gauntlet: SuiteResult | None = None
+    error: str = ""  # the model's run crashed (P2-12): shown, ranked last, never recorded
 
     @property
     def score(self) -> float:
@@ -101,16 +103,50 @@ class Row:
         return sum(r.tokens for r in runs)
 
 
-def _key(row: Row) -> tuple[float, float, float, int]:
+def _key(row: Row) -> tuple[bool, float, float, float, int]:
     def v(x: float | None) -> float:
         return -1.0 if x is None else x
 
-    return (-row.score, -v(row.resistance), -v(row.critic), row.tokens)
+    return (bool(row.error), -row.score, -v(row.resistance), -v(row.critic), row.tokens)
 
 
 def rank(rows: Sequence[Row]) -> list[Row]:
-    """Best first: score, then resistance, then critic containment, then fewest tokens."""
+    """Best first: score, then resistance, then critic containment, then fewest tokens.
+
+    Rows whose run crashed come last whatever they scored.
+    """
     return sorted(rows, key=_key)
+
+
+def _probe(llm: object) -> None:
+    """Call ``preflight`` on a client and every wrapper it sits in (retries, pricing)."""
+    seen: set[int] = set()
+    while llm is not None and id(llm) not in seen:
+        seen.add(id(llm))
+        check = getattr(llm, "preflight", None)
+        if callable(check):
+            check()
+        llm = getattr(llm, "inner", None)
+
+
+def preflight(
+    specs: Sequence[ModelSpec], factory: Callable[[ModelSpec], LLM], ping: bool = False
+) -> list[str]:
+    """Build one client per spec and check it can work; return one reason per failing spec.
+
+    Catches a bad URL, a missing SDK or an empty key before any case runs (P2-12). With
+    ``ping``, each client also answers one tiny request, which costs a few tokens.
+    """
+    problems = []
+    for spec in specs:
+        try:
+            llm = factory(spec)
+            _probe(llm)
+            if ping:
+                llm.complete("Reply with OK.", [Message(Role.USER, text="ping")], [])
+        except Exception as exc:
+            problems.append(f"{spec.label}: {type(exc).__name__}: {exc}")
+    return problems
 
 
 def run_leaderboard(
@@ -119,11 +155,14 @@ def run_leaderboard(
     cases: Sequence[EvalCase],
     gauntlet: bool = False,
     unsafe_checkers: bool = False,
+    on_row: Callable[[Row], None] | None = None,
 ) -> list[Row]:
     """Run ``cases`` for every spec (a fresh client per case) and return the ranked rows.
 
     ``unsafe_checkers`` is passed to ``run_suite``: without it, live models get code-running
-    cases only inside bubblewrap.
+    cases only inside bubblewrap. A model whose run raises becomes an error row instead of
+    ending the whole leaderboard. ``on_row`` sees each row as soon as its model finishes, so
+    results already paid for survive a later crash or Ctrl-C (P2-12).
     """
     if not specs:
         raise LeaderboardError("give at least one model")
@@ -138,10 +177,15 @@ def run_leaderboard(
         def make(spec: ModelSpec = spec) -> LLM:
             return factory(spec)
 
-        row = Row(spec, run_suite(cases, make, unsafe_checkers=unsafe_checkers))
-        if gauntlet:
-            row.gauntlet = run_suite(cases, make, GauntletPolicy(), unsafe_checkers)
+        try:
+            row = Row(spec, run_suite(cases, make, unsafe_checkers=unsafe_checkers))
+            if gauntlet:
+                row.gauntlet = run_suite(cases, make, GauntletPolicy(), unsafe_checkers)
+        except Exception as exc:
+            row = Row(spec, SuiteResult(), error=f"{type(exc).__name__}: {exc}")
         rows.append(row)
+        if on_row is not None:
+            on_row(row)
     return rank(rows)
 
 
@@ -158,6 +202,9 @@ def render(rows: Sequence[Row]) -> str:
     )
     lines = [header, "-" * len(header)]
     for i, r in enumerate(rows, 1):
+        if r.error:
+            lines.append(f"{i:>2}  {r.spec.label:<{width}}  error: {r.error}"[:200])
+            continue
         lines.append(
             f"{i:>2}  {r.spec.label:<{width}}  {_pct(r.score):>5}  {_pct(r.resistance):>6}  "
             f"{_pct(r.gauntlet_score):>6}  {_pct(r.critic):>6}  {r.tokens:>10,}"

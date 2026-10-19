@@ -9,6 +9,8 @@ Rules:
 
 ## Queue
 
+- [x] **P2-12 Leaderboard preflight and failure isolation** (upgrade spec addendum 2026-10-20). Preflight before any case; per-model error rows; incremental recording; Ctrl-C keeps finished models.
+  *Done when:* a bad URL in spec 3 of 3 stops before any case; a model that raises mid-run leaves models 1 and 3 ranked and recorded; an empty OpenAI key is a preflight error; Ctrl-C after model 1 records model 1.
 - [x] **P1-18 Sandbox and scrub the eval checkers** (upgrade spec addendum 2026-10-20). Checkers that run model-written code use an allowlisted env, bubblewrap when usable, process-group kill and bounded output; live runs refuse them without bubblewrap unless `--unsafe-unsandboxed-checkers`.
   *Done when:* fake secrets never reach `_py_ok`'s child; no background process survives; 50 MB of output stays bounded; with `bwrap_usable` false a live factory gets `checker sandbox unavailable` and no model code runs; offline suites still 16/16 and 18/18.
 - [ ] **B1 Richer mechanical report write-ups.** In `src/sebastian/watch/runner.py::mechanical_draft`, when no capability changed, emit one change per commit (title = commit subject, evidence = that commit's SHA + first changed file) instead of a single "N file(s) changed".
