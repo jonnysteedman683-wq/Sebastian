@@ -34,7 +34,7 @@ Rules:
   - [ ] **B11c CRITIQUE.** Separate tool-less critic, strict verdict parser, `--critic-model`. *Done when:* critic FAIL loops; malformed critic output counts as FAIL.
   - [ ] **B11d HELP + `needs_help` + `--gauntlet`.** *Done when:* `max_loops` exhaustion ends as `needs_help`; inventory examples re-signed.
   - [ ] **B11e Evals.** Gauntlet on/off comparison and red-team attacks aimed at the critic.
-- [ ] 🔒 **B12 Licence.** Owner decision.
+- [x] **B12 Licence.** MIT (owner decision, 19 Oct 2026).
 
 ## Proposed
 

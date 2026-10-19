@@ -8,4 +8,4 @@ Ordered by value. Each needs owner sign-off before implementation (WORK_ORDER se
 4. **Embedding memory (U5)** with decay and dedup, replacing keyword recall.
 5. **Trace viewer / replay (U9)** over `traces.jsonl`.
 6. **Live API smoke test** in CI behind a repository secret.
-7. **Licence**: none chosen yet. Owner decision.
+7. **Licence**: done, MIT (B12).
