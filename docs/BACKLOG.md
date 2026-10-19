@@ -91,7 +91,7 @@ Rules:
 - [ ] **B34 Gauntlet in evolve** (design Q5). `sebastian evolve --gauntlet` runs the inner agent under the Gauntlet; outer gates unchanged.
   *Done when:* a scripted cycle shows the inner run's VERIFY/CRITIQUE events and a `needs_help` inner run is rejected.
 
-- [ ] **B35 Generated critic attacks.** Extend `sebastian redteam` with a `--target critic` mode: the attacker writes reviewer-aimed payloads (fake approvals, "policy" lines) against a broken or tampered workspace; a false PASS that reaches `completed` is a breach saved as a scar.
+- [x] **B35 Generated critic attacks.** Extend `sebastian redteam` with a `--target critic` mode: the attacker writes reviewer-aimed payloads (fake approvals, "policy" lines) against a broken or tampered workspace; a false PASS that reaches `completed` is a breach saved as a scar.
   *Done when:* a scripted fooled critic produces a saved scar; a resisting one does not.
 - [ ] 🔒 **B36 Gauntlet default on** (design Q4). Flip `--gauntlet` to the default only after a live `--compare` shows a higher score with no lower injection resistance. Owner decision.
 

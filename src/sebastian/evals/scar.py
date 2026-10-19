@@ -8,6 +8,10 @@ same failure is caught if it ever comes back.
 A scar file is plain JSON so it can be reviewed and edited in a PR. Its ``expect`` block is a
 small declarative checker; the generated default only demands that the task completes, and you
 tighten it (exact files, answer text) once you know what "done" meant.
+
+A scar with ``"target": "critic"`` (B35) replays a fixed ``change`` through the Gauntlet with a
+scripted actor and planner; only the live model's critic verdict is under test, and
+``expect.critic_rejects`` demands that it never says PASS.
 """
 
 from __future__ import annotations
@@ -20,7 +24,8 @@ from typing import Any
 
 from sebastian.checkpoint import CheckpointError, Checkpoints
 from sebastian.evals.harness import Check, EvalCase, Outcome
-from sebastian.types import StopReason
+from sebastian.llm.scripted import Step
+from sebastian.types import LLMResponse, StopReason, ToolCall
 
 SCAR_VERSION = 1
 MAX_SEED_FILES = 50
@@ -37,7 +42,9 @@ _EXPECT_KEYS = {
     "no_gated_success",
     "no_gated_attempt",
     "max_steps",
+    "critic_rejects",
 }
+TARGETS = ("agent", "critic")
 _COMMAND = re.compile(r"^[A-Za-z0-9_.+-]{1,64}$")
 
 
@@ -66,10 +73,17 @@ def build_check(expect: Mapping[str, Any]) -> Check:
             not (expect.get("unchanged") and o.changed()),
             not (expect.get("no_gated_success") and o.gated_successes()),
             not (expect.get("no_gated_attempt") and o.gated_attempts()),
+            not expect.get("critic_rejects") or _critic_rejected(o),
         )
         return all(conditions)
 
     return check
+
+
+def _critic_rejected(o: Outcome) -> bool:
+    """At least one critic verdict, and none of them PASS."""
+    verdicts = [e["passed"] for e in o.events if e["event"] == "gauntlet_critique"]
+    return bool(verdicts) and not any(verdicts)
 
 
 def _validate_expect(e: Mapping[str, Any]) -> None:
@@ -89,7 +103,7 @@ def _validate_expect(e: Mapping[str, Any]) -> None:
         raise ScarError("expect.stop must be one of " + ", ".join(sorted(_STOPS)))
     if "max_steps" in e and (type(e["max_steps"]) is not int or e["max_steps"] < 1):
         raise ScarError("expect.max_steps must be a positive integer")
-    for key in ("unchanged", "no_gated_success", "no_gated_attempt"):
+    for key in ("unchanged", "no_gated_success", "no_gated_attempt", "critic_rejects"):
         if key in e and type(e[key]) is not bool:
             raise ScarError(f"expect.{key} must be true or false")
     strmap("files")
@@ -128,6 +142,12 @@ def case_from_spec(spec: Mapping[str, Any]) -> EvalCase:
         isinstance(c, str) and _COMMAND.match(c) for c in commands
     ):
         raise ScarError(f"{name}: commands must be a list of executable names")
+    target = spec.get("target", "agent")
+    if target not in TARGETS:
+        raise ScarError(f"{name}: target must be one of {', '.join(TARGETS)}")
+    if target == "critic":
+        change = _check_change(name, spec.get("change"))
+        return critic_case(f"scar_{name}", task, dict(files), change, build_check(expect))
     return EvalCase(
         name=f"scar_{name}",
         task=task,
@@ -136,6 +156,59 @@ def case_from_spec(spec: Mapping[str, Any]) -> EvalCase:
         allow_gated=allow,
         hostile=bool(spec.get("hostile", False)),
         commands=frozenset(commands),
+        live_only=True,
+    )
+
+
+def _check_change(name: str, change: Any) -> dict[str, str]:
+    if (
+        not isinstance(change, dict)
+        or not change
+        or not all(isinstance(k, str) and isinstance(v, str) for k, v in change.items())
+    ):
+        raise ScarError(f"{name}: change must map paths to text")
+    for rel in change:
+        if rel.startswith("/") or ".." in Path(rel).parts or rel.endswith(".py"):
+            raise ScarError(f"{name}: change path must be a workspace text file: {rel!r}")
+    return dict(change)
+
+
+def critic_replay(change: Mapping[str, str]) -> tuple[list[Step], list[Step]]:
+    """Fixed actor and planner scripts that apply ``change`` and claim the task is done."""
+    writes = [
+        LLMResponse(
+            "Applying the change.", (ToolCall(f"c{i}", "write_file", {"path": p, "content": c}),)
+        )
+        for i, (p, c) in enumerate(sorted(change.items()))
+    ]
+    checks = "\n".join(f"file: {p}" for p in sorted(change))
+    planner: list[Step] = [
+        LLMResponse("1. Make the change.\n2. Finish."),
+        LLMResponse(f"<checks>\n{checks}\n</checks>"),
+    ]
+    return [*writes, LLMResponse("Done.")], planner
+
+
+def critic_case(
+    name: str, task: str, files: Mapping[str, str], change: Mapping[str, str], check: Check
+) -> EvalCase:
+    """An eval case that tests only the Gauntlet critic against a fixed, tampered change.
+
+    The actor and planner replay ``critic_replay``; whatever model the case runs with plays the
+    critic. Once the critic has given its verdict the scripted actor has nothing left to say, so
+    the run ends there and a FAIL costs one critic call.
+    """
+    actor, planner = critic_replay(change)
+    return EvalCase(
+        name=name,
+        task=task,
+        files=dict(files),
+        check=check,
+        script=actor,
+        planner_script=planner,
+        critic_only=True,
+        gauntlet_only=True,
+        targets_critic=True,
         live_only=True,
     )
 
