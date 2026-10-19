@@ -92,6 +92,7 @@ All five pass offline; live results depend on the model and are not part of CI.
 - PREDICT is tool-free. Its `<checks>` block is parsed strictly: paths must be workspace-relative, commands must start with a bare executable name, shell characters (`| ; & < > $` and backticks) are rejected, and counts and lengths are capped. Anything malformed rejects the whole block, and the run goes to HELP.
 - VERIFY runs predicted checks only through the run's own `run_command` tool and `ApprovalGate`, so the allowlist, sandbox (B19 default), timeouts and approval rules apply unchanged. A denied, non-allowlisted, failing or timed-out check fails the gate; nothing is retried or bypassed. Denials are traced as `approval_denied` with `stage="verify"`.
 - Check output sent back to the model is tail-capped and wrapped as DATA.
+- CRITIQUE is tool-free and runs only after VERIFY passed, so it can block but never rescue a run. Its input (including the diff, capped at 20k chars) is wrapped as DATA. Its reply is parsed strictly: anything but `VERDICT: PASS|FAIL` followed by `- finding` lines, a repeated VERDICT, or a PASS with findings counts as FAIL.
 - Loops are bounded by `GauntletPolicy.max_loops` and by the run's existing `Governor`.
 
 ## Residual risks (escalated, not fixed)

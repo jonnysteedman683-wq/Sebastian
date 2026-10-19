@@ -3,6 +3,7 @@
 All notable changes follow [Keep a Changelog](https://keepachangelog.com) and SemVer.
 
 ## [Unreleased]
+- feat: Gauntlet CRITIQUE stage (B11c): `critique()` runs a tool-free critic over task, plan, prediction, diff and check results, all marked as data. `parse_verdict` is strict (anything malformed, or a PASS with findings, counts as FAIL), and the critic refuses to run when VERIFY failed. Not wired into runs yet.
 - feat: Gauntlet VERIFY stage (B11b): `verify()` runs predicted checks through `run_command` and the approval gate. Any non-zero exit, error or denial fails the gate, and `findings()` builds the loop-back turn with tail-capped output marked as data. Not wired into runs yet.
 - feat: `sebastian.gauntlet` stage machine and PREDICT stage (B11a): bounded loop/replan/help transitions, strict `<checks>` parsing (workspace-relative paths, bare executables, no shell characters, Python changes need a check). Not wired into runs yet.
 - docs: B11 Gauntlet design doc for owner review (`docs/design/B11-gauntlet.md`).
