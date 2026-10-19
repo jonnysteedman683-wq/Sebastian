@@ -9,6 +9,8 @@ Rules:
 
 ## Queue
 
+- [x] **P1-19 Per-endpoint API credentials** (upgrade spec addendum 2026-10-20; with P1-17's no-redirect bullet). `OPENAI_API_KEY` only to `api.openai.com`; other hosts need `#ENV_NAME` / `SEBASTIAN_API_KEY_ENV`; credential variables refused; redirects refused.
+  *Done when:* a recording transport shows the OpenAI key only on `api.openai.com`, none on a third-party or localhost host unless named, and `#ANTHROPIC_API_KEY` is a `LeaderboardError`.
 - [ ] **B1 Richer mechanical report write-ups.** In `src/sebastian/watch/runner.py::mechanical_draft`, when no capability changed, emit one change per commit (title = commit subject, evidence = that commit's SHA + first changed file) instead of a single "N file(s) changed".
   *Done when:* a test with 2 commits produces 2 changes with the right SHAs; existing tests pass. 🔒 guarded path (`src/sebastian/watch/`); needs `owner-approved`.
 - [x] **B2 `read_file` line ranges.** Add optional `start_line: int = 0` and `max_lines: int = 0` (0 = all) to `read_file` in `tools/builtin.py`.

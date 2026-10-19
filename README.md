@@ -84,7 +84,8 @@ cost in `sebastian traces` and the dashboard.
 | `SEBASTIAN_CRITIC_MODEL` | (planning model) | Gauntlet critic; also `--critic-model` (implies `--gauntlet`). |
 | `SEBASTIAN_BACKEND` | `anthropic` | `openai` = any OpenAI-compatible server (OpenAI, Ollama, vLLM, LM Studio, OpenRouter...). No extra install. |
 | `SEBASTIAN_BASE_URL` | `https://api.openai.com/v1` | OpenAI-compatible endpoint. Plain `http://` only for localhost. |
-| `OPENAI_API_KEY` | (none) | Sent as a bearer token by the `openai` backend; never logged. Local servers usually need none. |
+| `OPENAI_API_KEY` | (none) | Sent as a bearer token **only to `api.openai.com`**; never logged. |
+| `SEBASTIAN_API_KEY_ENV` | (none) | Name of the variable holding the key for any other `openai`-backend host (e.g. `OPENROUTER_API_KEY`). Unset = no key is sent there. `ANTHROPIC_API_KEY`, `GH_*` and `GITHUB_*` are refused. In `sebastian models`, use a `#ENV_NAME` suffix per spec instead. |
 | `SEBASTIAN_MAX_STEPS` | `25` | |
 | `SEBASTIAN_MAX_COST` | `0` (off) | USD per run; also `--max-cost`. Needs a price for every model in use. |
 | `SEBASTIAN_MAX_TOKENS` | `200000` | |
