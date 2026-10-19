@@ -1,15 +1,15 @@
 {
-  "summary": "3 commit(s): docs: MIT licence (B12); Merge branch 'main' into claude/b12-mit-licence; Merge pull request #29 from jonnysteedman683-wq/claude/b12-mit-licence",
+  "summary": "1 commit(s): Create codeql.yml",
   "changes": [
     {
-      "category": "ABILITY_CHANGE",
-      "title": "6 file(s) changed",
-      "description": "Detected automatically from code: 6 file(s) changed.",
+      "category": "QUALITY",
+      "title": "1 file(s) changed",
+      "description": "Detected automatically from code: 1 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "f906a1a53426517603db1ee41d1ab99fb5165a66",
-          "path": "CHANGELOG.md"
+          "sha": "12360306d8184d1a635b7ca4fedbd86fd98e5847",
+          "path": ".github/workflows/codeql.yml"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 25,
+  "seq": 26,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "9fb149f65783be5d418cc25b23ddb715911271ec",
-    "to_sha": "f906a1a53426517603db1ee41d1ab99fb5165a66"
+    "from_sha": "f906a1a53426517603db1ee41d1ab99fb5165a66",
+    "to_sha": "12360306d8184d1a635b7ca4fedbd86fd98e5847"
   },
-  "generated_at": "2026-10-19T07:39:48Z",
+  "generated_at": "2026-10-19T07:46:24Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -74,6 +74,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "NORMAL",
-  "signature": "c92e9116f3c60b9d9e39a7ff62bbe40cbf0d494a5bdad8aa914cbc2783d8fc55"
+  "priority": "LOW",
+  "signature": "b4005e3ee39f864c428152a1a7d77230e6840a7fecad5921913de6a0025b1154"
 }
