@@ -1,14 +1,14 @@
 {
-  "summary": "2 commit(s): feat: optionally revert a failed Gauntlet attempt before retrying (B33); Merge pull request #34 from jonnysteedman683-wq/claude/b33-gauntlet-revert",
+  "summary": "2 commit(s): feat: run evolve's inner agent under the Gauntlet (B34); Merge pull request #35 from jonnysteedman683-wq/claude/b34-evolve-gauntlet",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "9 file(s) changed",
-      "description": "Detected automatically from code: 9 file(s) changed.",
+      "title": "8 file(s) changed",
+      "description": "Detected automatically from code: 8 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "ada165fd2f28b17492590e0d0aaebe410241ba94",
+          "sha": "380c41c95403a6b993ac17ba619c7a02876e5df9",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 30,
+  "seq": 31,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "adb46244fc942dd58fbbf7b9b057f100fc09a420",
-    "to_sha": "ada165fd2f28b17492590e0d0aaebe410241ba94"
+    "from_sha": "ada165fd2f28b17492590e0d0aaebe410241ba94",
+    "to_sha": "380c41c95403a6b993ac17ba619c7a02876e5df9"
   },
-  "generated_at": "2026-10-19T12:29:51Z",
+  "generated_at": "2026-10-19T12:38:41Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -75,5 +75,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "002e30f3947d7d29c6035a54344261dede434d652be1d963a1a56366627b51df"
+  "signature": "8cd5eb091311e180866c59b58cb6d165a81144177f30e4f02bf1270467b70fea"
 }
