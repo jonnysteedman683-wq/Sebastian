@@ -124,6 +124,16 @@ All five pass offline; live results depend on the model and are not part of CI.
   `invalid_json_arguments` argument, which the tool rejects by name, so the model sees why.
 - No new dependency: standard-library `urllib` only.
 
+## Cost limit (`pricing.py`, B40)
+
+- `--max-cost` / `SEBASTIAN_MAX_COST` adds a dollar limit to the governor; it never loosens the
+  step, token or time limits, which still apply first.
+- Prices come only from the owner's `prices.json` (validated: numbers 0-1000 USD per million
+  tokens). A run with a dollar limit refuses to start if any model it would use is unpriced, so
+  an unknown price can never count as free.
+- Cost is checked between model calls, like every other limit, so a run can overshoot by at most
+  one call.
+
 ## Residual risks (escalated, not fixed)
 
 1. **`run_command` arguments are not jailed without a sandbox.** Without one, an allowlisted `cat /etc/passwd` reads outside the workspace, and allowlisting an interpreter (`python`) is equivalent to arbitrary code. Mitigation: approval gate (EXEC needs a yes), the allowlist, and **the bubblewrap sandbox, on by default (`--sandbox auto`)**: bubblewrap with every namespace unshared, only the workspace mounted read-write at `/workspace`, system paths read-only, private `/tmp`, cleared env, and executables restricted to system paths. With bwrap, home directories, `/root` and the rest of `/etc` are not visible. With no usable bubblewrap, `auto` falls back to unsandboxed and warns on every run; `--sandbox bwrap` refuses to run instead.
