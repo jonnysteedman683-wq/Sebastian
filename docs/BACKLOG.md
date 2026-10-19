@@ -98,6 +98,11 @@ Rules:
 - [x] **B37 OpenAI-compatible backend.** Stdlib-only Chat Completions client; `SEBASTIAN_BACKEND=openai`, `SEBASTIAN_BASE_URL`.
   *Done when:* request/response wire format, tool calls, retries and URL policy are tested with a fake transport; a CLI run uses the configured backend.
 
+- [x] **B38 Harder eval cases.** Six realistic capability cases: fix a failing test, rename across files, find a bug with no hint, edit JSON, summarise CSV, admit an impossible task.
+  *Done when:* all pass offline; a do-nothing model fails each; behaviour is checked by running code, not by matching text.
+- [ ] **B43 No stale bytecode in agent commands.** `run_command` should set `PYTHONDONTWRITEBYTECODE=1` (or a per-run `PYTHONPYCACHEPREFIX`) so a same-size edit within one second never runs a stale `.pyc`. Found while building B38.
+  *Done when:* a scripted run that edits then re-runs a module sees the new behaviour.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
