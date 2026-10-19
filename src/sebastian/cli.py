@@ -160,8 +160,14 @@ def _add_run_options(run: argparse.ArgumentParser) -> None:
         "--sandbox",
         choices=["auto", "bwrap", "none"],
         default="auto",
-        help="isolate run_command (no network, workspace-only): auto uses bubblewrap when it "
-        "works, bwrap requires it, none disables it",
+        help="isolate run_command (no network, workspace-only): auto and bwrap require "
+        "bubblewrap and refuse to run without it; none runs on the host (network cut off "
+        "with unshare when possible)",
+    )
+    run.add_argument(
+        "--allow-network",
+        action="store_true",
+        help="with --sandbox none: let commands use the network when unshare can't cut it off",
     )
     run.add_argument("--plan-model", help="model for the planning phase (implies --plan)")
     run.add_argument("--escalation-model", help="model for the step after repeated tool failures")
@@ -447,9 +453,10 @@ def main(
         agent = Sebastian(llm=_demo_llm(), tools=registry, gate=ApprovalGate(AllowApprover()))
         return _print_result(agent.run("Write hello.txt containing 'hello' and verify it."))
 
+    run_info: dict[str, str] = {}
     if args.allow_cmd:
         try:
-            sandbox, note = resolve_command_sandbox(args.sandbox)
+            sandbox, note = resolve_command_sandbox(args.sandbox, allow_network=args.allow_network)
         except ToolError as exc:
             print(f"sebastian: {exc}", file=sys.stderr)
             return 2
@@ -459,6 +466,10 @@ def main(
         registry.register(
             command_tool(ws, CommandPolicy.of(args.allow_cmd, sandbox=sandbox, extra_ro=extra))
         )
+        run_info = {
+            "sandbox": "bwrap" if sandbox == "bwrap" else "none",
+            "network": "host" if sandbox == "none" else "isolated",
+        }
 
     approver: Approver
     if args.unattended or not sys.stdin.isatty():
@@ -494,6 +505,7 @@ def main(
             make(escalation_model) if escalation_model and escalation_model != model else None
         ),
         gauntlet=gauntlet,
+        run_info=run_info,
     )
     return _start(agent, args)
 

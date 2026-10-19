@@ -166,7 +166,9 @@ class CommandPolicy:
     max_memory_bytes: int = 1_073_741_824  # 1 GiB address space
     max_cpu_seconds: int = 60
     env_passthrough: frozenset[str] = frozenset({"PATH", "LANG", "LC_ALL"})
-    sandbox: str = "none"  # "none" | "bwrap" (Linux namespaces, no network, workspace-only)
+    # "bwrap": Linux namespaces, no network, workspace-only. "unshare": no sandbox, but no
+    # network either (user + net namespace). "none": host process with network.
+    sandbox: str = "none"
     env: tuple[tuple[str, str], ...] = ()  # fixed extra variables, e.g. (("PYTHONPATH", "src"),)
     extra_ro: tuple[str, ...] = ()  # extra read-only paths in the sandbox (e.g. a venv)
 
@@ -180,7 +182,7 @@ class CommandPolicy:
         return cls(allowed=frozenset(allowed), **kwargs)  # type: ignore[arg-type]
 
 
-SANDBOXES = frozenset({"none", "bwrap"})
+SANDBOXES = frozenset({"none", "unshare", "bwrap"})
 SANDBOX_WORKDIR = "/workspace"
 # Read-only system paths visible inside the bwrap sandbox. Nothing else from the host is
 # mounted: no /home, no /root, no /etc beyond what the dynamic loader needs.
@@ -248,6 +250,8 @@ def command_tool(ws: Workspace, policy: CommandPolicy) -> Tool:
         env.update(policy.env)
         if policy.sandbox == "bwrap":
             argv = _sandboxed(ws, argv, env, policy.extra_ro)
+        elif policy.sandbox == "unshare":
+            argv = _netless(argv)
         proc = subprocess.Popen(
             argv,
             cwd=ws.root,
@@ -284,6 +288,25 @@ def _sandboxed(
     return bwrap_argv(bwrap, ws.root, exe, argv[1:], inner, extra_ro=extra_ro)
 
 
+UNSHARE_NET = ("--user", "--map-root-user", "--net")
+
+
+def _netless(argv: list[str]) -> list[str]:
+    unshare = shutil.which("unshare")
+    if unshare is None:
+        raise ToolError("network isolation needs util-linux 'unshare', which is not installed")
+    return [unshare, *UNSHARE_NET, "--", *argv]
+
+
+def unshare_usable(unshare: str) -> bool:
+    """True if ``unshare`` can create an unprivileged user + network namespace here."""
+    probe = [unshare, *UNSHARE_NET, "--", "/bin/true"]
+    try:
+        return subprocess.run(probe, check=False, capture_output=True, timeout=10).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
 def bwrap_usable(bwrap: str) -> bool:
     """True if ``bwrap`` can create an unprivileged sandbox here (namespaces may be blocked)."""
     probe = [bwrap, "--unshare-all", "--ro-bind", "/", "/", "--", "/bin/true"]
@@ -304,22 +327,46 @@ def python_roots() -> list[str]:
     return sorted(r for r in roots if r and r != "/")
 
 
-def resolve_command_sandbox(mode: str) -> tuple[str, str]:
-    """Turn ``auto | bwrap | none`` into the sandbox ``run_command`` will use.
+def resolve_command_sandbox(mode: str, *, allow_network: bool = False) -> tuple[str, str]:
+    """Turn ``auto | bwrap | none`` into the sandbox ``run_command`` will use. Fails closed.
 
-    Returns ``(sandbox, note)``: ``auto`` picks ``bwrap`` when it works here and otherwise
-    falls back to ``none`` with a warning note; ``bwrap`` raises if it is unusable.
+    Returns ``(sandbox, note)``; ``note`` is a warning to print on every run.
+
+    - ``auto`` and ``bwrap`` use bubblewrap and raise ``ToolError`` when it is missing or
+      blocked: commands never run unsandboxed unless the user asked for ``none``.
+    - ``none`` runs on the host but still without network (``unshare``) when it can; if it
+      cannot, it raises unless ``allow_network`` accepts a networked host process.
+
+    ``allow_network`` never loosens bubblewrap, which always unshares the network.
     """
     if mode not in {"auto", "bwrap", "none"}:
         raise ValueError(f"unknown sandbox mode {mode!r}")
     if mode == "none":
-        return "none", ""
+        return _resolve_unsandboxed(allow_network)
     exe = shutil.which("bwrap")
     if exe is not None and bwrap_usable(exe):
         return "bwrap", ""
     if mode == "bwrap":
         raise ToolError("sandbox 'bwrap' required but bubblewrap is missing or blocked here")
-    return "none", (
-        "warning: run_command is NOT sandboxed (bubblewrap missing or blocked); "
-        "install bubblewrap or pass --sandbox none to silence this"
+    raise ToolError(
+        "bubblewrap is missing or blocked here, so run_command will not run (--sandbox auto "
+        "fails closed); install bubblewrap, or pass --sandbox none to run commands on the host"
+    )
+
+
+def _resolve_unsandboxed(allow_network: bool) -> tuple[str, str]:
+    if allow_network:
+        return "none", (
+            "warning: run_command is NOT sandboxed and has network access "
+            "(--sandbox none --allow-network)"
+        )
+    exe = shutil.which("unshare")
+    if exe is not None and unshare_usable(exe):
+        return "unshare", (
+            "warning: run_command is NOT sandboxed (--sandbox none); "
+            "network is cut off with unshare"
+        )
+    raise ToolError(
+        "--sandbox none: unshare cannot isolate the network here, so commands would have "
+        "network access; pass --allow-network to accept that"
     )
