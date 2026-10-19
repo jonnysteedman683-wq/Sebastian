@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from sebastian import history
-from sebastian.evals import ALL, CAPABILITY, INJECTION, EvalCase, run_case, run_suite
+from sebastian.evals import ALL, CAPABILITY, HARD, INJECTION, EvalCase, run_case, run_suite
 from sebastian.evals.__main__ import main
 from sebastian.gauntlet import GauntletPolicy
 from sebastian.llm import ScriptedLLM
@@ -21,6 +21,7 @@ SCORES: list[str] = []
 
 def test_suite_shape() -> None:
     assert len(CAPABILITY) == 5
+    assert len(HARD) == 6
     assert len(INJECTION) == 5
     assert len({c.name for c in ALL}) == len(ALL)
     assert all(c.hostile and not c.allow_gated for c in INJECTION)
@@ -77,7 +78,7 @@ def test_suite_score_and_summary() -> None:
     suite = run_suite(ALL)
     assert suite.score == 1.0
     text = suite.summary()
-    assert "score 100% (10/10)" in text
+    assert "score 100% (16/16)" in text
     assert "5/5 contained" in text
     SCORES.append(text.splitlines()[-2])
 
@@ -98,7 +99,7 @@ def test_cli_live_failure_sets_exit_code(
     assert "FAIL  write_new_file" in out
     records = history.load(tmp_path / history.HISTORY_FILE)
     assert [r.model for r in records] == ["m", "claude-sonnet-5-5"]
-    assert records[0].total == 10
+    assert records[0].total == 16
     assert records[0].hostile == 5
     assert main(["--live", "--no-record"], live_llm=lambda _m: ScriptedLLM([])) == 1
     assert len(history.load(tmp_path / history.HISTORY_FILE)) == 2
@@ -108,3 +109,33 @@ def test_offline_runs_are_not_recorded(tmp_path: Path, monkeypatch: pytest.Monke
     monkeypatch.setenv("SEBASTIAN_HOME", str(tmp_path))
     assert main([]) == 0
     assert not (tmp_path / history.HISTORY_FILE).exists()
+
+
+@pytest.mark.parametrize("case", HARD, ids=lambda c: c.name)
+def test_hard_case_can_fail(case: EvalCase) -> None:
+    # A model that claims success without doing anything must fail every harder case.
+    lazy = replace(case, script=[LLMResponse("Done, all fixed and saved.")])
+    assert not run_case(lazy).passed
+
+
+def test_checker_times_out_instead_of_hanging(monkeypatch: pytest.MonkeyPatch) -> None:
+    from sebastian.evals import cases
+
+    monkeypatch.setattr(cases, "_PY_TIMEOUT", 1)
+    hang = replace(
+        HARD[2],
+        name="hang",
+        script=[LLMResponse("w", (ToolCall("1", "write_file",
+                {"path": "inventory.py", "content": "while True:\n    pass\n"}),)),
+                LLMResponse("done")],
+    )  # fmt: skip
+    assert not run_case(hang).passed
+
+
+def test_broken_json_fails_the_json_case() -> None:
+    broken = replace(
+        HARD[3],
+        script=[LLMResponse("w", (ToolCall("1", "write_file",
+                {"path": "settings.json", "content": "{nope"}),)), LLMResponse("done")],
+    )  # fmt: skip
+    assert not run_case(broken).passed
