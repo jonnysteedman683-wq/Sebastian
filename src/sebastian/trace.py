@@ -85,6 +85,7 @@ class RunSummary:
     stop: str = "running"
     steps: int = 0
     tokens: int = 0
+    cost: float = 0.0  # USD, when the run's models were priced (B40)
 
 
 def summarize_runs(path: str | Path, limit: int) -> list[RunSummary]:
@@ -114,5 +115,10 @@ def summarize_runs(path: str | Path, limit: int) -> list[RunSummary]:
                 run.steps = rec["steps"]
             usage = rec.get("usage")
             if isinstance(usage, dict):
-                run.tokens = sum(v for v in usage.values() if isinstance(v, int))
+                run.tokens = sum(
+                    v for k, v in usage.items() if k in ("input", "output") and type(v) is int
+                )
+                cost = usage.get("cost")
+                if isinstance(cost, int | float) and not isinstance(cost, bool) and cost >= 0:
+                    run.cost = float(cost)
     return list(runs.values())[-limit:]

@@ -61,9 +61,15 @@ def _invoke(tool: Tool, call: ToolCall) -> tuple[str, str | None]:
         return "", f"{type(exc).__name__}: {exc}"
 
 
-def _usage(u: Usage) -> dict[str, int]:
-    """Token counts for traces. The key avoids "token", which redaction treats as a secret."""
-    return {"input": u.input_tokens, "output": u.output_tokens}
+def _usage(u: Usage) -> dict[str, int | float]:
+    """Token counts (and USD cost when priced) for traces.
+
+    The keys avoid "token", which redaction treats as a secret.
+    """
+    out: dict[str, int | float] = {"input": u.input_tokens, "output": u.output_tokens}
+    if u.cost:
+        out["cost"] = round(u.cost, 6)
+    return out
 
 
 RESUME_NOTE = (

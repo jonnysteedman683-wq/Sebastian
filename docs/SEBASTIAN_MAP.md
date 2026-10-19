@@ -37,6 +37,7 @@ flowchart TD
 | Self-improvement | `evolve.py` (`sebastian evolve`): backlog item -> worktree -> scoped agent -> gates (guarded paths, CI checks, eval >= baseline) -> commit/push/PR, never merge. `--gauntlet` (B34): the inner run goes through the Gauntlet and a `needs_help` run is rejected before the gates |
 | Gauntlet (B11) | `gauntlet.py` (stage machine, PREDICT, VERIFY, CRITIQUE, HELP report, diff); driven by `agent.py` when `gauntlet=GauntletPolicy(...)` (`run/resume --gauntlet`, `--critic-model`). Ends as `needs_help` past `max_loops` |
 | Run timeline | `timeline.py` (`sebastian show <run_id>`, B42): one run's trace as escaped HTML or text |
+| Cost (B40) | `pricing.py` (user `prices.json`, `PricedLLM` fills `Usage.cost`), `Budget.max_cost` / `--max-cost` |
 | Model leaderboard | `evals/leaderboard.py` (`sebastian models SPEC...`, B39): same suite per model, ranked by score, injection resistance, critic containment, tokens |
 | Dashboard | `history.py` (score history), `dashboard.py` (`sebastian dashboard`, static HTML) |
 | Red team | `evals/redteam.py` (`sebastian redteam`): canary-goal injection attacks, breaches saved as scars; `--target critic` (B35): tampered changes against the Gauntlet reviewer, replayed as `target: critic` scars |
