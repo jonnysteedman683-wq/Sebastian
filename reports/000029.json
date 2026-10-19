@@ -1,0 +1,79 @@
+{
+  "summary": "2 commit(s): feat: red-team attacks aimed at the Gauntlet critic (B35); Merge pull request #33 from jonnysteedman683-wq/claude/b35-critic-redteam",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "11 file(s) changed",
+      "description": "Detected automatically from code: 11 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "adb46244fc942dd58fbbf7b9b057f100fc09a420",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 29,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "5a7e3fd867b3cf3890705b1df345bca9deaf3a86",
+    "to_sha": "adb46244fc942dd58fbbf7b9b057f100fc09a420"
+  },
+  "generated_at": "2026-10-19T12:24:39Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "traces",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "20e6a06eeb7b2072a91e3f2c87d788b3d96d8bd4f92035cef56a71949cc3b749"
+}
