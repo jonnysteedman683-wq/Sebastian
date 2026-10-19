@@ -49,7 +49,7 @@ Rules:
   *Done when:* tests show the planner gets only the plan call and the escalation model only the step after a nudge.
 
 - [x] 🔒 **B18 Live eval workflow** (PROPOSALS #6). Weekly + manual live evals behind the `ANTHROPIC_API_KEY` secret.
-- [ ] **B19 Sandbox by default.** Once `--sandbox bwrap` has run cleanly on the owner's hosts, make it the default when bubblewrap is present.
+- [x] **B19 Sandbox by default.** Once `--sandbox bwrap` has run cleanly on the owner's hosts, make it the default when bubblewrap is present.
   *Done when:* default policy uses bwrap if usable, `--sandbox none` opts out; tests cover both.
 
 - [x] **B22 `edit_file` tool.** Exact-text replace in an existing file (WRITE).

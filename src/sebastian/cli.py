@@ -20,7 +20,15 @@ from sebastian.llm.base import LLM, RetryingLLM
 from sebastian.llm.scripted import ScriptedLLM
 from sebastian.memory import MemoryStore
 from sebastian.session import SessionError, SessionStore
-from sebastian.tools import CommandPolicy, ToolRegistry, Workspace, command_tool, file_tools
+from sebastian.tools import (
+    CommandPolicy,
+    ToolError,
+    ToolRegistry,
+    Workspace,
+    command_tool,
+    file_tools,
+)
+from sebastian.tools.builtin import python_roots, resolve_command_sandbox
 from sebastian.trace import JsonlTracer, summarize_runs
 from sebastian.types import LLMResponse, RunResult, StopReason, ToolCall
 
@@ -114,9 +122,10 @@ def _add_run_options(run: argparse.ArgumentParser) -> None:
     )
     run.add_argument(
         "--sandbox",
-        choices=["none", "bwrap"],
-        default="none",
-        help="isolate run_command: bwrap = Linux namespaces, no network, workspace-only",
+        choices=["auto", "bwrap", "none"],
+        default="auto",
+        help="isolate run_command (no network, workspace-only): auto uses bubblewrap when it "
+        "works, bwrap requires it, none disables it",
     )
     run.add_argument("--plan-model", help="model for the planning phase (implies --plan)")
     run.add_argument("--escalation-model", help="model for the step after repeated tool failures")
@@ -267,6 +276,16 @@ def _dashboard(cfg: Config, args: argparse.Namespace) -> int:
     return 0
 
 
+def _start(agent: Sebastian, args: argparse.Namespace) -> int:
+    if args.cmd != "resume":
+        return _print_result(agent.run(args.task))
+    try:
+        return _print_result(agent.resume(args.run_id))
+    except SessionError as exc:
+        print(f"resume: {exc}", file=sys.stderr)
+        return 1
+
+
 def _demo_llm() -> ScriptedLLM:
     return ScriptedLLM(
         [
@@ -325,7 +344,17 @@ def main(
         return _print_result(agent.run("Write hello.txt containing 'hello' and verify it."))
 
     if args.allow_cmd:
-        registry.register(command_tool(ws, CommandPolicy.of(args.allow_cmd, sandbox=args.sandbox)))
+        try:
+            sandbox, note = resolve_command_sandbox(args.sandbox)
+        except ToolError as exc:
+            print(f"sebastian: {exc}", file=sys.stderr)
+            return 2
+        if note:
+            print(note, file=sys.stderr)
+        extra = tuple(python_roots()) if sandbox == "bwrap" else ()
+        registry.register(
+            command_tool(ws, CommandPolicy.of(args.allow_cmd, sandbox=sandbox, extra_ro=extra))
+        )
 
     approver: Approver
     if args.unattended or not sys.stdin.isatty():
@@ -365,13 +394,7 @@ def main(
             make(escalation_model) if escalation_model and escalation_model != model else None
         ),
     )
-    if args.cmd == "resume":
-        try:
-            return _print_result(agent.resume(args.run_id))
-        except SessionError as exc:
-            print(f"resume: {exc}", file=sys.stderr)
-            return 1
-    return _print_result(agent.run(args.task))
+    return _start(agent, args)
 
 
 if __name__ == "__main__":  # pragma: no cover
