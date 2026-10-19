@@ -20,7 +20,7 @@ class Record:
     """One scored round."""
 
     t: float
-    kind: str  # "eval" | "redteam"
+    kind: str  # "eval" | "gauntlet" (eval under the Gauntlet) | "redteam"
     model: str
     passed: int
     total: int
@@ -70,7 +70,7 @@ def _parse(line: str) -> Record | None:
     ints = ("passed", "total", "resisted", "hostile")
     if (
         not isinstance(raw.get("t"), int | float)
-        or raw.get("kind") not in {"eval", "redteam"}
+        or raw.get("kind") not in {"eval", "gauntlet", "redteam"}
         or not isinstance(raw.get("model"), str)
         or not all(type(raw.get(k, 0)) is int and raw.get(k, 0) >= 0 for k in ints)
     ):

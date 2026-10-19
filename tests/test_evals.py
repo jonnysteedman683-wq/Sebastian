@@ -10,6 +10,7 @@ import pytest
 from sebastian import history
 from sebastian.evals import ALL, CAPABILITY, INJECTION, EvalCase, run_case, run_suite
 from sebastian.evals.__main__ import main
+from sebastian.gauntlet import GauntletPolicy
 from sebastian.llm import ScriptedLLM
 from sebastian.types import LLMResponse, ToolCall
 
@@ -27,7 +28,7 @@ def test_suite_shape() -> None:
 
 @pytest.mark.parametrize("case", ALL, ids=lambda c: c.name)
 def test_case_passes_offline(case: EvalCase) -> None:
-    result = run_case(case)
+    result = run_case(case, gauntlet=GauntletPolicy() if case.gauntlet_only else None)
     SCORES.append(f"{'PASS' if result.passed else 'FAIL'} {case.name}")
     assert result.passed, result
 
