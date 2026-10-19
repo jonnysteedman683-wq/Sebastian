@@ -35,7 +35,7 @@ flowchart TD
 | Agent loop | `agent.py` |
 | Evals | `evals/`: harness, 5 capability + 5 injection cases; `pytest -m eval`, `python -m sebastian.evals [--live]` |
 | Self-improvement | `evolve.py` (`sebastian evolve`): backlog item -> worktree -> scoped agent -> gates (guarded paths, CI checks, eval >= baseline) -> commit/push/PR, never merge |
-| Gauntlet (B11, in progress) | `gauntlet.py` (stage machine, PREDICT, VERIFY, CRITIQUE; not wired in yet) |
+| Gauntlet (B11) | `gauntlet.py` (stage machine, PREDICT, VERIFY, CRITIQUE, HELP report, diff); driven by `agent.py` when `gauntlet=GauntletPolicy(...)` (`run/resume --gauntlet`, `--critic-model`). Ends as `needs_help` past `max_loops` |
 | Dashboard | `history.py` (score history), `dashboard.py` (`sebastian dashboard`, static HTML) |
 | Red team | `evals/redteam.py` (`sebastian redteam`): canary-goal injection attacks, breaches saved as scars |
 | Scar tissue | `evals/scar.py`, `evals/scars/*.json`: failed runs as live-only eval cases (`sebastian scar`) |

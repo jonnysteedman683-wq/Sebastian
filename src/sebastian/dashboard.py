@@ -115,6 +115,8 @@ def render(s: Snapshot) -> str:
             _tile("Scars", str(len(s.scars)), f"{len(red_scars)} from the red team"),
             _tile("Runs", str(len(s.runs)),
                   f"{_pct(completed / len(done)) if done else 'n/a'} completed"),
+            _tile("Needs help", str(stops.get("needs_help", 0)),
+                  "Gauntlet runs that could not prove they were done"),
         ]
     )  # fmt: skip
     eval_chart = line_chart(

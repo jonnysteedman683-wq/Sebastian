@@ -32,7 +32,7 @@ Rules:
   - [x] **B11a Stage machine + PREDICT.** `gauntlet.py`: `GauntletPolicy`, `Stage`, `next_stage`, strict `<checks>` parser, tool-free `predict`. Not wired in.
   - [x] **B11b VERIFY.** Run predicted checks via `run_command`; loop back on failure. *Done when:* a scripted run that breaks a test loops, fixes it and passes; a denied check fails the gate.
   - [x] **B11c CRITIQUE.** Separate tool-less critic (`critic_for`: policy, then planner, then actor model), strict verdict parser; runs only after VERIFY passed. The `--critic-model` flag moves to B11d with the rest of the CLI wiring.
-  - [ ] **B11d HELP + `needs_help` + `--gauntlet` + `--critic-model`.** *Done when:* `max_loops` exhaustion ends as `needs_help`; inventory examples re-signed.
+  - [x] **B11d HELP + `needs_help` + `--gauntlet` + `--critic-model`.** *Done when:* `max_loops` exhaustion ends as `needs_help`; inventory examples re-signed.
   - [ ] **B11e Evals.** Gauntlet on/off comparison and red-team attacks aimed at the critic.
 - [x] **B12 Licence.** MIT (owner decision, 19 Oct 2026).
 
@@ -85,6 +85,11 @@ Rules:
 
 - [x] **B32 Dashboard.** Score history from live evals and red-team rounds; `sebastian dashboard` renders a static HTML page.
   *Done when:* the page shows trends, tiles, runs and scars from local files, escapes all values, and does not overflow at phone width.
+
+- [ ] **B33 Revert between Gauntlet loops** (design Q3). Optional `GauntletPolicy.revert_on_loop`: `Checkpoints.undo` before looping back so each attempt starts clean.
+  *Done when:* with the flag, a failed attempt's writes are gone before the next ACT; off by default; tests cover both.
+- [ ] **B34 Gauntlet in evolve** (design Q5). `sebastian evolve --gauntlet` runs the inner agent under the Gauntlet; outer gates unchanged.
+  *Done when:* a scripted cycle shows the inner run's VERIFY/CRITIQUE events and a `needs_help` inner run is rejected.
 
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 

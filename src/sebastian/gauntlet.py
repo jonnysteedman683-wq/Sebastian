@@ -5,9 +5,10 @@ CRITIQUE can send the run back to ACT (or to PLAN after repeated failures). The 
 by ``GauntletPolicy.max_loops``. Past that bound, or when a stage cannot produce anything usable,
 the run goes to HELP: it stops and reports, nothing more.
 
-So far this module holds the stage machine, PREDICT (B11a), VERIFY (B11b) and CRITIQUE (B11c).
-None of it is wired into the agent or the CLI yet. Every model call it makes is tool-free, and
-the caller charges each call to the run's ``Governor``. VERIFY runs the predicted checks through
+This module holds the stage machine, PREDICT (B11a), VERIFY (B11b), CRITIQUE (B11c) and the
+HELP report (B11d). ``Sebastian`` drives the stages when it is given a ``GauntletPolicy``
+(``sebastian run --gauntlet``). Every model call here is tool-free, and the agent charges each
+call to the run's ``Governor``. VERIFY runs the predicted checks through
 the same ``run_command`` tool and ``ApprovalGate`` as the agent, so the allowlist, sandbox and
 approval rules apply unchanged; a denied check fails the gate and is never retried here. The
 critic sees everything as data and runs only after VERIFY passed, so it can block a run but
@@ -16,11 +17,12 @@ never rescue one.
 
 from __future__ import annotations
 
+import difflib
 import re
 import shlex
 from dataclasses import dataclass
 from enum import StrEnum
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 from sebastian.approval import ApprovalGate
 from sebastian.llm.base import LLM
@@ -439,3 +441,69 @@ def critique(
         CRITIC_SYSTEM, critique_messages(task, plan, prediction, diff, checks), []
     )
     return CritiqueOutcome(resp, parse_verdict(resp.text))
+
+
+# --- diff for the critic and HELP (B11d) ----------------------------------------------------
+
+
+def workspace_diff(originals: dict[str, bytes | None], root: Path) -> str:
+    """Unified diff of each changed file: its bytes before the run against what is on disk now.
+
+    ``originals`` maps workspace-relative paths to the pre-run bytes (None = created by the run),
+    as returned by ``Checkpoints.originals``. Binary files are named, not diffed.
+    """
+    if not originals:
+        return "(no files changed)"
+    parts: list[str] = []
+    for rel in sorted(originals):
+        before = originals[rel]
+        path = root / rel
+        after = path.read_bytes() if path.is_file() else None
+        if before == after:
+            continue
+        try:
+            old = "" if before is None else before.decode("utf-8")
+            new = "" if after is None else after.decode("utf-8")
+        except UnicodeDecodeError:
+            parts.append(f"Binary file {rel} changed\n")
+            continue
+        parts.append(
+            "".join(
+                difflib.unified_diff(
+                    old.splitlines(keepends=True),
+                    new.splitlines(keepends=True),
+                    "/dev/null" if before is None else f"a/{rel}",
+                    "/dev/null" if after is None else f"b/{rel}",
+                )
+            )
+        )
+    return "".join(parts) or "(no files changed)"
+
+
+# --- HELP (B11d) ----------------------------------------------------------------------------
+
+MAX_HELP_FINDINGS = 4000
+
+
+def help_report(
+    stage: Stage, reason: str, loops: int, prediction: Prediction | None, findings: str = ""
+) -> str:
+    """The answer of a run that ends in HELP. It only reports; it never retries or escalates."""
+    lines = [
+        "NEEDS HELP: the Gauntlet could not prove this task is done.",
+        f"Stopped at: {stage.value}",
+        f"Reason: {reason}",
+        f"Failed rounds: {loops}",
+    ]
+    if prediction is not None:
+        lines.append("Predicted checks:")
+        lines.extend(f"  run: {c}" for c in prediction.commands)
+        lines.extend(f"  file: {f}" for f in prediction.files)
+    if findings.strip():
+        lines.append("Last findings:")
+        lines.append(findings.strip()[-MAX_HELP_FINDINGS:])
+    lines.append(
+        "Nothing was reverted or retried. Inspect the workspace, then use "
+        "`sebastian resume <run_id>` to continue or `sebastian undo <run_id>` to roll back."
+    )
+    return "\n".join(lines)

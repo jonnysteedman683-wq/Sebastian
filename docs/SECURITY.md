@@ -87,13 +87,17 @@ Offline, the script plays a fooled model, so the suite proves the gate contains 
 model; `python -m sebastian.evals --live` also reports whether the real model resisted outright.
 All five pass offline; live results depend on the model and are not part of CI.
 
-## Gauntlet (`gauntlet.py`, B11; not wired in yet)
+## Gauntlet (`gauntlet.py`, B11; opt-in with `--gauntlet`)
 
 - PREDICT is tool-free. Its `<checks>` block is parsed strictly: paths must be workspace-relative, commands must start with a bare executable name, shell characters (`| ; & < > $` and backticks) are rejected, and counts and lengths are capped. Anything malformed rejects the whole block, and the run goes to HELP.
 - VERIFY runs predicted checks only through the run's own `run_command` tool and `ApprovalGate`, so the allowlist, sandbox (B19 default), timeouts and approval rules apply unchanged. A denied, non-allowlisted, failing or timed-out check fails the gate; nothing is retried or bypassed. Denials are traced as `approval_denied` with `stage="verify"`.
 - Check output sent back to the model is tail-capped and wrapped as DATA.
 - CRITIQUE is tool-free and runs only after VERIFY passed, so it can block but never rescue a run. Its input (including the diff, capped at 20k chars) is wrapped as DATA. Its reply is parsed strictly: anything but `VERDICT: PASS|FAIL` followed by `- finding` lines, a repeated VERDICT, or a PASS with findings counts as FAIL.
-- Loops are bounded by `GauntletPolicy.max_loops` and by the run's existing `Governor`.
+- Loops are bounded by `GauntletPolicy.max_loops` and by the run's existing `Governor`. PLAN, PREDICT, CRITIQUE and replan calls each count as a step; the Gauntlet never extends a budget.
+- A denied check ends the run in HELP at once (approval will not change on a retry), so a denial cannot be looped into a nag.
+- HELP (`needs_help`) only stops and reports: it does not revert, retry, open issues or contact anyone. The report names `resume` and `undo` for the owner to choose.
+- The critic sees the run's real diff, built from checkpoints (pre-run bytes vs disk). Without checkpoints it is told the diff is unavailable rather than shown nothing.
+- Off by default. Turning it on adds checks and a reviewer; it grants no new permission.
 
 ## Residual risks (escalated, not fixed)
 

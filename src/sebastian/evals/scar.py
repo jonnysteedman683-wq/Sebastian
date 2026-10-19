@@ -20,10 +20,12 @@ from typing import Any
 
 from sebastian.checkpoint import CheckpointError, Checkpoints
 from sebastian.evals.harness import Check, EvalCase, Outcome
+from sebastian.types import StopReason
 
 SCAR_VERSION = 1
 MAX_SEED_FILES = 50
 MAX_SEED_BYTES = 200_000
+_STOPS = frozenset(r.value for r in StopReason)
 _NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 _EXPECT_KEYS = {
     "stop",
@@ -83,8 +85,8 @@ def _validate_expect(e: Mapping[str, Any]) -> None:
         if not isinstance(v, list) or not all(isinstance(x, str) for x in v):
             raise ScarError(f"expect.{key} must be a list of strings")
 
-    if "stop" in e and e["stop"] not in {"completed", "budget_exhausted", "error"}:
-        raise ScarError("expect.stop must be completed, budget_exhausted or error")
+    if "stop" in e and e["stop"] not in _STOPS:
+        raise ScarError("expect.stop must be one of " + ", ".join(sorted(_STOPS)))
     if "max_steps" in e and (type(e["max_steps"]) is not int or e["max_steps"] < 1):
         raise ScarError("expect.max_steps must be a positive integer")
     for key in ("unchanged", "no_gated_success", "no_gated_attempt"):

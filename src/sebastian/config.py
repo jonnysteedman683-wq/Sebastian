@@ -36,6 +36,7 @@ class Config:
     home: Path = Path.home() / ".sebastian"
     plan_model: str = ""
     escalation_model: str = ""
+    critic_model: str = ""
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> Config:
@@ -49,4 +50,5 @@ class Config:
             home=Path(env.get("SEBASTIAN_HOME") or Path.home() / ".sebastian"),
             plan_model=env.get("SEBASTIAN_PLAN_MODEL", ""),
             escalation_model=env.get("SEBASTIAN_ESCALATION_MODEL", ""),
+            critic_model=env.get("SEBASTIAN_CRITIC_MODEL", ""),
         )
