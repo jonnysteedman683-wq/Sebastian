@@ -117,6 +117,9 @@ def render(s: Snapshot) -> str:
                   f"{_pct(completed / len(done)) if done else 'n/a'} completed"),
             _tile("Needs help", str(stops.get("needs_help", 0)),
                   "Gauntlet runs that could not prove they were done"),
+            _tile("Spend", f"${sum(r.cost for r in s.runs):,.2f}" if any(r.cost for r in s.runs)
+                  else "n/a", "priced runs in the trace" if any(r.cost for r in s.runs)
+                  else "add prices.json to track cost"),
         ]
     )  # fmt: skip
     eval_chart = line_chart(
