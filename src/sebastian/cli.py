@@ -1,4 +1,4 @@
-"""CLI: run, resume, demo, traces, undo, scar, evolve, redteam, dashboard and version."""
+"""CLI: run, resume, demo, traces, show, undo, scar, evolve, redteam, dashboard, version."""
 
 from __future__ import annotations
 
@@ -116,6 +116,11 @@ def _build_parser() -> argparse.ArgumentParser:
     dash = sub.add_parser("dashboard", help="write an HTML page of scores, scars and runs")
     dash.add_argument("-o", "--out", type=Path, default=Path("sebastian-dashboard.html"))
     dash.add_argument("--scars", type=Path, default=Path("evals/scars"), help="scar directory")
+
+    show = sub.add_parser("show", help="one run's trace as an HTML (or text) timeline")
+    show.add_argument("run_id", help="run id, or a unique prefix of at least 6 characters")
+    show.add_argument("-o", "--out", type=Path, help="HTML file (default: sebastian-run-<id>.html)")
+    show.add_argument("--text", action="store_true", help="print a text timeline instead")
 
     sub.add_parser("version")
     return p
@@ -298,6 +303,30 @@ def _redteam(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str],
     return 1 if report.breaches else 0
 
 
+def _show(cfg: Config, args: argparse.Namespace) -> int:
+    from sebastian.timeline import (  # noqa: PLC0415
+        TimelineError,
+        build,
+        load_events,
+        render_html,
+        render_text,
+    )
+
+    try:
+        run_id, events = load_events(cfg.home / "traces.jsonl", args.run_id)
+    except TimelineError as exc:
+        print(f"show: {exc}", file=sys.stderr)
+        return 1
+    entries = build(events)
+    if args.text:
+        print(render_text(run_id, entries))
+        return 0
+    out = args.out or Path(f"sebastian-run-{run_id[:12]}.html")
+    out.write_text(render_html(run_id, entries, time.time()), encoding="utf-8")
+    print(out)
+    return 0
+
+
 def _dashboard(cfg: Config, args: argparse.Namespace) -> int:
     from sebastian.dashboard import gather, render  # noqa: PLC0415
 
@@ -372,6 +401,7 @@ def main(
         "evolve": lambda: _evolve(cfg, args, factory),
         "redteam": lambda: _redteam(cfg, args, factory),
         "dashboard": lambda: _dashboard(cfg, args),
+        "show": lambda: _show(cfg, args),
     }
     if args.cmd in tools_only:
         return tools_only[args.cmd]()

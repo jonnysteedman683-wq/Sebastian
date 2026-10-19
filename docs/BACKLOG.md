@@ -98,6 +98,9 @@ Rules:
 - [x] **B37 OpenAI-compatible backend.** Stdlib-only Chat Completions client; `SEBASTIAN_BACKEND=openai`, `SEBASTIAN_BASE_URL`.
   *Done when:* request/response wire format, tool calls, retries and URL policy are tested with a fake transport; a CLI run uses the configured backend.
 
+- [x] **B42 Run timeline.** `sebastian show <run_id> [-o file] [--text]`: one run's trace as an HTML or text timeline, including every Gauntlet stage.
+  *Done when:* every trace event kind renders, untrusted text is escaped, prefix lookup and errors are tested.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).

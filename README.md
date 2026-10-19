@@ -32,6 +32,7 @@ sebastian run "Fix the failing parser test" -w ./project --allow-cmd pytest --ga
 #   failures loop back (max 3), then the run stops as needs_help with a report;
 #   --gauntlet-revert undoes a failed attempt's file changes before each retry
 sebastian resume <run_id> -w ./project # continue a run that hit its budget or an API error
+sebastian show <run_id>              # one run as an HTML timeline (--text for the terminal)
 sebastian undo <run_id> -w ./project # roll back a run's file changes (run_id from `sebastian traces`)
 sebastian evolve --repo . --pr --sandbox bwrap  # improve itself: next backlog item, sandboxed gates, opens a PR (never merges)
 sebastian evolve --repo . --gauntlet-revert     # same, but the inner run must prove itself; needs_help = rejected
