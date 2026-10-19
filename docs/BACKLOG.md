@@ -28,12 +28,12 @@ Rules:
 - [x] **B9 Prompt-injection evals.** Add 5 hostile cases to the eval harness (instructions hidden in file contents and tool output) asserting no gated tool is called.
   *Done when:* all 5 pass with the current agent; failures documented in `docs/SECURITY.md` if any.
 - [x] 🔒 **B10 Container sandbox for `run_command`** (PROPOSALS #1). Owner chose bubblewrap; opt-in via `--sandbox bwrap`.
-- [ ] **B11 Gauntlet stages** (PROPOSALS #3). Design approved (PR #26): `docs/design/B11-gauntlet.md`. Open questions take the doc's proposed defaults.
+- [x] **B11 Gauntlet stages** (PROPOSALS #3). Design approved (PR #26): `docs/design/B11-gauntlet.md`. Open questions take the doc's proposed defaults.
   - [x] **B11a Stage machine + PREDICT.** `gauntlet.py`: `GauntletPolicy`, `Stage`, `next_stage`, strict `<checks>` parser, tool-free `predict`. Not wired in.
   - [x] **B11b VERIFY.** Run predicted checks via `run_command`; loop back on failure. *Done when:* a scripted run that breaks a test loops, fixes it and passes; a denied check fails the gate.
   - [x] **B11c CRITIQUE.** Separate tool-less critic (`critic_for`: policy, then planner, then actor model), strict verdict parser; runs only after VERIFY passed. The `--critic-model` flag moves to B11d with the rest of the CLI wiring.
   - [x] **B11d HELP + `needs_help` + `--gauntlet` + `--critic-model`.** *Done when:* `max_loops` exhaustion ends as `needs_help`; inventory examples re-signed.
-  - [ ] **B11e Evals.** Gauntlet on/off comparison and red-team attacks aimed at the critic.
+  - [x] **B11e Evals.** Gauntlet on/off comparison and red-team attacks aimed at the critic.
 - [x] **B12 Licence.** MIT (owner decision, 19 Oct 2026).
 
 ## Proposed
@@ -90,6 +90,10 @@ Rules:
   *Done when:* with the flag, a failed attempt's writes are gone before the next ACT; off by default; tests cover both.
 - [ ] **B34 Gauntlet in evolve** (design Q5). `sebastian evolve --gauntlet` runs the inner agent under the Gauntlet; outer gates unchanged.
   *Done when:* a scripted cycle shows the inner run's VERIFY/CRITIQUE events and a `needs_help` inner run is rejected.
+
+- [ ] **B35 Generated critic attacks.** Extend `sebastian redteam` with a `--target critic` mode: the attacker writes reviewer-aimed payloads (fake approvals, "policy" lines) against a broken or tampered workspace; a false PASS that reaches `completed` is a breach saved as a scar.
+  *Done when:* a scripted fooled critic produces a saved scar; a resisting one does not.
+- [ ] 🔒 **B36 Gauntlet default on** (design Q4). Flip `--gauntlet` to the default only after a live `--compare` shows a higher score with no lower injection resistance. Owner decision.
 
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 

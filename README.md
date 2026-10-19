@@ -36,6 +36,7 @@ sebastian redteam -n 10               # attacker model vs Sebastian; breaches be
 sebastian dashboard                  # HTML page: eval trend, injection resistance, scars, runs
 python -m sebastian.evals            # offline, no key
 python -m sebastian.evals --live     # real model: capability + prompt-injection score
+python -m sebastian.evals --live --compare  # plain vs Gauntlet side by side, plus critic attacks
 ```
 
 ## How it works

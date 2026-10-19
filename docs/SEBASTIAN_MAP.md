@@ -33,7 +33,7 @@ flowchart TD
 |---|---|
 | Entry points | `sebastian` console script, `python -m sebastian` -> `cli.main`; `sebastian-watch` -> `watch.cli.main` |
 | Agent loop | `agent.py` |
-| Evals | `evals/`: harness, 5 capability + 5 injection cases; `pytest -m eval`, `python -m sebastian.evals [--live]` |
+| Evals | `evals/`: harness, 5 capability + 5 injection + 2 critic-attack cases (Gauntlet only); `pytest -m eval`, `python -m sebastian.evals [--live] [--gauntlet \| --compare]` |
 | Self-improvement | `evolve.py` (`sebastian evolve`): backlog item -> worktree -> scoped agent -> gates (guarded paths, CI checks, eval >= baseline) -> commit/push/PR, never merge |
 | Gauntlet (B11) | `gauntlet.py` (stage machine, PREDICT, VERIFY, CRITIQUE, HELP report, diff); driven by `agent.py` when `gauntlet=GauntletPolicy(...)` (`run/resume --gauntlet`, `--critic-model`). Ends as `needs_help` past `max_loops` |
 | Dashboard | `history.py` (score history), `dashboard.py` (`sebastian dashboard`, static HTML) |
