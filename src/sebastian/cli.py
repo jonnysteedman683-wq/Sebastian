@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -21,6 +21,7 @@ from sebastian.llm import make_llm
 from sebastian.llm.base import LLM
 from sebastian.llm.scripted import ScriptedLLM
 from sebastian.memory import MemoryStore
+from sebastian.pricing import Price, PricingError, load_prices, priced, require_prices
 from sebastian.session import SessionError, SessionStore
 from sebastian.tools import (
     CommandPolicy,
@@ -150,6 +151,11 @@ def _add_run_options(run: argparse.ArgumentParser) -> None:
     run.add_argument("--plan-model", help="model for the planning phase (implies --plan)")
     run.add_argument("--escalation-model", help="model for the step after repeated tool failures")
     run.add_argument(
+        "--max-cost",
+        type=_non_negative_float,
+        help="stop the run at this many USD (needs prices in $SEBASTIAN_HOME/prices.json)",
+    )
+    run.add_argument(
         "--gauntlet",
         action="store_true",
         help="make the run prove it is done: plan, predict checks, verify them, then a critic "
@@ -164,6 +170,16 @@ def _add_run_options(run: argparse.ArgumentParser) -> None:
         "--critic-model", help="model for the Gauntlet critic (implies --gauntlet; default: "
         "the planning model)",
     )  # fmt: skip
+
+
+def _non_negative_float(value: str) -> float:
+    try:
+        n = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("must be a number") from exc
+    if not 0 <= n < float("inf"):
+        raise argparse.ArgumentTypeError("must be zero or more")
+    return n
 
 
 def _positive_int(value: str) -> int:
@@ -183,7 +199,8 @@ def _print_traces(path: Path, limit: int) -> int:
             if r.started is not None
             else "?"
         )
-        print(f"{r.run_id}  {started}  {r.stop}  steps={r.steps}  tokens={r.tokens}")
+        cost = f"  cost=${r.cost:.4f}" if r.cost else ""
+        print(f"{r.run_id}  {started}  {r.stop}  steps={r.steps}  tokens={r.tokens}{cost}")
     return 0
 
 
@@ -353,6 +370,62 @@ def _real_factory(cfg: Config) -> Callable[[str], LLM]:
     return make
 
 
+def _run_agent(
+    cfg: Config,
+    args: argparse.Namespace,
+    make: Callable[[str], LLM],
+    prices: Mapping[str, Price],
+    ws: Workspace,
+    registry: ToolRegistry,
+    checkpoints: Checkpoints | None,
+) -> int:
+    """Build the agent for ``run`` / ``resume`` and start it."""
+    clock = SystemClock()
+    approver: Approver
+    if args.unattended or not sys.stdin.isatty():
+        approver = DenyApprover()
+    else:
+        approver = InteractiveApprover()
+
+    model = args.model or cfg.model
+    llm = make(model)
+    plan_model = args.plan_model or cfg.plan_model
+    escalation_model = args.escalation_model or cfg.escalation_model
+    critic_model = args.critic_model or cfg.critic_model
+    gauntlet = None
+    if args.gauntlet or args.critic_model or args.gauntlet_revert:
+        critic = make(critic_model) if critic_model and critic_model != model else None
+        gauntlet = GauntletPolicy(critic_llm=critic, revert_on_loop=args.gauntlet_revert)
+    max_cost = cfg.max_cost if args.max_cost is None else args.max_cost
+    if max_cost:
+        used = [model, plan_model, escalation_model, critic_model if gauntlet else ""]
+        try:
+            require_prices([m for m in used if m], prices)
+        except PricingError as exc:
+            print(f"sebastian: {exc}", file=sys.stderr)
+            return 2
+
+    agent = Sebastian(
+        llm=llm,
+        tools=registry,
+        gate=ApprovalGate(approver),
+        budget=Budget(cfg.max_steps, cfg.max_tokens, float(cfg.max_seconds), max_cost),
+        memory=None if args.no_memory else MemoryStore(cfg.home / "memory.json"),
+        tracer=JsonlTracer(cfg.home / "traces.jsonl", clock),
+        clock=clock,
+        checkpoints=checkpoints,
+        sessions=SessionStore(cfg.home / "sessions"),
+        workspace=str(ws.root),
+        plan=args.plan or bool(args.plan_model),
+        planner_llm=make(plan_model) if plan_model and plan_model != model else None,
+        escalation_llm=(
+            make(escalation_model) if escalation_model and escalation_model != model else None
+        ),
+        gauntlet=gauntlet,
+    )
+    return _start(agent, args)
+
+
 def main(
     argv: Sequence[str] | None = None,
     llm_factory: Callable[[str], LLM] | None = None,
@@ -364,7 +437,16 @@ def main(
         return 0
 
     cfg = Config.from_env()
-    factory = llm_factory or _real_factory(cfg)
+    try:
+        prices = load_prices(cfg.home)
+    except PricingError as exc:
+        print(f"sebastian: {exc}", file=sys.stderr)
+        return 2
+    base_factory = llm_factory or _real_factory(cfg)
+
+    def factory(name: str) -> LLM:
+        return priced(base_factory(name), name, prices)
+
     tools_only: dict[str, Callable[[], int]] = {
         "traces": lambda: _print_traces(cfg.home / "traces.jsonl", args.limit),
         "undo": lambda: _undo(Checkpoints(cfg.home / "checkpoints"), args),
@@ -376,7 +458,6 @@ def main(
     if args.cmd in tools_only:
         return tools_only[args.cmd]()
 
-    clock = SystemClock()
     ws = Workspace(args.workspace)
     live = args.cmd in {"run", "resume"}
     checkpoints = Checkpoints(cfg.home / "checkpoints") if live else None
@@ -401,42 +482,7 @@ def main(
             command_tool(ws, CommandPolicy.of(args.allow_cmd, sandbox=sandbox, extra_ro=extra))
         )
 
-    approver: Approver
-    if args.unattended or not sys.stdin.isatty():
-        approver = DenyApprover()
-    else:
-        approver = InteractiveApprover()
-
-    make = factory
-    model = args.model or cfg.model
-    llm = make(model)
-    plan_model = args.plan_model or cfg.plan_model
-    escalation_model = args.escalation_model or cfg.escalation_model
-    critic_model = args.critic_model or cfg.critic_model
-    gauntlet = None
-    if args.gauntlet or args.critic_model or args.gauntlet_revert:
-        critic = make(critic_model) if critic_model and critic_model != model else None
-        gauntlet = GauntletPolicy(critic_llm=critic, revert_on_loop=args.gauntlet_revert)
-
-    agent = Sebastian(
-        llm=llm,
-        tools=registry,
-        gate=ApprovalGate(approver),
-        budget=Budget(cfg.max_steps, cfg.max_tokens, float(cfg.max_seconds)),
-        memory=None if args.no_memory else MemoryStore(cfg.home / "memory.json"),
-        tracer=JsonlTracer(cfg.home / "traces.jsonl", clock),
-        clock=clock,
-        checkpoints=checkpoints,
-        sessions=SessionStore(cfg.home / "sessions"),
-        workspace=str(ws.root),
-        plan=args.plan or bool(args.plan_model),
-        planner_llm=make(plan_model) if plan_model and plan_model != model else None,
-        escalation_llm=(
-            make(escalation_model) if escalation_model and escalation_model != model else None
-        ),
-        gauntlet=gauntlet,
-    )
-    return _start(agent, args)
+    return _run_agent(cfg, args, factory, prices, ws, registry, checkpoints)
 
 
 if __name__ == "__main__":  # pragma: no cover

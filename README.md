@@ -69,6 +69,11 @@ Full map: [`docs/SEBASTIAN_MAP.md`](docs/SEBASTIAN_MAP.md). Threat model: [`docs
 
 ## Configuration
 
+Costs (B40): put your provider's prices in `$SEBASTIAN_HOME/prices.json`, in USD per million
+tokens, e.g. `{"claude-sonnet-5-5": {"input": 3, "output": 15}, "qwen3": {"input": 0, "output": 0}}`
+(copy the numbers from the provider's pricing page; Sebastian ships none). Priced runs show their
+cost in `sebastian traces` and the dashboard.
+
 | Env var | Default | Notes |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | (none) | Read by the SDK only; never logged. |
@@ -80,6 +85,7 @@ Full map: [`docs/SEBASTIAN_MAP.md`](docs/SEBASTIAN_MAP.md). Threat model: [`docs
 | `SEBASTIAN_BASE_URL` | `https://api.openai.com/v1` | OpenAI-compatible endpoint. Plain `http://` only for localhost. |
 | `OPENAI_API_KEY` | (none) | Sent as a bearer token by the `openai` backend; never logged. Local servers usually need none. |
 | `SEBASTIAN_MAX_STEPS` | `25` | |
+| `SEBASTIAN_MAX_COST` | `0` (off) | USD per run; also `--max-cost`. Needs a price for every model in use. |
 | `SEBASTIAN_MAX_TOKENS` | `200000` | |
 | `SEBASTIAN_MAX_SECONDS` | `600` | |
 | `SEBASTIAN_HOME` | `~/.sebastian` | Memory and traces. |
