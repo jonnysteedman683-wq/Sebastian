@@ -223,3 +223,24 @@ def test_cli_bad_price_file_and_bad_flag(
         main(["run", "t", "--max-cost", "-1"])
     with pytest.raises(SystemExit):
         main(["run", "t", "--max-cost", "lots"])
+
+
+def test_cli_models_are_priced(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from sebastian import cli
+    from sebastian.evals.harness import CaseResult, SuiteResult
+
+    (home / "prices.json").write_text('{"m": {"input": 3, "output": 15}}')
+    built: list[LLM] = []
+
+    def fake_run(specs: Any, factory: Any, cases: Any, gauntlet: bool = False) -> list[Any]:
+        from sebastian.evals.leaderboard import Row
+
+        built.append(factory(specs[0]))
+        return [Row(specs[0], SuiteResult([CaseResult("c", True, False, True, "x", 1, 1)]))]
+
+    monkeypatch.setattr("sebastian.evals.leaderboard.run_leaderboard", fake_run)
+    args = ["models", "m", "--no-record", "--scars", str(tmp_path / "none")]
+    assert cli.main(args, llm_factory=lambda _n: ScriptedLLM([])) == 0
+    assert isinstance(built[0], PricedLLM)

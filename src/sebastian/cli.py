@@ -344,7 +344,12 @@ def _dashboard(cfg: Config, args: argparse.Namespace) -> int:
     return 0
 
 
-def _models(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], LLM] | None) -> int:
+def _models(
+    cfg: Config,
+    args: argparse.Namespace,
+    llm_factory: Callable[[str], LLM] | None,
+    prices: Mapping[str, Price],
+) -> int:
     from sebastian.evals.cases import ALL  # noqa: PLC0415
     from sebastian.evals.leaderboard import (  # noqa: PLC0415
         LeaderboardError,
@@ -357,8 +362,10 @@ def _models(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
 
     def factory(spec: ModelSpec) -> LLM:
         if llm_factory is not None:  # tests inject scripted models by name
-            return llm_factory(spec.model)
-        return make_llm(spec.model, spec.backend or cfg.backend, spec.base_url or cfg.base_url)
+            llm = llm_factory(spec.model)
+        else:
+            llm = make_llm(spec.model, spec.backend or cfg.backend, spec.base_url or cfg.base_url)
+        return priced(llm, spec.model, prices)
 
     try:
         specs = [parse_spec(s) for s in args.specs]
@@ -512,7 +519,7 @@ def main(
         "evolve": lambda: _evolve(cfg, args, factory),
         "redteam": lambda: _redteam(cfg, args, factory),
         "dashboard": lambda: _dashboard(cfg, args),
-        "models": lambda: _models(cfg, args, llm_factory),
+        "models": lambda: _models(cfg, args, llm_factory, prices),
     }
     if args.cmd in tools_only:
         return tools_only[args.cmd]()
