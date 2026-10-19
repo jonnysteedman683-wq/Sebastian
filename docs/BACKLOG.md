@@ -98,6 +98,8 @@ Rules:
 - [x] **B37 OpenAI-compatible backend.** Stdlib-only Chat Completions client; `SEBASTIAN_BACKEND=openai`, `SEBASTIAN_BASE_URL`.
   *Done when:* request/response wire format, tool calls, retries and URL policy are tested with a fake transport; a CLI run uses the configured backend.
 
+- [x] **B41 Dashboard: Gauntlet and critic views.** Plain vs Gauntlet score and agent vs critic resistance on shared charts, Gauntlet/critic tiles, daily needs-help trend.
+  *Done when:* multi-series charts, latest-model trend filtering and the needs-help series are tested.
 - [x] **B40 Cost tracking.** Owner-kept `prices.json`, `Usage.cost`, `Budget.max_cost` / `--max-cost`, cost in traces and the dashboard.
   *Done when:* a priced run stops at its dollar limit; an unpriced model with a dollar limit is refused; traces and dashboard show spend.
 - [x] **B39 Model leaderboard.** `sebastian models [backend:]model[@base_url] ...` runs the eval suite per model and ranks them.
