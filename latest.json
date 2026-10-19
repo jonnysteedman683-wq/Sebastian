@@ -1,14 +1,14 @@
 {
-  "summary": "5 commit(s): feat: cost tracking and a per-run dollar limit (B40); Merge main into claude/b40-cost-tracking; Merge main into claude/b40-cost-tracking; fix: price the models leaderboard's clients too (B40); Merge pull request #39 from jonnysteedman683-wq/claude/b40-cost-tracking",
+  "summary": "5 commit(s): feat: dashboard charts for Gauntlet, critic and needs-help trends (B41); Merge main into claude/b41-dashboard-gauntlet; Merge main into claude/b41-dashboard-gauntlet; Merge main into claude/b41-dashboard-gauntlet; Merge pull request #40 from jonnysteedman683-wq/claude/b41-dashboard-gauntlet",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "14 file(s) changed",
-      "description": "Detected automatically from code: 14 file(s) changed.",
+      "title": "4 file(s) changed",
+      "description": "Detected automatically from code: 4 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "2cbe0fa636341edae62fa4bfdfa3663366b6369b",
+          "sha": "07f3eab70011c8f133f131e02b2f50b5097ddce8",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 35,
+  "seq": 36,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "2a5591abdb308be89dc277e2838f74777e43ea1e",
-    "to_sha": "2cbe0fa636341edae62fa4bfdfa3663366b6369b"
+    "from_sha": "2cbe0fa636341edae62fa4bfdfa3663366b6369b",
+    "to_sha": "07f3eab70011c8f133f131e02b2f50b5097ddce8"
   },
-  "generated_at": "2026-10-19T14:27:43Z",
+  "generated_at": "2026-10-19T15:30:22Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -77,5 +77,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "b1bd9345cf05674f8987585cf29c5c019b1f0093cada4a379004af73d024ccd9"
+  "signature": "b34b8b405988ffc95425143e2a0ee60d4caccb075cd0978ae0b7f5850a6b115e"
 }
