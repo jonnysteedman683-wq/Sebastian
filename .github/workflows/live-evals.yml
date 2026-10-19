@@ -56,6 +56,11 @@ jobs:
       - name: Require the checker sandbox
         if: steps.key.outputs.present == 'true'
         run: |
+          # Ubuntu 24.04 runners block unprivileged user namespaces through AppArmor, which
+          # bubblewrap needs. This VM is thrown away after the job.
+          if [ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+            sudo sysctl -q -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
           if ! bwrap --unshare-all --ro-bind / / -- /bin/true; then
             echo "::error title=No sandbox::bubblewrap is unusable on this runner; live evals refuse to run model code without it (P1-18)."
             exit 1
