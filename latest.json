@@ -1,14 +1,14 @@
 {
-  "summary": "2 commit(s): feat: wire the Gauntlet into runs with HELP and needs_help (B11d); Merge pull request #31 from jonnysteedman683-wq/claude/b11d-gauntlet-wiring",
+  "summary": "2 commit(s): feat: Gauntlet on/off eval comparison and critic attacks (B11e); Merge pull request #32 from jonnysteedman683-wq/claude/b11e-gauntlet-evals",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "13 file(s) changed",
-      "description": "Detected automatically from code: 13 file(s) changed.",
+      "title": "12 file(s) changed",
+      "description": "Detected automatically from code: 12 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "4dfc99502286876488bc1de087ca28e75c00fc55",
+          "sha": "5a7e3fd867b3cf3890705b1df345bca9deaf3a86",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 27,
+  "seq": 28,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "12360306d8184d1a635b7ca4fedbd86fd98e5847",
-    "to_sha": "4dfc99502286876488bc1de087ca28e75c00fc55"
+    "from_sha": "4dfc99502286876488bc1de087ca28e75c00fc55",
+    "to_sha": "5a7e3fd867b3cf3890705b1df345bca9deaf3a86"
   },
-  "generated_at": "2026-10-19T11:14:56Z",
+  "generated_at": "2026-10-19T11:25:32Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -75,5 +75,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "beb404a09397ed22e18cd65e9acaea64200a6cabf22cf57c8017c50c5d97cc75"
+  "signature": "2372e585bf93e57447109d6da0644781240d559905d322c84855e93435b40e6c"
 }
