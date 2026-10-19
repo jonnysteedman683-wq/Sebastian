@@ -16,6 +16,7 @@ from sebastian.budget import Budget
 from sebastian.checkpoint import CheckpointError, Checkpoints
 from sebastian.clock import SystemClock
 from sebastian.config import Config
+from sebastian.gauntlet import GauntletPolicy
 from sebastian.llm.base import LLM, RetryingLLM
 from sebastian.llm.scripted import ScriptedLLM
 from sebastian.memory import MemoryStore
@@ -129,6 +130,16 @@ def _add_run_options(run: argparse.ArgumentParser) -> None:
     )
     run.add_argument("--plan-model", help="model for the planning phase (implies --plan)")
     run.add_argument("--escalation-model", help="model for the step after repeated tool failures")
+    run.add_argument(
+        "--gauntlet",
+        action="store_true",
+        help="make the run prove it is done: plan, predict checks, verify them, then a critic "
+        "review; ends as needs_help if it cannot",
+    )
+    run.add_argument(
+        "--critic-model", help="model for the Gauntlet critic (implies --gauntlet; default: "
+        "the planning model)",
+    )  # fmt: skip
 
 
 def _positive_int(value: str) -> int:
@@ -376,6 +387,11 @@ def main(
     llm = make(model)
     plan_model = args.plan_model or cfg.plan_model
     escalation_model = args.escalation_model or cfg.escalation_model
+    critic_model = args.critic_model or cfg.critic_model
+    gauntlet = None
+    if args.gauntlet or args.critic_model:
+        critic = make(critic_model) if critic_model and critic_model != model else None
+        gauntlet = GauntletPolicy(critic_llm=critic)
 
     agent = Sebastian(
         llm=llm,
@@ -393,6 +409,7 @@ def main(
         escalation_llm=(
             make(escalation_model) if escalation_model and escalation_model != model else None
         ),
+        gauntlet=gauntlet,
     )
     return _start(agent, args)
 

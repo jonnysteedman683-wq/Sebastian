@@ -25,6 +25,9 @@ Plan before acting, and run the eval suite:
 
 ```bash
 sebastian run "Refactor utils.py and keep the tests green" -w ./project --plan
+sebastian run "Fix the failing parser test" -w ./project --allow-cmd pytest --gauntlet
+#   --gauntlet: plan, predict the checks, act, run the checks, then a critic review;
+#   failures loop back (max 3), then the run stops as needs_help with a report
 sebastian resume <run_id> -w ./project # continue a run that hit its budget or an API error
 sebastian undo <run_id> -w ./project # roll back a run's file changes (run_id from `sebastian traces`)
 sebastian evolve --repo . --pr --sandbox bwrap  # improve itself: next backlog item, sandboxed gates, opens a PR (never merges)
@@ -66,6 +69,7 @@ Full map: [`docs/SEBASTIAN_MAP.md`](docs/SEBASTIAN_MAP.md). Threat model: [`docs
 | `SEBASTIAN_MODEL` | `claude-sonnet-5-5` | Also `--model`. |
 | `SEBASTIAN_PLAN_MODEL` | (main model) | Planning model; also `--plan-model` (implies `--plan`). |
 | `SEBASTIAN_ESCALATION_MODEL` | (main model) | Used for the step after repeated tool failures; also `--escalation-model`. |
+| `SEBASTIAN_CRITIC_MODEL` | (planning model) | Gauntlet critic; also `--critic-model` (implies `--gauntlet`). |
 | `SEBASTIAN_MAX_STEPS` | `25` | |
 | `SEBASTIAN_MAX_TOKENS` | `200000` | |
 | `SEBASTIAN_MAX_SECONDS` | `600` | |

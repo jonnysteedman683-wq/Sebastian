@@ -22,6 +22,7 @@ class StopReason(StrEnum):
     COMPLETED = "completed"
     BUDGET_EXHAUSTED = "budget_exhausted"
     ERROR = "error"
+    NEEDS_HELP = "needs_help"  # the Gauntlet could not prove the task done (B11d)
 
 
 @dataclass(frozen=True, slots=True)
