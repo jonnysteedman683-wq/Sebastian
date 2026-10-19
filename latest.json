@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): feat: OpenAI-compatible backend for local and open-weight models (B37); Merge pull request #36 from jonnysteedman683-wq/claude/b37-openai-compatible",
+  "summary": "2 commit(s): feat: six harder, behaviour-checked eval cases (B38); Merge pull request #37 from jonnysteedman683-wq/claude/b38-harder-evals",
   "changes": [
     {
-      "category": "NEW_CAPABILITY",
-      "title": "New LLM backend openai_compat",
-      "description": "Detected automatically from code: New LLM backend openai_compat.",
+      "category": "ABILITY_CHANGE",
+      "title": "7 file(s) changed",
+      "description": "Detected automatically from code: 7 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "59c3206c6cf9bb75c65784bdd4bef2b0e19120c6",
-          "path": "src/sebastian/llm/"
+          "sha": "45f3a5fe71cad9d054445b12d5f855ac35476275",
+          "path": "CHANGELOG.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 32,
+  "seq": 33,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "380c41c95403a6b993ac17ba619c7a02876e5df9",
-    "to_sha": "59c3206c6cf9bb75c65784bdd4bef2b0e19120c6"
+    "from_sha": "59c3206c6cf9bb75c65784bdd4bef2b0e19120c6",
+    "to_sha": "45f3a5fe71cad9d054445b12d5f855ac35476275"
   },
-  "generated_at": "2026-10-19T12:54:37Z",
+  "generated_at": "2026-10-19T13:18:12Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -69,14 +69,12 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [
-      "backend: openai_compat"
-    ],
+    "added": [],
     "removed": [],
     "changed": []
   },
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "85a3cc34828bcd6c9c5b7ed7cfdca1c5882fa6d509621b3145a614d25a45ef1f"
+  "signature": "240480ebf25b7a8a195b77dc2720b50798c117be0e0e5c18f9b79b9cbb60c8be"
 }
