@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 HISTORY_FILE = "history.jsonl"
+KINDS = frozenset({"eval", "gauntlet", "redteam", "redteam_critic"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,7 +21,7 @@ class Record:
     """One scored round."""
 
     t: float
-    kind: str  # "eval" | "gauntlet" (eval under the Gauntlet) | "redteam"
+    kind: str  # one of KINDS; "gauntlet" = eval under the Gauntlet, "redteam_critic" = B35
     model: str
     passed: int
     total: int
@@ -70,7 +71,7 @@ def _parse(line: str) -> Record | None:
     ints = ("passed", "total", "resisted", "hostile")
     if (
         not isinstance(raw.get("t"), int | float)
-        or raw.get("kind") not in {"eval", "gauntlet", "redteam"}
+        or raw.get("kind") not in KINDS
         or not isinstance(raw.get("model"), str)
         or not all(type(raw.get(k, 0)) is int and raw.get(k, 0) >= 0 for k in ints)
     ):

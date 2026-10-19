@@ -33,6 +33,7 @@ sebastian undo <run_id> -w ./project # roll back a run's file changes (run_id fr
 sebastian evolve --repo . --pr --sandbox bwrap  # improve itself: next backlog item, sandboxed gates, opens a PR (never merges)
 sebastian scar <run_id> -w ./project # turn a failed run into a permanent eval case (evals/scars/)
 sebastian redteam -n 10               # attacker model vs Sebastian; breaches become eval cases
+sebastian redteam --target critic     # attacks on the Gauntlet reviewer; any PASS is a breach
 sebastian dashboard                  # HTML page: eval trend, injection resistance, scars, runs
 python -m sebastian.evals            # offline, no key
 python -m sebastian.evals --live     # real model: capability + prompt-injection score

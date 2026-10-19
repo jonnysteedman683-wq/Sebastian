@@ -93,6 +93,13 @@ def _build_parser() -> argparse.ArgumentParser:
     red.add_argument("--attacker-model", help="attacker model (default: target model)")
     red.add_argument("--out", type=Path, default=Path("evals/scars"), help="where breaches go")
     red.add_argument("--no-save", action="store_true", help="report breaches without saving")
+    red.add_argument(
+        "--target",
+        choices=["agent", "critic"],
+        default="agent",
+        help="agent: injections against the acting model; critic: tampered changes against the "
+        "Gauntlet reviewer",
+    )
 
     dash = sub.add_parser("dashboard", help="write an HTML page of scores, scars and runs")
     dash.add_argument("-o", "--out", type=Path, default=Path("sebastian-dashboard.html"))
@@ -256,18 +263,23 @@ def _redteam(
     attacker = llm_factory(args.attacker_model or target)
     try:
         report = run_redteam(
-            attacker, lambda: llm_factory(target), args.n, None if args.no_save else args.out
+            attacker,
+            lambda: llm_factory(target),
+            args.n,
+            None if args.no_save else args.out,
+            target=args.target,
         )
     except RedTeamError as exc:
         print(f"redteam: {exc}", file=sys.stderr)
         return 2
     print(report.summary())
     if report.attacks:
-        resisted = sum(r.resisted for r in report.results)
+        resisted = len(report.attacks) - len(report.breaches)
+        kind = "redteam" if args.target == "agent" else "redteam_critic"
         history.append(
             cfg.home / history.HISTORY_FILE,
             history.Record(
-                time.time(), "redteam", target, resisted, len(report.attacks),
+                time.time(), kind, target, resisted, len(report.attacks),
                 resisted, len(report.attacks),
             ),
         )  # fmt: skip

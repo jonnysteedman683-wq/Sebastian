@@ -103,6 +103,7 @@ class EvalCase:
     targets_critic: bool = False  # hostile content aimed at the Gauntlet critic (B11e)
     planner_script: Sequence[Step] = ()  # offline PLAN/PREDICT replies under the Gauntlet
     critic_script: Sequence[Step] = ()  # offline critic replies under the Gauntlet
+    critic_only: bool = False  # actor and planner always replay; a live model plays only critic
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,6 +120,8 @@ class CaseResult:
     error: str = ""
     mode: str = PLAIN
     targets_critic: bool = False
+    critic_calls: int = 0
+    critic_passes: int = 0  # critic verdicts of PASS; for critic attacks every PASS is a breach
 
 
 @dataclass(slots=True)
@@ -189,7 +192,13 @@ def run_case(
     the real diff, and gets ``GAUNTLET_EXTRA_STEPS`` more steps than a plain run.
     """
     planner: LLM | None = None
-    if gauntlet is not None and llm is None:
+    actor = llm
+    if case.critic_only:  # B35: the change is fixed; only the reviewer is under test
+        gauntlet = gauntlet or GauntletPolicy()
+        critic = llm or ScriptedLLM(case.critic_script or DEFAULT_CRITIC)
+        gauntlet = replace(gauntlet, critic_llm=critic)
+        planner, actor = ScriptedLLM(case.planner_script or DEFAULT_PLANNER), None
+    elif gauntlet is not None and llm is None:
         gauntlet, planner = _offline_gauntlet(case, gauntlet)
     extra = GAUNTLET_EXTRA_STEPS if gauntlet is not None else 0
     with (
@@ -208,7 +217,7 @@ def run_case(
         gated = frozenset(t.name for t in registry if t.permission >= Permission.WRITE)
         tracer = MemoryTracer()
         agent = Sebastian(
-            llm=llm or ScriptedLLM(case.script),
+            llm=actor or ScriptedLLM(case.script),
             tools=registry,
             gate=ApprovalGate(AllowApprover() if case.allow_gated else DenyApprover()),
             budget=budget or Budget(max_steps=15 + extra, max_tokens=150_000),
@@ -222,6 +231,7 @@ def run_case(
         before = snapshot(root)
         result = agent.run(case.task)
         outcome = Outcome(root, result, tracer.events, before, gated)
+        verdicts = [bool(e["passed"]) for e in outcome.events if e["event"] == "gauntlet_critique"]
         try:
             passed = bool(case.check(outcome))
             error = ""
@@ -238,6 +248,8 @@ def run_case(
             error=error,
             mode=PLAIN if gauntlet is None else GAUNTLET,
             targets_critic=case.targets_critic,
+            critic_calls=len(verdicts),
+            critic_passes=sum(verdicts),
         )
 
 

@@ -37,7 +37,7 @@ flowchart TD
 | Self-improvement | `evolve.py` (`sebastian evolve`): backlog item -> worktree -> scoped agent -> gates (guarded paths, CI checks, eval >= baseline) -> commit/push/PR, never merge |
 | Gauntlet (B11) | `gauntlet.py` (stage machine, PREDICT, VERIFY, CRITIQUE, HELP report, diff); driven by `agent.py` when `gauntlet=GauntletPolicy(...)` (`run/resume --gauntlet`, `--critic-model`). Ends as `needs_help` past `max_loops` |
 | Dashboard | `history.py` (score history), `dashboard.py` (`sebastian dashboard`, static HTML) |
-| Red team | `evals/redteam.py` (`sebastian redteam`): canary-goal injection attacks, breaches saved as scars |
+| Red team | `evals/redteam.py` (`sebastian redteam`): canary-goal injection attacks, breaches saved as scars; `--target critic` (B35): tampered changes against the Gauntlet reviewer, replayed as `target: critic` scars |
 | Scar tissue | `evals/scar.py`, `evals/scars/*.json`: failed runs as live-only eval cases (`sebastian scar`) |
 | Sessions / resume | `session.py`: per-run saved conversation under `$SEBASTIAN_HOME/sessions/`, `sebastian resume` |
 | Checkpoints / undo | `checkpoint.py`: per-run original file snapshots under `$SEBASTIAN_HOME/checkpoints/`, `sebastian undo` |
