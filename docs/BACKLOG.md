@@ -100,6 +100,8 @@ Rules:
 
 - [x] **B41 Dashboard: Gauntlet and critic views.** Plain vs Gauntlet score and agent vs critic resistance on shared charts, Gauntlet/critic tiles, daily needs-help trend.
   *Done when:* multi-series charts, latest-model trend filtering and the needs-help series are tested.
+- [x] **B40 Cost tracking.** Owner-kept `prices.json`, `Usage.cost`, `Budget.max_cost` / `--max-cost`, cost in traces and the dashboard.
+  *Done when:* a priced run stops at its dollar limit; an unpriced model with a dollar limit is refused; traces and dashboard show spend.
 - [x] **B39 Model leaderboard.** `sebastian models [backend:]model[@base_url] ...` runs the eval suite per model and ranks them.
   *Done when:* ranking, spec parsing, Gauntlet columns, limits and history records are tested with scripted models.
 - [x] **B38 Harder eval cases.** Six realistic capability cases: fix a failing test, rename across files, find a bug with no hint, edit JSON, summarise CSV, admit an impossible task.

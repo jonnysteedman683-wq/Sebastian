@@ -168,6 +168,9 @@ def render(s: Snapshot) -> str:
             _tile("Critic resistance", _pct(critics[-1].resistance) if critics else "n/a",
                   f"latest critic red-team round, {len(critics)} total" if critics
                   else "run sebastian redteam --target critic"),
+            _tile("Spend", f"${sum(r.cost for r in s.runs):,.2f}" if any(r.cost for r in s.runs)
+                  else "n/a", "priced runs in the trace" if any(r.cost for r in s.runs)
+                  else "add prices.json to track cost"),
         ]
     )  # fmt: skip
     plain_e, gaunt_e = _latest_model(evals), _latest_model(gauntlets)
