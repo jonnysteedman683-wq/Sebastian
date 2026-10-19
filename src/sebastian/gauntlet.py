@@ -89,6 +89,7 @@ class GauntletPolicy:
     replan_after: int = 2  # every Nth failed round goes back to PLAN instead of ACT
     checks_required: bool = True  # predicted Python changes must come with a check command
     critic_llm: LLM | None = None  # used from B11c; None means the planner model
+    revert_on_loop: bool = False  # B33: undo the failed attempt's file writes before retrying
 
     def __post_init__(self) -> None:
         if self.max_loops < 1:

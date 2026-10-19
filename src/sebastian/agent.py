@@ -365,9 +365,33 @@ class Sebastian:
             return self._finish(run_id, StopReason.COMPLETED, answer, governor)
         if t.stage is Stage.HELP:
             return self._help(run_id, governor, stage, t.reason, t.loops, g.prediction, findings)
+        if policy.revert_on_loop:
+            findings += self._revert(run_id)
         if t.stage is Stage.PLAN:
             return self._replan(run_id, policy, g, governor, findings)
         return findings
+
+    def _revert(self, run_id: str) -> str:
+        """B33: roll back this run's file writes so the next attempt starts clean."""
+        if self.checkpoints is None:
+            self.tracer.emit(run_id, "gauntlet_revert", skipped="checkpoints are off")
+            return ""
+        try:
+            report = self.checkpoints.rewind()
+        except CheckpointError as exc:
+            self.tracer.emit(run_id, "gauntlet_revert", skipped=str(exc))
+            return ""
+        files = report.restored + report.deleted
+        self.tracer.emit(
+            run_id, "gauntlet_revert", restored=report.restored, deleted=report.deleted
+        )
+        if not files:
+            return ""
+        return (
+            "\n<reverted>Your previous attempt's file changes were undone, so the workspace is "
+            f"as it was before this run ({', '.join(files)}). "
+            "Redo the work from scratch.</reverted>"
+        )
 
     def _critique(
         self,

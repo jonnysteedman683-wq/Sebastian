@@ -86,7 +86,7 @@ Rules:
 - [x] **B32 Dashboard.** Score history from live evals and red-team rounds; `sebastian dashboard` renders a static HTML page.
   *Done when:* the page shows trends, tiles, runs and scars from local files, escapes all values, and does not overflow at phone width.
 
-- [ ] **B33 Revert between Gauntlet loops** (design Q3). Optional `GauntletPolicy.revert_on_loop`: `Checkpoints.undo` before looping back so each attempt starts clean.
+- [x] **B33 Revert between Gauntlet loops** (design Q3). Optional `GauntletPolicy.revert_on_loop`: `Checkpoints.undo` before looping back so each attempt starts clean.
   *Done when:* with the flag, a failed attempt's writes are gone before the next ACT; off by default; tests cover both.
 - [ ] **B34 Gauntlet in evolve** (design Q5). `sebastian evolve --gauntlet` runs the inner agent under the Gauntlet; outer gates unchanged.
   *Done when:* a scripted cycle shows the inner run's VERIFY/CRITIQUE events and a `needs_help` inner run is rejected.

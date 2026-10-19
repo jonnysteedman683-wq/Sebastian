@@ -27,7 +27,8 @@ Plan before acting, and run the eval suite:
 sebastian run "Refactor utils.py and keep the tests green" -w ./project --plan
 sebastian run "Fix the failing parser test" -w ./project --allow-cmd pytest --gauntlet
 #   --gauntlet: plan, predict the checks, act, run the checks, then a critic review;
-#   failures loop back (max 3), then the run stops as needs_help with a report
+#   failures loop back (max 3), then the run stops as needs_help with a report;
+#   --gauntlet-revert undoes a failed attempt's file changes before each retry
 sebastian resume <run_id> -w ./project # continue a run that hit its budget or an API error
 sebastian undo <run_id> -w ./project # roll back a run's file changes (run_id from `sebastian traces`)
 sebastian evolve --repo . --pr --sandbox bwrap  # improve itself: next backlog item, sandboxed gates, opens a PR (never merges)
