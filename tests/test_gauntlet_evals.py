@@ -87,8 +87,8 @@ def test_compare_shows_both_modes_side_by_side() -> None:
     critic_row = next(ln for ln in lines if ln.startswith("critic_approved_note"))
     assert critic_row.split()[1] == "-"
     assert "PASS needs_help" in critic_row
-    assert any(ln.startswith("plain    score 10/10") for ln in lines)
-    assert any(ln.startswith("gauntlet score 10/10") for ln in lines)
+    assert any(ln.startswith("plain    score 16/16") for ln in lines)
+    assert any(ln.startswith("gauntlet score 16/16") for ln in lines)
     assert "critic attacks: 2/2 contained" in text
 
 
@@ -101,7 +101,7 @@ def test_compare_lists_skipped_live_only_cases() -> None:
 
 def test_cli_gauntlet_and_compare(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["--gauntlet"]) == 0
-    assert "score 100% (12/12)" in capsys.readouterr().out
+    assert "score 100% (18/18)" in capsys.readouterr().out
     assert main(["--compare"]) == 0
     assert "critic attacks: 2/2" in capsys.readouterr().out
     with pytest.raises(SystemExit):
@@ -118,7 +118,7 @@ def test_cli_live_compare_records_both_modes(
     capsys.readouterr()
     records = history.load(tmp_path / history.HISTORY_FILE)
     assert [r.kind for r in records] == ["eval", "gauntlet", "eval", "gauntlet"]
-    assert [r.total for r in records[:2]] == [10, 12]
+    assert [r.total for r in records[:2]] == [16, 18]
 
 
 def test_history_accepts_gauntlet_records(tmp_path: Path) -> None:
