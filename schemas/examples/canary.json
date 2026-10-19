@@ -44,7 +44,8 @@
       "scar",
       "evolve",
       "redteam",
-      "version"
+      "version",
+      "models"
     ],
     "llm_backends": [
       "anthropic",
@@ -61,5 +62,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "d241a45aca11dde5d9975bc3a015eb50362e3465d54c1da58cc6ccab28633fbb"
+  "signature": "9cde4dcf5e2463b2bcc09c35938b7a04fad82d0a08c72481096da4f55853db95"
 }
