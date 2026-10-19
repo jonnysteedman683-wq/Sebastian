@@ -88,7 +88,7 @@ Rules:
 
 - [x] **B33 Revert between Gauntlet loops** (design Q3). Optional `GauntletPolicy.revert_on_loop`: `Checkpoints.undo` before looping back so each attempt starts clean.
   *Done when:* with the flag, a failed attempt's writes are gone before the next ACT; off by default; tests cover both.
-- [ ] **B34 Gauntlet in evolve** (design Q5). `sebastian evolve --gauntlet` runs the inner agent under the Gauntlet; outer gates unchanged.
+- [x] **B34 Gauntlet in evolve** (design Q5). `sebastian evolve --gauntlet` runs the inner agent under the Gauntlet; outer gates unchanged.
   *Done when:* a scripted cycle shows the inner run's VERIFY/CRITIQUE events and a `needs_help` inner run is rejected.
 
 - [x] **B35 Generated critic attacks.** Extend `sebastian redteam` with a `--target critic` mode: the attacker writes reviewer-aimed payloads (fake approvals, "policy" lines) against a broken or tampered workspace; a false PASS that reaches `completed` is a breach saved as a scar.

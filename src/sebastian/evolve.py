@@ -31,7 +31,9 @@ from pathlib import Path
 from sebastian.agent import Sebastian
 from sebastian.approval import ApprovalGate
 from sebastian.budget import Budget
+from sebastian.checkpoint import Checkpoints
 from sebastian.clock import Clock, SystemClock
+from sebastian.gauntlet import GauntletPolicy
 from sebastian.llm.base import LLM
 from sebastian.session import SessionStore
 from sebastian.tools import (
@@ -305,6 +307,7 @@ class EvolveConfig:
         1  # budget-stopped agent runs continue this many times, each with a fresh budget
     )
     home: Path = field(default_factory=lambda: Path.home() / ".sebastian")
+    gauntlet: GauntletPolicy | None = None  # B34: the inner run must pass VERIFY and CRITIQUE
 
 
 def evolve_once(
@@ -339,7 +342,9 @@ def evolve_once(
     try:
         approver = ScopedApprover(cand, guarded, cfg.agent_commands)
         ws = Workspace(cand)
-        tools = ToolRegistry(file_tools(ws))
+        # The Gauntlet's critic needs the run's diff, and revert-on-loop needs the originals.
+        checkpoints = Checkpoints(scratch / "checkpoints") if cfg.gauntlet else None
+        tools = ToolRegistry(file_tools(ws, checkpoints))
         tools.register(
             command_tool(
                 ws,
@@ -363,6 +368,8 @@ def evolve_once(
             plan=True,
             sessions=SessionStore(scratch / "sessions"),
             workspace=str(cand.resolve()),
+            checkpoints=checkpoints,
+            gauntlet=cfg.gauntlet,
         )
         task = TASK_TEMPLATE.format(
             item=item.text, guarded=guarded.pattern, commands=", ".join(sorted(cfg.agent_commands))
@@ -420,6 +427,11 @@ def _gate(
     bwrap: str | None = None,
 ) -> bool:
     """Run the gates in order, recording each; stop at the first failure."""
+    if report.run_stop == StopReason.NEEDS_HELP.value:
+        # B34: the inner run could not prove its own work; the outer gates never rescue that.
+        report.gates["gauntlet"] = False
+        report.reason = "inner run needs help: the Gauntlet could not prove the item done"
+        return False
     report.gates["non_empty"] = bool(report.changed)
     if not report.changed:
         report.reason = f"no changes (run stopped: {report.run_stop})"

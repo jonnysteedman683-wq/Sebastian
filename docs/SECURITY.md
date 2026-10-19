@@ -64,6 +64,7 @@ under `python -m sebastian.evals --live --gauntlet` or `--compare`, not plain `-
 - **Gates before commit:** non-empty diff, no guarded path in the final diff (catches side
   channels), all CI checks pass, offline eval score >= the base commit's.
 - **No merge:** the best outcome is a branch or PR for a human to review.
+- **Gauntlet (opt-in, `--gauntlet`, B34):** the inner run must also pass its own predicted checks and a tool-free critic. A `needs_help` run is rejected outright (the outer gates never rescue it) and its patch is kept for review. This only adds gates; the scope, the outer gates and the no-merge rule are unchanged. Predicted checks still go through the scoped approver, so they are limited to `pytest`, `ruff` and `mypy`.
 - **Gate sandbox:** the gates run code the agent just wrote. With `--sandbox auto` (default) or
   `bwrap` they run under bubblewrap: no network, only the worktree writable, cleared
   environment. Use `--sandbox bwrap` to refuse to run at all without it.
