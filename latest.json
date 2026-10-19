@@ -1,15 +1,15 @@
 {
-  "summary": "3 commit(s): feat: sebastian models leaderboard across backends (B39); Merge main into claude/b39-models-leaderboard; Merge pull request #38 from jonnysteedman683-wq/claude/b39-models-leaderboard",
+  "summary": "5 commit(s): feat: cost tracking and a per-run dollar limit (B40); Merge main into claude/b40-cost-tracking; Merge main into claude/b40-cost-tracking; fix: price the models leaderboard's clients too (B40); Merge pull request #39 from jonnysteedman683-wq/claude/b40-cost-tracking",
   "changes": [
     {
-      "category": "NEW_FEATURE",
-      "title": "New CLI command models",
-      "description": "Detected automatically from code: New CLI command models.",
+      "category": "ABILITY_CHANGE",
+      "title": "14 file(s) changed",
+      "description": "Detected automatically from code: 14 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "2a5591abdb308be89dc277e2838f74777e43ea1e",
-          "path": "src/sebastian/cli.py"
+          "sha": "2cbe0fa636341edae62fa4bfdfa3663366b6369b",
+          "path": "CHANGELOG.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 34,
+  "seq": 35,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "45f3a5fe71cad9d054445b12d5f855ac35476275",
-    "to_sha": "2a5591abdb308be89dc277e2838f74777e43ea1e"
+    "from_sha": "2a5591abdb308be89dc277e2838f74777e43ea1e",
+    "to_sha": "2cbe0fa636341edae62fa4bfdfa3663366b6369b"
   },
-  "generated_at": "2026-10-19T13:20:55Z",
+  "generated_at": "2026-10-19T14:27:43Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -70,14 +70,12 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [
-      "cli: models"
-    ],
+    "added": [],
     "removed": [],
     "changed": []
   },
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "355840306f8543a667fc8e543b5efe3cd70205b1b6c7f19f222e021a8e1dc407"
+  "signature": "b1bd9345cf05674f8987585cf29c5c019b1f0093cada4a379004af73d024ccd9"
 }
