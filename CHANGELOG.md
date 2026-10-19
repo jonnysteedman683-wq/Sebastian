@@ -3,6 +3,7 @@
 All notable changes follow [Keep a Changelog](https://keepachangelog.com) and SemVer.
 
 ## [Unreleased]
+- docs: B11 Gauntlet design doc for owner review (`docs/design/B11-gauntlet.md`).
 
 ### Changed (B19 sandbox by default)
 - `sebastian run/resume --allow-cmd ...` now default to `--sandbox auto`: `run_command` runs under bubblewrap (no network, workspace-only, Python install paths read-only) whenever bubblewrap works on the host. If it does not, commands run unsandboxed and a warning is printed every run; `--sandbox none` opts out silently, and `--sandbox bwrap` refuses to start without it.

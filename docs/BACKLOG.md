@@ -29,6 +29,7 @@ Rules:
   *Done when:* all 5 pass with the current agent; failures documented in `docs/SECURITY.md` if any.
 - [x] 🔒 **B10 Container sandbox for `run_command`** (PROPOSALS #1). Owner chose bubblewrap; opt-in via `--sandbox bwrap`.
 - [ ] 🔒 **B11 Gauntlet stages** (PROPOSALS #3). Needs an owner design review.
+  Design for review: `docs/design/B11-gauntlet.md` (splits into B11a–B11e once approved).
 - [ ] 🔒 **B12 Licence.** Owner decision.
 
 ## Proposed
