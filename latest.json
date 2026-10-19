@@ -1,14 +1,14 @@
 {
-  "summary": "3 commit(s): feat: sandbox run_command by default when bubblewrap works (B19); docs: reword sandbox residual risk for the new default (B19); Merge pull request #25 from jonnysteedman683-wq/claude/sandbox-default",
+  "summary": "2 commit(s): docs: B11 Gauntlet design for owner review; Merge pull request #26 from jonnysteedman683-wq/claude/b11-gauntlet-design",
   "changes": [
     {
-      "category": "ABILITY_CHANGE",
-      "title": "8 file(s) changed",
-      "description": "Detected automatically from code: 8 file(s) changed.",
+      "category": "DOCS",
+      "title": "3 file(s) changed",
+      "description": "Detected automatically from code: 3 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "0441f5061fbe67499a2aa037cd1b684a4a63c6e7",
+          "sha": "cb6a1e8397ad59c2c43c8061c54dec553a220c32",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 21,
+  "seq": 22,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "095f60dd92dc9e73143e6ddc494e003730a22011",
-    "to_sha": "0441f5061fbe67499a2aa037cd1b684a4a63c6e7"
+    "from_sha": "0441f5061fbe67499a2aa037cd1b684a4a63c6e7",
+    "to_sha": "cb6a1e8397ad59c2c43c8061c54dec553a220c32"
   },
-  "generated_at": "2026-10-19T02:46:18Z",
+  "generated_at": "2026-10-19T05:33:28Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -74,6 +74,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "NORMAL",
-  "signature": "1ab6b9515a3f5012a7c2790b4561980788fd391bf7809df7f9af493dd2b57f87"
+  "priority": "LOW",
+  "signature": "81718c6ad608faa2cbcabfd1bb1f20e8f2e32858c06dd675fba5fbf4e2186bde"
 }
