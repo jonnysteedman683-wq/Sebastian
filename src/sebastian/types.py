@@ -59,6 +59,7 @@ class Usage:
 
     input_tokens: int = 0
     output_tokens: int = 0
+    cost: float = 0.0  # USD, when the model's price is known (B40); 0.0 otherwise
 
     @property
     def total(self) -> int:
@@ -67,7 +68,9 @@ class Usage:
 
     def __add__(self, other: Usage) -> Usage:
         return Usage(
-            self.input_tokens + other.input_tokens, self.output_tokens + other.output_tokens
+            self.input_tokens + other.input_tokens,
+            self.output_tokens + other.output_tokens,
+            self.cost + other.cost,
         )
 
 
