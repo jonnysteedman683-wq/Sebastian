@@ -1,0 +1,82 @@
+{
+  "summary": "2 commit(s): feat: OpenAI-compatible backend for local and open-weight models (B37); Merge pull request #36 from jonnysteedman683-wq/claude/b37-openai-compatible",
+  "changes": [
+    {
+      "category": "NEW_CAPABILITY",
+      "title": "New LLM backend openai_compat",
+      "description": "Detected automatically from code: New LLM backend openai_compat.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "59c3206c6cf9bb75c65784bdd4bef2b0e19120c6",
+          "path": "src/sebastian/llm/"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 32,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "380c41c95403a6b993ac17ba619c7a02876e5df9",
+    "to_sha": "59c3206c6cf9bb75c65784bdd4bef2b0e19120c6"
+  },
+  "generated_at": "2026-10-19T12:54:37Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "traces",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [
+      "backend: openai_compat"
+    ],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "85a3cc34828bcd6c9c5b7ed7cfdca1c5882fa6d509621b3145a614d25a45ef1f"
+}
