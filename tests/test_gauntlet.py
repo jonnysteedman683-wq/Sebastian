@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+import os
+import sys
+from pathlib import Path
+
 import pytest
 
+from sebastian.approval import AllowApprover, ApprovalGate, Approver, DenyApprover
 from sebastian.gauntlet import (
+    MAX_CHECK_OUTPUT,
     PREDICT_INSTRUCTION,
     GauntletError,
     GauntletPolicy,
@@ -11,8 +17,11 @@ from sebastian.gauntlet import (
     next_stage,
     parse_prediction,
     predict,
+    verify,
 )
 from sebastian.llm import LLMError, ScriptedLLM
+from sebastian.tools import CommandPolicy, ToolRegistry, Workspace, command_tool, file_tools
+from sebastian.trace import MemoryTracer
 from sebastian.types import LLMResponse, Usage
 
 GOOD = """<checks>
@@ -185,3 +194,76 @@ def test_rejected_prediction_still_returns_usage() -> None:
 def test_predict_propagates_llm_errors() -> None:
     with pytest.raises(LLMError):
         predict(ScriptedLLM([]), "SYS", "task")
+
+
+# --- VERIFY (B11b) ---------------------------------------------------------------------------
+
+PY = os.path.basename(sys.executable)
+CHECK = "import sys, pathlib\nsys.exit(1 if 'bug' in pathlib.Path('app.txt').read_text() else 0)\n"
+
+
+def _verify_env(
+    tmp_path: Path, approver: Approver | None = None
+) -> tuple[ToolRegistry, ApprovalGate, MemoryTracer]:
+    ws = Workspace(tmp_path)
+    (tmp_path / "check.py").write_text(CHECK)
+    tools = ToolRegistry([*file_tools(ws), command_tool(ws, CommandPolicy.of([PY]))])
+    return tools, ApprovalGate(approver or AllowApprover()), MemoryTracer()
+
+
+def test_failed_check_loops_back_then_fix_passes(tmp_path: Path) -> None:
+    tools, gate, tracer = _verify_env(tmp_path)
+    pred = parse_prediction(f"<checks>\nfile: app.txt\nrun: {PY} check.py\n</checks>")
+    policy = GauntletPolicy()
+
+    (tmp_path / "app.txt").write_text("has a bug")  # ACT, first attempt
+    first = verify(pred, tools, gate, tracer, "r1")
+    assert not first.passed
+    assert first.checks[0].output.startswith("exit_code=1")
+    t = next_stage(Stage.VERIFY, first.passed, 0, policy)
+    assert (t.stage, t.loops) == (Stage.ACT, 1)
+    findings = first.findings(t.loops)
+    assert f"`{PY} check.py`: FAILED" in findings
+    assert "DATA" in findings
+
+    (tmp_path / "app.txt").write_text("fixed")  # ACT, second attempt
+    second = verify(pred, tools, gate, tracer, "r1")
+    assert second.passed
+    assert next_stage(Stage.VERIFY, second.passed, t.loops, policy).stage is Stage.CRITIQUE
+    events = [e for e in tracer.events if e["event"] == "gauntlet_verify"]
+    assert [e["passed"] for e in events] == [False, True]
+
+
+def test_denied_check_fails_the_gate_and_never_runs(tmp_path: Path) -> None:
+    tools, gate, tracer = _verify_env(tmp_path, DenyApprover())
+    (tmp_path / "app.txt").write_text("fixed")
+    out = verify(Prediction(commands=(f"{PY} check.py",)), tools, gate, tracer, "r2")
+    assert not out.passed
+    assert out.denied
+    assert out.checks[0].output == "denied by approval gate"
+    assert "denied" in out.findings(1)
+    denied = [e for e in tracer.events if e["event"] == "approval_denied"]
+    assert denied[0]["stage"] == "verify"
+
+
+def test_non_allowlisted_command_fails(tmp_path: Path) -> None:
+    tools, gate, _ = _verify_env(tmp_path)
+    out = verify(Prediction(commands=("ls",)), tools, gate)
+    assert not out.passed
+    assert "not allowed" in out.checks[0].output
+
+
+def test_missing_run_command_tool_fails(tmp_path: Path) -> None:
+    tools = ToolRegistry(file_tools(Workspace(tmp_path)))
+    out = verify(Prediction(commands=("pytest",)), tools, ApprovalGate(AllowApprover()))
+    assert not out.passed
+    assert "not available" in out.checks[0].output
+
+
+def test_no_commands_passes_and_output_is_tail_capped(tmp_path: Path) -> None:
+    tools, gate, _ = _verify_env(tmp_path)
+    assert verify(Prediction(files=("notes.md",)), tools, gate).passed
+    (tmp_path / "loud.py").write_text("print('x' * 10000)\nraise SystemExit(3)\n")
+    out = verify(Prediction(commands=(f"{PY} loud.py",)), tools, gate)
+    assert not out.passed
+    assert len(out.checks[0].output) <= MAX_CHECK_OUTPUT

@@ -3,6 +3,7 @@
 All notable changes follow [Keep a Changelog](https://keepachangelog.com) and SemVer.
 
 ## [Unreleased]
+- feat: Gauntlet VERIFY stage (B11b): `verify()` runs predicted checks through `run_command` and the approval gate. Any non-zero exit, error or denial fails the gate, and `findings()` builds the loop-back turn with tail-capped output marked as data. Not wired into runs yet.
 - feat: `sebastian.gauntlet` stage machine and PREDICT stage (B11a): bounded loop/replan/help transitions, strict `<checks>` parsing (workspace-relative paths, bare executables, no shell characters, Python changes need a check). Not wired into runs yet.
 - docs: B11 Gauntlet design doc for owner review (`docs/design/B11-gauntlet.md`).
 

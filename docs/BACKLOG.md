@@ -30,7 +30,7 @@ Rules:
 - [x] 🔒 **B10 Container sandbox for `run_command`** (PROPOSALS #1). Owner chose bubblewrap; opt-in via `--sandbox bwrap`.
 - [ ] **B11 Gauntlet stages** (PROPOSALS #3). Design approved (PR #26): `docs/design/B11-gauntlet.md`. Open questions take the doc's proposed defaults.
   - [x] **B11a Stage machine + PREDICT.** `gauntlet.py`: `GauntletPolicy`, `Stage`, `next_stage`, strict `<checks>` parser, tool-free `predict`. Not wired in.
-  - [ ] **B11b VERIFY.** Run predicted checks via `run_command`; loop back on failure. *Done when:* a scripted run that breaks a test loops, fixes it and passes; a denied check fails the gate.
+  - [x] **B11b VERIFY.** Run predicted checks via `run_command`; loop back on failure. *Done when:* a scripted run that breaks a test loops, fixes it and passes; a denied check fails the gate.
   - [ ] **B11c CRITIQUE.** Separate tool-less critic, strict verdict parser, `--critic-model`. *Done when:* critic FAIL loops; malformed critic output counts as FAIL.
   - [ ] **B11d HELP + `needs_help` + `--gauntlet`.** *Done when:* `max_loops` exhaustion ends as `needs_help`; inventory examples re-signed.
   - [ ] **B11e Evals.** Gauntlet on/off comparison and red-team attacks aimed at the critic.
