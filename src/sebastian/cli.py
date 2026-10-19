@@ -136,6 +136,12 @@ def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser])
     mods.add_argument("--gauntlet", action="store_true", help="also run under the Gauntlet")
     mods.add_argument("--scars", type=Path, default=Path("evals/scars"), help="scar directory")
     mods.add_argument("--no-record", action="store_true", help="don't add results to history")
+    mods.add_argument(
+        "--unsafe-unsandboxed-checkers",
+        action="store_true",
+        help="run code-executing checkers and commands without bubblewrap (host process, "
+        "scrubbed env, network on); live runs refuse those cases otherwise",
+    )
 
 
 def _add_run_options(run: argparse.ArgumentParser) -> None:
@@ -358,6 +364,7 @@ def _models(
         render,
         run_leaderboard,
     )
+    from sebastian.evals.sandbox import UNSAFE_WARNING  # noqa: PLC0415
     from sebastian.evals.scar import ScarError, load_scars  # noqa: PLC0415
 
     def factory(spec: ModelSpec) -> LLM:
@@ -370,7 +377,15 @@ def _models(
     try:
         specs = [parse_spec(s) for s in args.specs]
         cases = [*ALL, *load_scars(args.scars)]
-        rows = run_leaderboard(specs, factory, cases, gauntlet=args.gauntlet)
+        if args.unsafe_unsandboxed_checkers:
+            print(UNSAFE_WARNING, file=sys.stderr)
+        rows = run_leaderboard(
+            specs,
+            factory,
+            cases,
+            gauntlet=args.gauntlet,
+            unsafe_checkers=args.unsafe_unsandboxed_checkers,
+        )
     except (LeaderboardError, ScarError) as exc:
         print(f"models: {exc}", file=sys.stderr)
         return 2
