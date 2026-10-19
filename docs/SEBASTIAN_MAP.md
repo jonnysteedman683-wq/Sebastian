@@ -44,7 +44,7 @@ flowchart TD
 | Context management | `context.py`: per-result cap + oldest-first elision of tool results (`ContextPolicy`) |
 | Tool layer | `tools/base.py`, `tools/builtin.py`, `tools/workspace.py` |
 | Memory/state | `memory.py` (JSON, schema v1) |
-| LLM backends | `llm/anthropic.py`, `llm/scripted.py`, `llm/base.py` |
+| LLM backends | `llm/anthropic.py`, `llm/openai_compat.py` (B37, stdlib HTTP, any OpenAI-compatible server), `llm/scripted.py`, `llm/base.py`; `llm.make_llm` picks one from `SEBASTIAN_BACKEND` |
 | Schedulers / servers | None (deliberately). See PROPOSALS. |
 | Repo watch tooling | `watch/` (`sebastian-watch`): `gitio.py` read-only git, `inventory.py` static AST inventory + risk signals, `report.py` finalise/sign/verify, `runner.py` unattended run + delivery, `cli.py`; scheduled by `.github/workflows/watch.yml`; keyless publish to the `watch-state` branch (`latest.json`, `reports/`, `state.json`) |
 | Daily agent | `docs/BACKLOG.md` (queue), `AGENTS.md` (routine), `.github/workflows/guard.yml` (guarded paths), `scripts/resign_examples.py` |

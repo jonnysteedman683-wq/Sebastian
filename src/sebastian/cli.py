@@ -17,7 +17,8 @@ from sebastian.checkpoint import CheckpointError, Checkpoints
 from sebastian.clock import SystemClock
 from sebastian.config import Config
 from sebastian.gauntlet import GauntletPolicy
-from sebastian.llm.base import LLM, RetryingLLM
+from sebastian.llm import make_llm
+from sebastian.llm.base import LLM
 from sebastian.llm.scripted import ScriptedLLM
 from sebastian.memory import MemoryStore
 from sebastian.session import SessionError, SessionStore
@@ -229,27 +230,17 @@ def _scar(cfg: Config, args: argparse.Namespace) -> int:
     return 0
 
 
-def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], LLM] | None) -> int:
+def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], LLM]) -> int:
     from sebastian.evolve import EvolveConfig, EvolveError, evolve_once, open_pr  # noqa: PLC0415
 
     model = args.model or cfg.model
-    if llm_factory is None:  # pragma: no cover - needs the SDK and a key
-        from sebastian.llm.anthropic import AnthropicLLM  # noqa: PLC0415
-
-        llm: LLM = RetryingLLM(AnthropicLLM(model))
-    else:
-        llm = llm_factory(model)
+    llm = llm_factory(model)
     gauntlet = None
     if args.gauntlet or args.gauntlet_revert or args.critic_model:
         critic_model = args.critic_model or cfg.critic_model
         critic: LLM | None = None
         if critic_model and critic_model != model:
-            if llm_factory is None:  # pragma: no cover - needs the SDK and a key
-                from sebastian.llm.anthropic import AnthropicLLM  # noqa: PLC0415
-
-                critic = RetryingLLM(AnthropicLLM(critic_model))
-            else:
-                critic = llm_factory(critic_model)
+            critic = llm_factory(critic_model)
         gauntlet = GauntletPolicy(critic_llm=critic, revert_on_loop=args.gauntlet_revert)
     config = EvolveConfig(
         base=args.base,
@@ -277,16 +268,8 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
     return 0 if report.accepted else 1
 
 
-def _redteam(
-    cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], LLM] | None
-) -> int:
+def _redteam(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], LLM]) -> int:
     from sebastian.evals.redteam import RedTeamError, run_redteam  # noqa: PLC0415
-
-    if llm_factory is None:  # pragma: no cover - needs the SDK and a key
-        from sebastian.llm.anthropic import AnthropicLLM  # noqa: PLC0415
-
-        def llm_factory(name: str) -> LLM:
-            return RetryingLLM(AnthropicLLM(name))
 
     target = args.model or cfg.model
     attacker = llm_factory(args.attacker_model or target)
@@ -361,6 +344,15 @@ def _print_result(result: RunResult) -> int:
     return 0 if result.stop_reason is StopReason.COMPLETED else 1
 
 
+def _real_factory(cfg: Config) -> Callable[[str], LLM]:
+    """Real model clients for the configured backend (``SEBASTIAN_BACKEND``, B37)."""
+
+    def make(name: str) -> LLM:
+        return make_llm(name, cfg.backend, cfg.base_url)
+
+    return make
+
+
 def main(
     argv: Sequence[str] | None = None,
     llm_factory: Callable[[str], LLM] | None = None,
@@ -372,12 +364,13 @@ def main(
         return 0
 
     cfg = Config.from_env()
+    factory = llm_factory or _real_factory(cfg)
     tools_only: dict[str, Callable[[], int]] = {
         "traces": lambda: _print_traces(cfg.home / "traces.jsonl", args.limit),
         "undo": lambda: _undo(Checkpoints(cfg.home / "checkpoints"), args),
         "scar": lambda: _scar(cfg, args),
-        "evolve": lambda: _evolve(cfg, args, llm_factory),
-        "redteam": lambda: _redteam(cfg, args, llm_factory),
+        "evolve": lambda: _evolve(cfg, args, factory),
+        "redteam": lambda: _redteam(cfg, args, factory),
         "dashboard": lambda: _dashboard(cfg, args),
     }
     if args.cmd in tools_only:
@@ -414,16 +407,7 @@ def main(
     else:
         approver = InteractiveApprover()
 
-    make: Callable[[str], LLM]
-    if llm_factory is None:
-        from sebastian.llm.anthropic import AnthropicLLM  # noqa: PLC0415
-
-        def make(name: str) -> LLM:
-            return RetryingLLM(AnthropicLLM(name))
-
-    else:
-        make = llm_factory
-
+    make = factory
     model = args.model or cfg.model
     llm = make(model)
     plan_model = args.plan_model or cfg.plan_model

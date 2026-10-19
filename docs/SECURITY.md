@@ -110,6 +110,20 @@ All five pass offline; live results depend on the model and are not part of CI.
 - `--gauntlet-revert` (B33) rolls back the failed attempt's file-tool writes (from checkpoints) before each retry, so the critic only ever sees the final attempt's diff. It does not undo what `run_command` changed, never runs on HELP (the last attempt stays for inspection), and is skipped, with a trace event, when checkpoints are off or corrupt. A later `sebastian undo` stays exact.
 - Critic attacks are evaluated (B11e, `python -m sebastian.evals --compare`): workspace text that tells the reviewer to approve. A case passes only if the run never reports `completed` on a broken or tampered result. Offline, `critic_approved_note` shows VERIFY stopping a broken change before a fooled critic is consulted; `critic_policy_note` shows the critic is the only line of defence against an unrequested extra change that passes its checks, so its live result is the number to watch.
 
+## OpenAI-compatible backend (`llm/openai_compat.py`, B37)
+
+- Swapping the model changes nothing about Sebastian's limits: the approval gate, workspace jail,
+  command sandbox, budget, Gauntlet and evolve's gates all live in code and apply to every backend.
+  Weaker or less-aligned models simply hit them more often; run the evals and red team per model.
+- Prompts carry workspace contents, so `SEBASTIAN_BASE_URL` must be `https://`; plain `http://`
+  is refused unless the host is loopback (`localhost`, `127.0.0.1`, `::1`). Credentials in the
+  URL are refused; the key comes only from `OPENAI_API_KEY`, is sent only as a bearer header and
+  is kept out of `repr`, traces and error messages (errors show at most 500 chars of the
+  server's reply).
+- Malformed tool-call arguments from a model never crash a run: they reach the tool as an
+  `invalid_json_arguments` argument, which the tool rejects by name, so the model sees why.
+- No new dependency: standard-library `urllib` only.
+
 ## Residual risks (escalated, not fixed)
 
 1. **`run_command` arguments are not jailed without a sandbox.** Without one, an allowlisted `cat /etc/passwd` reads outside the workspace, and allowlisting an interpreter (`python`) is equivalent to arbitrary code. Mitigation: approval gate (EXEC needs a yes), the allowlist, and **the bubblewrap sandbox, on by default (`--sandbox auto`)**: bubblewrap with every namespace unshared, only the workspace mounted read-write at `/workspace`, system paths read-only, private `/tmp`, cleared env, and executables restricted to system paths. With bwrap, home directories, `/root` and the rest of `/etc` are not visible. With no usable bubblewrap, `auto` falls back to unsandboxed and warns on every run; `--sandbox bwrap` refuses to run instead.

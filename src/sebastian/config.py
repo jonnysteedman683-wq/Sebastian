@@ -37,6 +37,8 @@ class Config:
     plan_model: str = ""
     escalation_model: str = ""
     critic_model: str = ""
+    backend: str = "anthropic"  # B37: "anthropic" or "openai" (any OpenAI-compatible server)
+    base_url: str = ""  # OpenAI-compatible endpoint, e.g. http://localhost:11434/v1 for Ollama
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> Config:
@@ -51,4 +53,12 @@ class Config:
             plan_model=env.get("SEBASTIAN_PLAN_MODEL", ""),
             escalation_model=env.get("SEBASTIAN_ESCALATION_MODEL", ""),
             critic_model=env.get("SEBASTIAN_CRITIC_MODEL", ""),
+            backend=_backend(env.get("SEBASTIAN_BACKEND") or "anthropic"),
+            base_url=env.get("SEBASTIAN_BASE_URL", ""),
         )
+
+
+def _backend(value: str) -> str:
+    if value not in {"anthropic", "openai"}:
+        raise ValueError(f"SEBASTIAN_BACKEND must be anthropic or openai, got {value!r}")
+    return value
