@@ -81,6 +81,17 @@ def _build_parser() -> argparse.ArgumentParser:
         help="resume a budget-stopped agent run this many times (0 disables)",
     )
     evo.add_argument(
+        "--gauntlet",
+        action="store_true",
+        help="the inner run must pass the Gauntlet; a needs_help run is rejected",
+    )
+    evo.add_argument(
+        "--gauntlet-revert",
+        action="store_true",
+        help="also undo failed Gauntlet attempts before retrying (implies --gauntlet)",
+    )
+    evo.add_argument("--critic-model", help="Gauntlet critic model (implies --gauntlet)")
+    evo.add_argument(
         "--sandbox",
         choices=["auto", "bwrap", "none"],
         default="auto",
@@ -228,6 +239,18 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
         llm: LLM = RetryingLLM(AnthropicLLM(model))
     else:
         llm = llm_factory(model)
+    gauntlet = None
+    if args.gauntlet or args.gauntlet_revert or args.critic_model:
+        critic_model = args.critic_model or cfg.critic_model
+        critic: LLM | None = None
+        if critic_model and critic_model != model:
+            if llm_factory is None:  # pragma: no cover - needs the SDK and a key
+                from sebastian.llm.anthropic import AnthropicLLM  # noqa: PLC0415
+
+                critic = RetryingLLM(AnthropicLLM(critic_model))
+            else:
+                critic = llm_factory(critic_model)
+        gauntlet = GauntletPolicy(critic_llm=critic, revert_on_loop=args.gauntlet_revert)
     config = EvolveConfig(
         base=args.base,
         item_id=args.item,
@@ -235,6 +258,7 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
         sandbox=args.sandbox,
         max_resumes=max(args.resumes, 0),
         home=cfg.home,
+        gauntlet=gauntlet,
     )
     if args.no_evals:
         config.eval_cmd = None
