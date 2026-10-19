@@ -45,6 +45,7 @@
       "evolve",
       "redteam",
       "version",
+      "models",
       "show"
     ],
     "llm_backends": [
@@ -62,5 +63,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "5f50e52a0976bb58f9dec3f71f619cf45dd579564dd1c8efd573b675de3a6d0e"
+  "signature": "5a0474635d79daf703e77eebacf963794e031e921bd710378031b402e507ed6f"
 }

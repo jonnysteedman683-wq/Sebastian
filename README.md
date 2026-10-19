@@ -43,6 +43,7 @@ sebastian dashboard                  # HTML page: eval trend, injection resistan
 python -m sebastian.evals            # offline, no key
 python -m sebastian.evals --live     # real model: capability + prompt-injection score
 python -m sebastian.evals --live --compare  # plain vs Gauntlet side by side, plus critic attacks
+sebastian models claude-sonnet-5-5 openai:qwen3@http://localhost:11434/v1 --gauntlet  # rank models
 ```
 
 ## How it works

@@ -1,4 +1,4 @@
-"""CLI: run, resume, demo, traces, show, undo, scar, evolve, redteam, dashboard, version."""
+"""CLI: run, resume, demo, traces, show, undo, scar, evolve, redteam, models, dashboard, version."""
 
 from __future__ import annotations
 
@@ -117,13 +117,32 @@ def _build_parser() -> argparse.ArgumentParser:
     dash.add_argument("-o", "--out", type=Path, default=Path("sebastian-dashboard.html"))
     dash.add_argument("--scars", type=Path, default=Path("evals/scars"), help="scar directory")
 
+    _add_models_parser(sub)
+    _add_show_parser(sub)
+
+    sub.add_parser("version")
+    return p
+
+
+def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    mods = sub.add_parser("models", help="run the eval suite on several models and rank them")
+    mods.add_argument(
+        "specs",
+        nargs="+",
+        metavar="SPEC",
+        help="[backend:]model[@base_url], e.g. "
+        "claude-sonnet-5-5 or openai:qwen3@http://localhost:11434/v1",
+    )
+    mods.add_argument("--gauntlet", action="store_true", help="also run under the Gauntlet")
+    mods.add_argument("--scars", type=Path, default=Path("evals/scars"), help="scar directory")
+    mods.add_argument("--no-record", action="store_true", help="don't add results to history")
+
+
+def _add_show_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     show = sub.add_parser("show", help="one run's trace as an HTML (or text) timeline")
     show.add_argument("run_id", help="run id, or a unique prefix of at least 6 characters")
     show.add_argument("-o", "--out", type=Path, help="HTML file (default: sebastian-run-<id>.html)")
     show.add_argument("--text", action="store_true", help="print a text timeline instead")
-
-    sub.add_parser("version")
-    return p
 
 
 def _add_run_options(run: argparse.ArgumentParser) -> None:
@@ -340,6 +359,48 @@ def _dashboard(cfg: Config, args: argparse.Namespace) -> int:
     return 0
 
 
+def _models(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], LLM] | None) -> int:
+    from sebastian.evals.cases import ALL  # noqa: PLC0415
+    from sebastian.evals.leaderboard import (  # noqa: PLC0415
+        LeaderboardError,
+        ModelSpec,
+        parse_spec,
+        render,
+        run_leaderboard,
+    )
+    from sebastian.evals.scar import ScarError, load_scars  # noqa: PLC0415
+
+    def factory(spec: ModelSpec) -> LLM:
+        if llm_factory is not None:  # tests inject scripted models by name
+            return llm_factory(spec.model)
+        return make_llm(spec.model, spec.backend or cfg.backend, spec.base_url or cfg.base_url)
+
+    try:
+        specs = [parse_spec(s) for s in args.specs]
+        cases = [*ALL, *load_scars(args.scars)]
+        rows = run_leaderboard(specs, factory, cases, gauntlet=args.gauntlet)
+    except (LeaderboardError, ScarError) as exc:
+        print(f"models: {exc}", file=sys.stderr)
+        return 2
+    print(render(rows))
+    if not args.no_record:
+        now = time.time()
+        for row in rows:
+            for kind, suite in (("eval", row.plain), ("gauntlet", row.gauntlet)):
+                if suite is None:
+                    continue
+                hostile = [r for r in suite.results if r.hostile]
+                history.append(
+                    cfg.home / history.HISTORY_FILE,
+                    history.Record(
+                        now, kind, row.spec.label,
+                        sum(r.passed for r in suite.results), len(suite.results),
+                        sum(r.resisted for r in hostile), len(hostile),
+                    ),
+                )  # fmt: skip
+    return 0
+
+
 def _start(agent: Sebastian, args: argparse.Namespace) -> int:
     if args.cmd != "resume":
         return _print_result(agent.run(args.task))
@@ -401,6 +462,7 @@ def main(
         "evolve": lambda: _evolve(cfg, args, factory),
         "redteam": lambda: _redteam(cfg, args, factory),
         "dashboard": lambda: _dashboard(cfg, args),
+        "models": lambda: _models(cfg, args, llm_factory),
         "show": lambda: _show(cfg, args),
     }
     if args.cmd in tools_only:
