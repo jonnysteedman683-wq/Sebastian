@@ -3,6 +3,7 @@
 All notable changes follow [Keep a Changelog](https://keepachangelog.com) and SemVer.
 
 ## [Unreleased]
+- docs: docstrings for every public class, function and method in `src/sebastian/watch/` (B21); its `D1` ignore is dropped from `pyproject.toml`, so the whole package is now docstring-checked. No behaviour change.
 - feat: `sebastian show <run_id>` (B42). Renders one run's trace as a self-contained HTML timeline (or `--text`): task, plan, each model step with tool calls and usage, tool results and errors, approval denials, budget warnings, and every Gauntlet stage (predict, verify, critique, revert, help). Accepts a unique id prefix of 6+ characters. No JavaScript; all trace content escaped. Capability inventory updated (`show`) and re-signed.
 - fix: no stale bytecode in agent commands (B43). `run_command` now sets `PYTHONDONTWRITEBYTECODE=1` so a same-size edit to a Python file within one second never runs a stale `.pyc`.
 - feat: dashboard Gauntlet and critic views (B41). Eval chart now shows plain vs Gauntlet scores together; red-team chart shows resistance of the agent vs the critic; new daily "runs needing help" trend; new Gauntlet score and Critic resistance tiles. Series are told apart by line style as well as colour (solid vs dashed), with a legend. Trend lines follow the latest model only, so leaderboard runs across several models don't zigzag. Still no JavaScript and no external assets.
