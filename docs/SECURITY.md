@@ -65,14 +65,21 @@ under `python -m sebastian.evals --live --gauntlet` or `--compare`, not plain `-
   channels), all CI checks pass, offline eval score >= the base commit's.
 - **No merge:** the best outcome is a branch or PR for a human to review.
 - **Gauntlet (opt-in, `--gauntlet`, B34):** the inner run must also pass its own predicted checks and a tool-free critic. A `needs_help` run is rejected outright (the outer gates never rescue it) and its patch is kept for review. This only adds gates; the scope, the outer gates and the no-merge rule are unchanged. Predicted checks still go through the scoped approver, so they are limited to `pytest`, `ruff` and `mypy`.
-- **Gate sandbox:** the gates run code the agent just wrote. With `--sandbox auto` (default) or
-  `bwrap` they run under bubblewrap: no network, only the worktree writable, cleared
-  environment. Use `--sandbox bwrap` to refuse to run at all without it.
+- **Gate sandbox (fails closed, P1-02):** the gates run code the agent just wrote. With
+  `--sandbox auto` (default) or `bwrap` they run under bubblewrap: no network, only the worktree
+  writable, cleared environment. With no usable bubblewrap, `auto` ends with an `EvolveError`
+  before any worktree is created. Agent-written code runs on the host only with
+  `--unsafe-no-sandbox` (`--sandbox none` alone is refused too).
+- **No secrets in gate env (P1-02):** every gate command, sandboxed or not, and bwrap itself,
+  get only `PATH`, `LANG`, `LC_ALL`, `HOME=<worktree>` and `PYTHONPATH=<worktree>/src`. API
+  keys, tokens and anything else in the parent environment never reach the candidate's tests,
+  conftest or src. The report says `gate sandbox: ... (no secrets in gate env)`.
 - **Agent commands:** when the gates are sandboxed, the agent's own `run_command` calls during
   the cycle use the same sandbox, so every piece of agent-written code that runs is jailed.
-- **Residual risk:** with no usable bubblewrap, `auto` runs everything unsandboxed (the report
-  says `gate sandbox: none`). Use `--sandbox bwrap` to forbid that, and prefer a disposable
-  environment (container, CI runner or VM) either way.
+  Unsandboxed, they get the same scrubbed `run_command` environment (`PATH`, `LANG`, `LC_ALL`).
+- **Residual risk:** with `--unsafe-no-sandbox`, agent-written code runs on the host with
+  network and can read any file the user can, even though its environment holds no secrets.
+  Use it only in a disposable environment (container, CI runner or VM).
 
 ## Sessions (`session.py`)
 
