@@ -106,6 +106,17 @@ All five pass offline; live results depend on the model and are not part of CI.
 - `actions/checkout` runs with `persist-credentials: false`, so no `GITHUB_TOKEN` is left in
   `.git/config`. Permissions stay `contents: read`.
 
+## API credentials for OpenAI-compatible servers (`llm/openai_compat.py`, P1-19)
+
+- `OPENAI_API_KEY` is attached only when the base URL's host is exactly `api.openai.com`.
+  Before P1-19 every endpoint (another HTTPS host, or whatever held a localhost port) got it.
+- Any other host gets the key from a variable the user names (`SEBASTIAN_API_KEY_ENV`, or
+  `#ENV_NAME` on a leaderboard spec), or no `Authorization` header at all.
+- Names holding other credentials are refused: `ANTHROPIC_API_KEY`, `GH_*`, `GITHUB_*`.
+- Redirects are refused (`_NoRedirect`): urllib would otherwise copy the `Authorization`
+  header to the redirect target.
+- Credentials in the base URL (`https://user:key@host`) are still rejected.
+
 ## Eval checkers (`evals/sandbox.py`, P1-18)
 
 Three B38 cases (`fix_failing_test`, `rename_across_files`, `find_bug_no_hint`; `runs_code=True`)

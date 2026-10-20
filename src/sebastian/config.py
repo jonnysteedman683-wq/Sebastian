@@ -39,6 +39,7 @@ class Config:
     critic_model: str = ""
     backend: str = "anthropic"  # B37: "anthropic" or "openai" (any OpenAI-compatible server)
     base_url: str = ""  # OpenAI-compatible endpoint, e.g. http://localhost:11434/v1 for Ollama
+    api_key_env: str = ""  # P1-19: variable holding the key for a non-OpenAI base URL
     max_cost: float = 0.0  # B40: USD per run; 0 = no dollar limit (needs prices.json)
 
     @classmethod
@@ -56,6 +57,7 @@ class Config:
             critic_model=env.get("SEBASTIAN_CRITIC_MODEL", ""),
             backend=_backend(env.get("SEBASTIAN_BACKEND") or "anthropic"),
             base_url=env.get("SEBASTIAN_BASE_URL", ""),
+            api_key_env=env.get("SEBASTIAN_API_KEY_ENV", "").strip(),
             max_cost=_cost(env.get("SEBASTIAN_MAX_COST", "")),
         )
 

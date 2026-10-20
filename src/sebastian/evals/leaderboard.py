@@ -1,10 +1,14 @@
 """Model leaderboard (B39): run the eval suite against several models and rank them.
 
-``sebastian models SPEC [SPEC ...]`` where each SPEC is ``[backend:]model[@base_url]``:
+``sebastian models SPEC [SPEC ...]`` where each SPEC is ``[backend:]model[@base_url][#KEY_ENV]``:
 
     claude-sonnet-5-5                         default backend (SEBASTIAN_BACKEND)
     anthropic:claude-opus-5-5
-    openai:qwen3@http://localhost:11434/v1    a local Ollama model
+    openai:qwen3@http://localhost:11434/v1    a local Ollama model (no key sent)
+    openai:m@https://openrouter.ai/api/v1#OPENROUTER_API_KEY
+
+``OPENAI_API_KEY`` goes only to api.openai.com; any other host gets the variable named after
+``#`` or no key at all (P1-19).
 
 Every model gets the same cases, the same budget and the same guardrails. Rows are ranked by
 score, then injection resistance, then critic containment (with ``--gauntlet``), then fewest
@@ -18,7 +22,8 @@ from dataclasses import dataclass
 
 from sebastian.evals.harness import EvalCase, SuiteResult, run_suite
 from sebastian.gauntlet import GauntletPolicy
-from sebastian.llm.base import LLM
+from sebastian.llm.base import LLM, LLMError
+from sebastian.llm.openai_compat import check_key_env
 
 BACKENDS = ("anthropic", "openai")
 MAX_MODELS = 10
@@ -35,6 +40,7 @@ class ModelSpec:
     model: str
     backend: str = ""  # "" = the configured default
     base_url: str = ""
+    key_env: str = ""  # variable holding this endpoint's API key (P1-19)
 
     @property
     def label(self) -> str:
@@ -44,13 +50,21 @@ class ModelSpec:
 
 
 def parse_spec(text: str) -> ModelSpec:
-    """Parse ``[backend:]model[@base_url]``.
+    """Parse ``[backend:]model[@base_url][#KEY_ENV]``.
 
     The backend prefix is recognised only for known backends, so model names that contain a
     colon (``qwen3:8b``) still work.
     """
     text = text.strip()
-    rest, _, base_url = text.partition("@")
+    body, hash_, key_env = text.rpartition("#") if "#" in text else (text, "", "")
+    if hash_:
+        if not key_env.strip():
+            raise LeaderboardError(f"empty #KEY_ENV in {text!r}")
+        try:
+            key_env = check_key_env(key_env)
+        except LLMError as exc:
+            raise LeaderboardError(f"{exc}: {text!r}") from exc
+    rest, _, base_url = body.partition("@")
     backend = ""
     head, sep, tail = rest.partition(":")
     if sep and head in BACKENDS:
@@ -59,7 +73,9 @@ def parse_spec(text: str) -> ModelSpec:
         raise LeaderboardError(f"no model name in {text!r}")
     if base_url and backend != "openai":
         raise LeaderboardError(f"@base_url needs the openai backend: {text!r}")
-    return ModelSpec(rest.strip(), backend, base_url.strip())
+    if key_env and backend != "openai":
+        raise LeaderboardError(f"#KEY_ENV needs the openai backend: {text!r}")
+    return ModelSpec(rest.strip(), backend, base_url.strip(), key_env)
 
 
 @dataclass(slots=True)
