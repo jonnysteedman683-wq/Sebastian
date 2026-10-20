@@ -1,5 +1,5 @@
 {
-  "summary": "4 commit(s): fix(security): P1-18 sandbox and scrub the eval checkers; Merge main into claude/p1-18-sandbox-eval-checkers; Merge main into claude/p1-18-sandbox-eval-checkers; Merge pull request #44 from jonnysteedman683-wq/claude/p1-18-sandbox-eval-checkers",
+  "summary": "5 commit(s): fix(security)!: P1-19 send API keys only to the endpoint they belong to; Merge main into claude/p1-19-per-endpoint-keys; Merge main into claude/p1-19-per-endpoint-keys; Merge main into claude/p1-19-per-endpoint-keys; Merge pull request #46 from jonnysteedman683-wq/claude/p1-19-per-endpoint-keys",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
@@ -8,7 +8,7 @@
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "a63c1115ac21cec38e73aecf7377977de8c56b8f",
+          "sha": "1d0bc821aa34691ffda9fc0e5c099793eb008620",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 42,
+  "seq": 43,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "9ab91e9a9b2f435b2e84a28fac24537906fde22f",
-    "to_sha": "a63c1115ac21cec38e73aecf7377977de8c56b8f"
+    "from_sha": "a63c1115ac21cec38e73aecf7377977de8c56b8f",
+    "to_sha": "1d0bc821aa34691ffda9fc0e5c099793eb008620"
   },
-  "generated_at": "2026-10-20T13:29:48Z",
+  "generated_at": "2026-10-20T13:52:36Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -78,5 +78,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "256b8818456655fb34cd2708a8cb32942907f33d3fe9bad3522d670df243d39b"
+  "signature": "53e6eee598e8712a7d73ffad4f4ffe1ed270c9f5b6114603168b4e91053a9e98"
 }

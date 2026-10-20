@@ -1,0 +1,82 @@
+{
+  "summary": "5 commit(s): fix(security)!: P1-19 send API keys only to the endpoint they belong to; Merge main into claude/p1-19-per-endpoint-keys; Merge main into claude/p1-19-per-endpoint-keys; Merge main into claude/p1-19-per-endpoint-keys; Merge pull request #46 from jonnysteedman683-wq/claude/p1-19-per-endpoint-keys",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "13 file(s) changed",
+      "description": "Detected automatically from code: 13 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "1d0bc821aa34691ffda9fc0e5c099793eb008620",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 43,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "a63c1115ac21cec38e73aecf7377977de8c56b8f",
+    "to_sha": "1d0bc821aa34691ffda9fc0e5c099793eb008620"
+  },
+  "generated_at": "2026-10-20T13:52:36Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "53e6eee598e8712a7d73ffad4f4ffe1ed270c9f5b6114603168b4e91053a9e98"
+}
