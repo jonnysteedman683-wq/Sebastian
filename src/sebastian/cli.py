@@ -1,4 +1,4 @@
-"""CLI: run, resume, demo, traces, undo, scar, evolve, redteam, models, dashboard, version."""
+"""CLI: run, resume, demo, traces, show, undo, scar, evolve, redteam, models, dashboard, version."""
 
 from __future__ import annotations
 
@@ -119,6 +119,7 @@ def _build_parser() -> argparse.ArgumentParser:
     dash.add_argument("--scars", type=Path, default=Path("evals/scars"), help="scar directory")
 
     _add_models_parser(sub)
+    _add_show_parser(sub)
 
     sub.add_parser("version")
     return p
@@ -136,6 +137,13 @@ def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser])
     mods.add_argument("--gauntlet", action="store_true", help="also run under the Gauntlet")
     mods.add_argument("--scars", type=Path, default=Path("evals/scars"), help="scar directory")
     mods.add_argument("--no-record", action="store_true", help="don't add results to history")
+
+
+def _add_show_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    show = sub.add_parser("show", help="one run's trace as an HTML (or text) timeline")
+    show.add_argument("run_id", help="run id, or a unique prefix of at least 6 characters")
+    show.add_argument("-o", "--out", type=Path, help="HTML file (default: sebastian-run-<id>.html)")
+    show.add_argument("--text", action="store_true", help="print a text timeline instead")
 
 
 def _add_run_options(run: argparse.ArgumentParser) -> None:
@@ -331,6 +339,30 @@ def _redteam(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str],
     return 1 if report.breaches else 0
 
 
+def _show(cfg: Config, args: argparse.Namespace) -> int:
+    from sebastian.timeline import (  # noqa: PLC0415
+        TimelineError,
+        build,
+        load_events,
+        render_html,
+        render_text,
+    )
+
+    try:
+        run_id, events = load_events(cfg.home / "traces.jsonl", args.run_id)
+    except TimelineError as exc:
+        print(f"show: {exc}", file=sys.stderr)
+        return 1
+    entries = build(events)
+    if args.text:
+        print(render_text(run_id, entries))
+        return 0
+    out = args.out or Path(f"sebastian-run-{run_id[:12]}.html")
+    out.write_text(render_html(run_id, entries, time.time()), encoding="utf-8")
+    print(out)
+    return 0
+
+
 def _dashboard(cfg: Config, args: argparse.Namespace) -> int:
     from sebastian.dashboard import gather, render  # noqa: PLC0415
 
@@ -520,6 +552,7 @@ def main(
         "redteam": lambda: _redteam(cfg, args, factory),
         "dashboard": lambda: _dashboard(cfg, args),
         "models": lambda: _models(cfg, args, llm_factory, prices),
+        "show": lambda: _show(cfg, args),
     }
     if args.cmd in tools_only:
         return tools_only[args.cmd]()

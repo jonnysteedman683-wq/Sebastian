@@ -70,7 +70,7 @@ def test_render_escapes_everything_untrusted() -> None:
 
 def test_render_empty_state() -> None:
     page = render(Snapshot([], [], [], 0.0))
-    assert page.count("No data yet.") == 2
+    assert page.count("No data yet.") == 3  # eval, red team, needs help
     assert "No runs traced yet." in page
     assert "No scars yet." in page
     assert "run evals --live" in page
@@ -99,3 +99,65 @@ def test_cli_dashboard(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
     assert main(["dashboard", "-o", str(out), "--scars", str(tmp_path / "s")]) == 0
     assert out.read_text().startswith("<!doctype html>")
     assert "1 scored round(s), 0 run(s), 0 scar(s)" in capsys.readouterr().err
+
+
+# --- B41: Gauntlet, critic and needs-help views ---------------------------------------------
+
+
+def test_multi_line_chart_draws_each_series_with_a_legend() -> None:
+    from sebastian.dashboard import multi_line_chart
+
+    page = multi_line_chart(
+        "T", [("plain", [(1.0, 0.5), (2.0, 0.6)]), ("Gauntlet", [(2.0, 0.9)]), ("x", [])], "l"
+    )
+    assert page.count("<polyline") == 2  # the empty series is skipped
+    assert 'class="key s1">plain' in page
+    assert 'class="key s2">Gauntlet' in page
+    assert "Gauntlet 1970-01-01" in page  # series name in each point's tooltip
+    assert "No data yet." in multi_line_chart("T", [("a", [])], "l")
+    same_time = multi_line_chart("T", [("a", [(5.0, 0.1)]), ("b", [(5.0, 0.2)])], "l")
+    assert same_time.count('cx="320.0"') == 2  # a single instant is centred
+
+
+def test_gauntlet_and_critic_tiles_and_charts() -> None:
+    records = [
+        rec(1.0, "eval", 6, 10),
+        rec(2.0, "gauntlet", 9, 10),
+        rec(3.0, "redteam", 4, 5, 4, 5),
+        rec(4.0, "redteam_critic", 3, 4, 3, 4),
+    ]
+    page = render(Snapshot(records, [], [], 9.0))
+    assert "Gauntlet score" in page
+    assert ">90%<" in page
+    assert "Critic resistance" in page
+    assert ">75%<" in page
+    assert 'class="key s2">Gauntlet' in page
+    assert 'class="key s2">critic' in page
+    assert "Live eval score (m)" in page
+
+
+def test_trend_lines_follow_the_latest_model_only() -> None:
+    from sebastian.history import Record
+
+    records = [Record(1.0, "eval", "a", 1, 2), Record(2.0, "eval", "b", 2, 2),
+               Record(3.0, "eval", "a", 2, 2)]  # fmt: skip
+    page = render(Snapshot(records, [], [], 9.0))
+    assert "Live eval score (a)" in page
+    eval_fig = page.split("Live eval score (a)")[1].split("</figure>")[0]
+    assert eval_fig.count("<circle") == 2  # model b's point is left out
+
+
+def test_needs_help_by_day() -> None:
+    from sebastian.dashboard import needs_help_by_day
+
+    day = 86_400.0
+    runs = [
+        RunSummary("a", 10.0, "needs_help"),
+        RunSummary("b", 20.0, "completed"),
+        RunSummary("c", day + 5, "completed"),
+        RunSummary("d", day + 6, "running"),  # unfinished: ignored
+        RunSummary("e", None, "needs_help"),  # no start time: ignored
+    ]
+    assert needs_help_by_day(runs) == [(0.0, 0.5), (day, 0.0)]
+    page = render(Snapshot([], runs, [], 9.0))
+    assert "Runs needing help (daily share)" in page

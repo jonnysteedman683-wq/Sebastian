@@ -99,7 +99,8 @@
       "evolve",
       "redteam",
       "version",
-      "models"
+      "models",
+      "show"
     ],
     "llm_backends": [
       "anthropic",
@@ -124,5 +125,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "ac8123329d7a69ab1463234771a4a01d3298a965d5c1f647aa4720d7ef256766"
+  "signature": "f2a90714cd080f277ef6c549aa05500c38156175609ecbf6ab021e45c6789a9e"
 }

@@ -64,13 +64,14 @@ _PRIORITY_RANK = {"LOW": 0, "NORMAL": 1, "HIGH": 2}
 
 
 class ReportError(ValueError):
-    pass
+    """A report could not be built, signed or validated."""
 
 
 # --- signing -------------------------------------------------------------------
 
 
 def canonical(report: Mapping[str, Any]) -> bytes:
+    """The bytes a signature covers: every field but ``signature``, as sorted compact JSON."""
     body = {k: v for k, v in report.items() if k != "signature"}
     return json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
 
@@ -90,6 +91,11 @@ def sign(report: dict[str, Any], key: bytes | None) -> dict[str, Any]:
 
 
 def signature_ok(report: Mapping[str, Any], key: bytes | None) -> bool:
+    """True when ``signature`` matches the report's content.
+
+    With ``key`` that means its HMAC-SHA256; without one (keyless mode) a SHA-256
+    fingerprint, whose authenticity comes from GitHub provenance instead.
+    """
     given = report.get("signature")
     if not isinstance(given, str) or (key is not None and not key):
         return False
@@ -100,6 +106,7 @@ def signature_ok(report: Mapping[str, Any], key: bytes | None) -> bool:
 
 
 def schema_errors(report: Mapping[str, Any], schema: Mapping[str, Any]) -> list[str]:
+    """Every JSON Schema violation in ``report`` as ``path: message``, sorted; empty if valid."""
     try:
         from jsonschema import Draft202012Validator, FormatChecker  # noqa: PLC0415
     except ImportError as exc:  # pragma: no cover - exercised only without the extra
@@ -112,6 +119,7 @@ def schema_errors(report: Mapping[str, Any], schema: Mapping[str, Any]) -> list[
 
 
 def load_schema(path: str | Path) -> dict[str, Any]:
+    """Read a JSON Schema file."""
     data: dict[str, Any] = json.loads(Path(path).read_text(encoding="utf-8"))
     return data
 
@@ -250,6 +258,9 @@ def canary(
     ref: str = "main",
     generated_at: str | None = None,
 ) -> dict[str, Any]:
+    """The signed weekly canary report for ``ref``: no changes, always escalated, so the
+    coordinator can prove the watcher -> coordinator -> owner path still works end to end.
+    """
     sha = git.resolve(ref)
     current = inv.build(git, sha)
     report: dict[str, Any] = {
