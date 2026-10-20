@@ -1,15 +1,15 @@
 {
-  "summary": "6 commit(s): feat: sebastian show renders one run as a timeline (B42); Merge main into claude/b42-show-run; Merge main into claude/b42-show-run; Merge main into claude/b42-show-run; Merge branch 'main' into claude/b42-show-run; Merge pull request #41 from jonnysteedman683-wq/claude/b42-show-run",
+  "summary": "4 commit(s): docs: docstrings across the watch package; drop its D1 ignore (B21); Merge main into claude/b21-watch-docstrings; Merge main into claude/b21-watch-docstrings; Merge pull request #42 from jonnysteedman683-wq/claude/b21-watch-docstrings",
   "changes": [
     {
-      "category": "NEW_FEATURE",
-      "title": "New CLI command show",
-      "description": "Detected automatically from code: New CLI command show.",
+      "category": "ABILITY_CHANGE",
+      "title": "9 file(s) changed",
+      "description": "Detected automatically from code: 9 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "1d09d4a61f236bac39a85b932b37e3263981362e",
-          "path": "src/sebastian/cli.py"
+          "sha": "ffadc084ddff6e5df3dfb7f6340a376aca5306cc",
+          "path": "CHANGELOG.md"
         }
       ],
       "permission": "n/a",
@@ -23,18 +23,20 @@
     "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
   ],
   "pr_previews": [],
-  "escalation_reasons": [],
+  "escalation_reasons": [
+    "watch tooling or report contract changed: src/sebastian/watch/__main__.py, src/sebastian/watch/cli.py, src/sebastian/watch/gitio.py, src/sebastian/watch/inventory.py, src/sebastian/watch/report.py"
+  ],
   "report_type": "repo_change_report",
-  "seq": 39,
+  "seq": 40,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "eaf694b72084092ed64a9f0fea3f87c000f559f1",
-    "to_sha": "1d09d4a61f236bac39a85b932b37e3263981362e"
+    "from_sha": "1d09d4a61f236bac39a85b932b37e3263981362e",
+    "to_sha": "ffadc084ddff6e5df3dfb7f6340a376aca5306cc"
   },
-  "generated_at": "2026-10-20T12:57:37Z",
+  "generated_at": "2026-10-20T13:03:36Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -71,14 +73,12 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [
-      "cli: show"
-    ],
+    "added": [],
     "removed": [],
     "changed": []
   },
-  "risk_score": 0,
-  "escalate": false,
-  "priority": "NORMAL",
-  "signature": "fc5c98822a61b38a7d717f4cca2adc66716b50297a52c777f8ff056d506d2c80"
+  "risk_score": 3,
+  "escalate": true,
+  "priority": "HIGH",
+  "signature": "99ec9854b9b7135eda5e023ec6f8d1e769b0981d95962db3c043dc60deef61b0"
 }
