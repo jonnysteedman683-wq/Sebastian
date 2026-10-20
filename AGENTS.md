@@ -19,7 +19,7 @@ If the item is bigger than one PR, split it in `docs/BACKLOG.md` into smaller it
 
 ## Never
 
-- Touch guarded paths: `.github/`, `src/sebastian/watch/`, `schemas/repo_change_report.schema.json`, `schemas/README.md`, `docs/watch/`, `docs/WORK_ORDER.md`, `AGENTS.md`, `CLAUDE.md`. The Guard check fails your PR unless the owner adds `owner-approved`. If an item needs one, it is 🔒: skip it.
+- Touch guarded paths: `.github/`, `src/sebastian/watch/`, the safety TCB (`src/sebastian/{approval,agent,budget,evolve,gauntlet,checkpoint,session,trace}.py`, `src/sebastian/tools/`, `src/sebastian/llm/`, `src/sebastian/evals/`, `pyproject.toml`, `scripts/`), `schemas/repo_change_report.schema.json`, `schemas/README.md`, `docs/watch/`, `docs/WORK_ORDER.md`, `AGENTS.md`, `CLAUDE.md`. The Guard check fails your PR unless the owner adds `owner-approved`. If an item needs one, it is 🔒: skip it.
 - Push to `main` or to the `watch-state` branch. `watch-state` is written only by the Watch workflow.
 - Add a runtime dependency (`[project] dependencies`), network access in tests, or a real LLM call in tests.
 - Weaken safety: the approval gate, workspace jail, command sandbox, budget governor or trace redaction. Changes there need an owner-approved backlog item.

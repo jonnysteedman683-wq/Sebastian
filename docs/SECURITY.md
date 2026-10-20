@@ -61,6 +61,14 @@ under `python -m sebastian.evals --live --gauntlet` or `--compare`, not plain `-
   `.github/workflows/guard.yml` (one source of truth with the Guard check) and matched after
   resolving `..` and symlinks. Commands are limited to `pytest`, `ruff`, `mypy`. Everything
   else is denied.
+- **Guarded TCB (P1-03):** the guarded set covers the code that enforces safety: approval,
+  the agent loop, budget, evolve, the Gauntlet, checkpoints, sessions, traces, `tools/`, `llm/`,
+  `evals/`, `pyproject.toml` and `scripts/`, on top of CI, the watcher, the report contract and
+  the agents' rules. Evolve can't write them and an unlabelled PR fails the Guard check.
+  `.github/CODEOWNERS` lists the same paths. `DEFAULT_GUARDED` (the fallback when `guard.yml`
+  can't be read) is tested to equal the workflow's regex.
+- **Tests are never deleted (P1-03):** a gate rejects any cycle whose staged change deletes or
+  renames an existing file under `tests/`. Adding and editing tests is still allowed.
 - **Gates before commit:** non-empty diff, no guarded path in the final diff (catches side
   channels), all CI checks pass, offline eval score >= the base commit's.
 - **No merge:** the best outcome is a branch or PR for a human to review.
@@ -181,9 +189,9 @@ judge behaviour by running the workspace's Python, which is code the model under
 2. **Network egress for unsandboxed commands is opt-in (P1-01).** Under bwrap the network namespace is unshared, so commands have no network at all. Under `--sandbox none`, commands run inside `unshare --user --map-root-user --net` (no network, `network="isolated"` in the trace) when the host allows unprivileged user namespaces; if it doesn't, the run refuses to start unless `--allow-network` is passed (`network="host"`). `--allow-network` has no effect on bwrap. Residual: `unshare` cuts the network only; filesystem reads are still unjailed under `--sandbox none` (see 1).
 3. **Prompt injection is mitigated, not prevented.** Needs a hostile-input eval suite (U12).
 4. **RLIMIT_AS** can break some runtimes (e.g. JVM). Tunable via `CommandPolicy.max_memory_bytes`.
-5. **The watcher runs from `main`.** Whoever can merge to `main` can change the watcher and its workflow together. Mitigated by always-escalated tooling changes and the coordinator's heartbeat/canary; fully fixed only by branch protection + CODEOWNERS on `.github/`, `src/sebastian/watch/`, `schemas/` (owner action).
+5. **The watcher runs from `main`.** Whoever can merge to `main` can change the watcher and its workflow together. Mitigated by always-escalated tooling changes and the coordinator's heartbeat/canary; fully fixed only by branch protection that requires code-owner review (owner action); `.github/CODEOWNERS` now names the owner on these paths (P1-03).
 6. **Keyless trust depends on GitHub.** Anyone with push rights to `watch-state` could publish a report with a valid fingerprint. Mitigation: readers fetch only from GitHub and treat non-bot commits there as incidents; fully fixed by protecting `watch-state` so only Actions can push (owner action).
-7. **The Guard label is only as strong as who can apply it.** Anyone with triage/write access (including a coding agent with write access) can add `owner-approved`. Fully fixed by branch protection on `main` requiring your review plus CODEOWNERS on guarded paths (owner action).
+7. **The Guard label is only as strong as who can apply it.** Anyone with triage/write access (including a coding agent with write access) can add `owner-approved`. `.github/CODEOWNERS` now covers every guarded path (P1-03); fully fixed once branch protection on `main` requires code-owner review and restricts who can apply the label (owner actions).
 
 ## Reporting
 Raise a private issue to the owner (Jonny). Never include keys or memory contents.
