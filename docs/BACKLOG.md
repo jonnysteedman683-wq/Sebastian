@@ -120,6 +120,8 @@ Rules:
 
 - [x] 🔒 **P1-02 Evolve requires bwrap and scrubs the gate env** (upgrade spec 2026-10-19). No unsandboxed agent-written code without `--unsafe-no-sandbox`; gate commands never inherit host secrets.
   *Done when:* `evolve --sandbox auto` without bwrap ends with `EvolveError`; `--sandbox none` needs `--unsafe-no-sandbox`; a test with fake `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`/`GH_TOKEN` shows a gate command's env lacks them; report and SECURITY say "no secrets in gate env".
+- [x] **B44 No CHANGELOG conflicts between parallel PRs.** `.gitattributes` sets `CHANGELOG.md merge=union`.
+  *Done when:* a test merges two branches that each add an Unreleased line and gets both lines with no conflict.
 
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
