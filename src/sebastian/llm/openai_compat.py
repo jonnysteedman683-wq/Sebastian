@@ -13,6 +13,12 @@ the server reports them.
 Prompts carry workspace contents, so plain ``http://`` is accepted only for a loopback host;
 anything remote must use ``https://``. The API key is sent only as a bearer header and never
 logged.
+
+Which key goes where (P1-19): ``OPENAI_API_KEY`` is sent only to ``api.openai.com``. Any other
+host gets the key from an environment variable the user names for it (``key_env``: the
+leaderboard's ``#ENV_NAME`` suffix or ``SEBASTIAN_API_KEY_ENV``), or no key at all. Names that
+hold other credentials (``ANTHROPIC_API_KEY``, ``GH_*``, ``GITHUB_*``) are refused. Redirects
+are never followed, so a key can't be forwarded to a host it wasn't meant for.
 """
 
 from __future__ import annotations
@@ -31,6 +37,10 @@ from sebastian.tools.base import Tool
 from sebastian.types import LLMResponse, Message, Role, ToolCall, Usage
 
 API_KEY_ENV = "OPENAI_API_KEY"
+OPENAI_HOST = "api.openai.com"
+KEY_ENV_SETTING = "SEBASTIAN_API_KEY_ENV"
+_FORBIDDEN_KEY_ENVS = frozenset({"ANTHROPIC_API_KEY"})
+_FORBIDDEN_KEY_ENV_PREFIXES = ("GH_", "GITHUB_")
 _TRANSIENT_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
 _MAX_ERROR_BODY = 500
 
@@ -38,12 +48,31 @@ _MAX_ERROR_BODY = 500
 Transport = Callable[[str, dict[str, str], bytes, float], tuple[int, bytes]]
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Refuse every redirect: urllib would forward the ``Authorization`` header to the target."""
+
+    def redirect_request(
+        self, req: Any, fp: Any, code: int, msg: str, headers: Any, newurl: str
+    ) -> None:
+        raise LLMError(
+            f"HTTP {code} redirect to {urlsplit(newurl).netloc or newurl!r} refused; "
+            "set the final URL as the base URL"
+        )
+
+
+_OPENER = urllib.request.build_opener(_NoRedirect)
+
+
+def _open(req: urllib.request.Request, timeout: float) -> Any:
+    return _OPENER.open(req, timeout=timeout)
+
+
 def _urllib_transport(
     url: str, headers: dict[str, str], body: bytes, timeout: float
 ) -> tuple[int, bytes]:
     req = urllib.request.Request(url, data=body, headers=headers, method="POST")  # noqa: S310
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 - scheme checked
+        with _open(req, timeout) as resp:
             return int(resp.status), resp.read()
     except urllib.error.HTTPError as exc:
         return int(exc.code), exc.read()
@@ -58,10 +87,33 @@ def check_base_url(base_url: str) -> str:
     if parts.scheme not in {"http", "https"} or not host:
         raise LLMError(f"base URL must be http(s)://host[:port][/path], got {base_url!r}")
     if parts.username or parts.password:
-        raise LLMError("put the API key in OPENAI_API_KEY, not in the base URL")
+        raise LLMError(
+            "don't put credentials in the base URL; name the key's environment variable with "
+            f"{KEY_ENV_SETTING} (or #ENV_NAME in a leaderboard spec)"
+        )
     if parts.scheme == "http" and not _is_loopback(host):
         raise LLMError("plain http is only allowed for localhost; use https for remote servers")
     return base_url.strip().rstrip("/")
+
+
+def check_key_env(name: str) -> str:
+    """Validate the name of an environment variable that holds an API key."""
+    name = name.strip()
+    if not name.isidentifier() or not name.isascii():
+        raise LLMError(f"API key variable must be an environment variable name, got {name!r}")
+    upper = name.upper()
+    if upper in _FORBIDDEN_KEY_ENVS or upper.startswith(_FORBIDDEN_KEY_ENV_PREFIXES):
+        raise LLMError(f"refusing to send {name} to an OpenAI-compatible server")
+    return name
+
+
+def resolve_api_key(base_url: str, key_env: str = "") -> str:
+    """The key to send to ``base_url``: the named variable, else OPENAI_API_KEY for OpenAI only."""
+    if key_env:
+        return os.environ.get(check_key_env(key_env), "")
+    if (urlsplit(base_url).hostname or "").lower() == OPENAI_HOST:
+        return os.environ.get(API_KEY_ENV, "")
+    return ""
 
 
 def _is_loopback(host: str) -> bool:
@@ -81,6 +133,7 @@ class OpenAICompatLLM:
         model: str,
         base_url: str = "https://api.openai.com/v1",
         api_key: str | None = None,
+        key_env: str = "",
         max_tokens: int = 4096,
         timeout: float = 300.0,
         transport: Transport | None = None,
@@ -91,7 +144,7 @@ class OpenAICompatLLM:
         self.base_url = check_base_url(base_url)
         self.max_tokens = max_tokens
         self.timeout = timeout
-        self._api_key = api_key if api_key is not None else os.environ.get(API_KEY_ENV, "")
+        self._api_key = api_key if api_key is not None else resolve_api_key(self.base_url, key_env)
         self._transport = transport or _urllib_transport
 
     def preflight(self) -> None:
@@ -165,8 +218,17 @@ class OpenAICompatLLM:
         if status in _TRANSIENT_STATUS:
             raise TransientLLMError(f"HTTP {status}: {_snippet(body)}")
         if not 200 <= status < 300:
-            raise LLMError(f"HTTP {status}: {_snippet(body)}")
+            raise LLMError(f"HTTP {status}: {_snippet(body)}{self._key_hint(status)}")
         return parse_response(body)
+
+    def _key_hint(self, status: int) -> str:
+        if status not in {401, 403} or self._api_key:
+            return ""
+        host = urlsplit(self.base_url).hostname
+        return (
+            f" (no API key was sent to {host}; name its variable with {KEY_ENV_SETTING} "
+            "or #ENV_NAME in a leaderboard spec)"
+        )
 
 
 def _snippet(body: bytes) -> str:

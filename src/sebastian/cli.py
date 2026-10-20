@@ -440,7 +440,12 @@ def _models(
         if llm_factory is not None:  # tests inject scripted models by name
             llm = llm_factory(spec.model)
         else:
-            llm = make_llm(spec.model, spec.backend or cfg.backend, spec.base_url or cfg.base_url)
+            llm = make_llm(
+                spec.model,
+                spec.backend or cfg.backend,
+                spec.base_url or cfg.base_url,
+                spec.key_env or (cfg.api_key_env if not spec.base_url else ""),
+            )
         return priced(llm, spec.model, prices)
 
     done: list[Row] = []
@@ -557,7 +562,7 @@ def _real_factory(cfg: Config) -> Callable[[str], LLM]:
     """Real model clients for the configured backend (``SEBASTIAN_BACKEND``, B37)."""
 
     def make(name: str) -> LLM:
-        return make_llm(name, cfg.backend, cfg.base_url)
+        return make_llm(name, cfg.backend, cfg.base_url, cfg.api_key_env)
 
     return make
 
