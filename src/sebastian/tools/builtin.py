@@ -245,6 +245,7 @@ def command_tool(ws: Workspace, policy: CommandPolicy) -> Tool:
             raise ToolError(f"command not allowed: {argv[0]!r}; allowed: {sorted(policy.allowed)}")
         env = {k: v for k, v in os.environ.items() if k in policy.env_passthrough}
         env["HOME"] = str(ws.root)
+        env["PYTHONDONTWRITEBYTECODE"] = "1"
         env.update(policy.env)
         if policy.sandbox == "bwrap":
             argv = _sandboxed(ws, argv, env, policy.extra_ro)
