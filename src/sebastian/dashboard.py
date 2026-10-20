@@ -58,36 +58,79 @@ def _pct(x: float | None) -> str:
     return "n/a" if x is None else f"{x:.0%}"
 
 
-def line_chart(title: str, points: Sequence[tuple[float, float]], label: str) -> str:
+Points = Sequence[tuple[float, float]]
+
+
+def line_chart(title: str, points: Points, label: str) -> str:
     """Inline SVG line chart of ``(time, value 0..1)``; a note when there is no data."""
-    if not points:
+    return multi_line_chart(title, [("", points)], label)
+
+
+def multi_line_chart(title: str, series: Sequence[tuple[str, Points]], label: str) -> str:
+    """Several ``(name, points)`` series on one shared time axis (B41), with a legend.
+
+    Series are drawn in two alternating styles (solid accent, dashed second colour) so they stay
+    apart without relying on colour alone. Empty series are skipped.
+    """
+    drawn = [(name, sorted(pts)) for name, pts in series if pts]
+    if not drawn:
         caption = f"<figcaption>{_e(title)}</figcaption>"
         return f'<figure>{caption}<p class="empty">No data yet.</p></figure>'
-    t0, t1 = points[0][0], points[-1][0]
+    times = [t for _, pts in drawn for t, _ in pts]
+    t0, t1 = min(times), max(times)
     span = (t1 - t0) or 1.0
+    single_time = t0 == t1
     inner_w, inner_h = CHART_W - 2 * PAD, CHART_H - 2 * PAD
 
     def xy(t: float, v: float) -> tuple[float, float]:
-        x = PAD + (inner_w * (t - t0) / span if len(points) > 1 else inner_w / 2)
+        x = PAD + (inner_w / 2 if single_time else inner_w * (t - t0) / span)
         return round(x, 1), round(PAD + inner_h * (1 - max(0.0, min(1.0, v))), 1)
 
-    coords = [xy(t, v) for t, v in points]
-    path = " ".join(f"{x},{y}" for x, y in coords)
     rows = [(g, PAD + inner_h * (1 - g)) for g in (0.0, 0.5, 1.0)]
-    grid = "".join(
+    body = "".join(
         f'<line class="grid" x1="{PAD}" x2="{CHART_W - PAD}" y1="{y}" y2="{y}"/>'
         f'<text class="axis" x="4" y="{y + 4}">{int(g * 100)}%</text>'
         for g, y in rows
     )
-    dots = "".join(
-        f'<circle cx="{x}" cy="{y}" r="3.5"><title>{_e(_date(t))}: {_e(_pct(v))}</title></circle>'
-        for (x, y), (t, v) in zip(coords, points, strict=True)
-    )
+    legend = []
+    for i, (name, pts) in enumerate(drawn):
+        cls = "s1" if i % 2 == 0 else "s2"
+        coords = [xy(t, v) for t, v in pts]
+        path = " ".join(f"{x},{y}" for x, y in coords)
+        tip = f"{_e(name)} " if name else ""
+        body += f'<polyline class="{cls}" points="{path}"/>' + "".join(
+            f'<circle class="{cls}" cx="{x}" cy="{y}" r="3.5"><title>{tip}'
+            f"{_e(_date(t))}: {_e(_pct(v))}</title></circle>"
+            for (x, y), (t, v) in zip(coords, pts, strict=True)
+        )
+        if name:
+            legend.append(f'<span class="key {cls}">{_e(name)}</span>')
+    keys = f'<div class="legend">{"".join(legend)}</div>' if legend else ""
     return (
-        f"<figure><figcaption>{_e(title)}</figcaption>"
+        f"<figure><figcaption>{_e(title)}</figcaption>{keys}"
         f'<svg viewBox="0 0 {CHART_W} {CHART_H}" role="img" aria-label="{_e(label)}">'
-        f'{grid}<polyline points="{path}"/>{dots}</svg></figure>'
+        f"{body}</svg></figure>"
     )
+
+
+def _latest_model(records: Sequence[Record]) -> list[Record]:
+    """Records of one kind for the model of the most recent one, so a leaderboard run across
+    several models does not turn a trend line into a zigzag."""
+    if not records:
+        return []
+    model = records[-1].model
+    return [r for r in records if r.model == model]
+
+
+def needs_help_by_day(runs: Sequence[RunSummary]) -> list[tuple[float, float]]:
+    """Share of finished runs per UTC day that ended in ``needs_help``."""
+    days: dict[float, list[bool]] = {}
+    for r in runs:
+        if r.started is None or r.stop == "running":
+            continue
+        day = float(int(r.started // 86_400) * 86_400)
+        days.setdefault(day, []).append(r.stop == "needs_help")
+    return [(d, sum(v) / len(v)) for d, v in sorted(days.items())]
 
 
 def _tile(name: str, value: str, note: str = "") -> str:
@@ -101,6 +144,8 @@ def render(s: Snapshot) -> str:
     """The full HTML page."""
     evals = [r for r in s.records if r.kind == "eval"]
     reds = [r for r in s.records if r.kind == "redteam"]
+    gauntlets = [r for r in s.records if r.kind == "gauntlet"]
+    critics = [r for r in s.records if r.kind == "redteam_critic"]
     stops = Counter(r.stop for r in s.runs)
     done = [r for r in s.runs if r.stop != "running"]
     completed = stops.get("completed", 0)
@@ -117,18 +162,39 @@ def render(s: Snapshot) -> str:
                   f"{_pct(completed / len(done)) if done else 'n/a'} completed"),
             _tile("Needs help", str(stops.get("needs_help", 0)),
                   "Gauntlet runs that could not prove they were done"),
+            _tile("Gauntlet score", _pct(gauntlets[-1].score) if gauntlets else "n/a",
+                  f"{gauntlets[-1].model}, {_date(gauntlets[-1].t)}" if gauntlets
+                  else "run evals --live --compare"),
+            _tile("Critic resistance", _pct(critics[-1].resistance) if critics else "n/a",
+                  f"latest critic red-team round, {len(critics)} total" if critics
+                  else "run sebastian redteam --target critic"),
             _tile("Spend", f"${sum(r.cost for r in s.runs):,.2f}" if any(r.cost for r in s.runs)
                   else "n/a", "priced runs in the trace" if any(r.cost for r in s.runs)
                   else "add prices.json to track cost"),
         ]
     )  # fmt: skip
-    eval_chart = line_chart(
-        "Live eval score", [(r.t, r.score) for r in evals], "Eval score over time"
+    plain_e, gaunt_e = _latest_model(evals), _latest_model(gauntlets)
+    latest = plain_e or gaunt_e
+    eval_chart = multi_line_chart(
+        "Live eval score" + (f" ({latest[-1].model})" if latest else ""),
+        [
+            ("plain", [(r.t, r.score) for r in plain_e]),
+            ("Gauntlet", [(r.t, r.score) for r in gaunt_e]),
+        ],
+        "Eval score over time, plain and under the Gauntlet",
     )
-    red_chart = line_chart(
+    red_chart = multi_line_chart(
         "Red-team resistance",
-        [(r.t, r.resistance) for r in reds if r.resistance is not None],
-        "Share of red-team attacks resisted over time",
+        [
+            ("agent", [(r.t, r.resistance) for r in reds if r.resistance is not None]),
+            ("critic", [(r.t, r.resistance) for r in critics if r.resistance is not None]),
+        ],
+        "Share of red-team attacks resisted over time, against the agent and the critic",
+    )
+    help_chart = line_chart(
+        "Runs needing help (daily share)",
+        needs_help_by_day(s.runs),
+        "Share of finished runs per day that ended in needs_help",
     )
     stop_rows = (
         "".join(f"<tr><td>{_e(k)}</td><td>{v}</td></tr>" for k, v in sorted(stops.items()))
@@ -150,9 +216,10 @@ def render(s: Snapshot) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sebastian dashboard</title>
 <style>
-:root{{--bg:#fbfbfa;--fg:#1d1d1b;--muted:#6b6b66;--line:#e4e3df;--card:#fff;--accent:#2f6fde}}
+:root{{--bg:#fbfbfa;--fg:#1d1d1b;--muted:#6b6b66;--line:#e4e3df;--card:#fff;--accent:#2f6fde;
+--accent2:#c2410c}}
 @media (prefers-color-scheme:dark){{:root{{--bg:#151514;--fg:#ecebe7;--muted:#9a9993;
---line:#2c2c2a;--card:#1d1d1c;--accent:#7aa7ff}}}}
+--line:#2c2c2a;--card:#1d1d1c;--accent:#7aa7ff;--accent2:#fb923c}}}}
 *{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--fg);
 font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}}
 main{{max-width:960px;margin:0 auto;padding:24px 16px}}h1{{font-size:22px;margin:0 0 4px}}
@@ -163,6 +230,11 @@ h2{{font-size:15px;margin:28px 0 8px}}.sub{{color:var(--muted);margin:0 0 20px}}
 .n{{color:var(--muted);font-size:12px}}figure{{margin:12px 0;padding:12px}}
 figcaption{{font-weight:600;margin-bottom:6px}}svg{{width:100%;height:auto;display:block}}
 polyline{{fill:none;stroke:var(--accent);stroke-width:2}}circle{{fill:var(--accent)}}
+polyline.s2{{stroke:var(--accent2);stroke-dasharray:6 4}}circle.s2{{fill:var(--accent2)}}
+.legend{{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-bottom:4px}}
+.key::before{{content:"";display:inline-block;width:18px;height:0;vertical-align:middle;
+margin-right:6px;border-top:2px solid var(--accent)}}
+.key.s2::before{{border-top:2px dashed var(--accent2)}}
 .grid{{stroke:var(--line)}}.axis{{fill:var(--muted);font-size:11px}}
 table{{border-collapse:separate;border-spacing:0;width:100%;overflow:hidden}}
 td,th{{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}}
@@ -174,7 +246,7 @@ th{{color:var(--muted);font-weight:500;font-size:13px}}tr:last-child td{{border-
 <h1>Sebastian</h1>
 <p class="sub">Generated {_e(_date(s.generated))} UTC from local history, traces and scars.</p>
 <section class="tiles">{tiles}</section>
-<h2>Trends</h2>{eval_chart}{red_chart}
+<h2>Trends</h2>{eval_chart}{red_chart}{help_chart}
 <h2>Runs by outcome</h2><table><tr><th>Stop reason</th><th>Runs</th></tr>{stop_rows}</table>
 <h2>Recent runs</h2><div class="scroll"><table>
 <tr><th>Run</th><th>Started</th><th>Stop</th><th>Steps</th><th>Tokens</th></tr>

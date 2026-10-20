@@ -26,6 +26,8 @@ _RANK = {"READ": 0, "WRITE": 1, "EXEC": 2, "NETWORK": 3}
 
 @dataclass(frozen=True)
 class Inventory:
+    """What Sebastian can do at one commit: tools, CLI commands, backends, model, version."""
+
     tools: dict[str, str] = field(default_factory=dict)  # name -> permission
     cli_commands: frozenset[str] = frozenset()
     llm_backends: frozenset[str] = frozenset()
@@ -35,6 +37,7 @@ class Inventory:
     memory_schema: int | None = None
 
     def to_schema(self) -> dict[str, Any]:
+        """The report schema's ``capability_inventory`` object."""
         return {
             "tools": sorted(self.tools),
             "cli_commands": sorted(self.cli_commands),
@@ -154,6 +157,7 @@ def build(git: Git, sha: str | None) -> Inventory:
 
 
 def diff(old: Inventory, new: Inventory) -> dict[str, list[str]]:
+    """Capability changes from ``old`` to ``new``, as added / removed / changed lines."""
     added: list[str] = []
     removed: list[str] = []
     changed: list[str] = []
