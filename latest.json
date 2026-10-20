@@ -1,14 +1,14 @@
 {
-  "summary": "4 commit(s): fix(security): P1-01 make --sandbox auto fail closed for run_command; Merge main into claude/p1-01-sandbox-fail-closed; Merge main into claude/p1-01-sandbox-fail-closed; Merge pull request #43 from jonnysteedman683-wq/claude/p1-01-sandbox-fail-closed",
+  "summary": "4 commit(s): fix(security): P1-18 sandbox and scrub the eval checkers; Merge main into claude/p1-18-sandbox-eval-checkers; Merge main into claude/p1-18-sandbox-eval-checkers; Merge pull request #44 from jonnysteedman683-wq/claude/p1-18-sandbox-eval-checkers",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "9 file(s) changed",
-      "description": "Detected automatically from code: 9 file(s) changed.",
+      "title": "13 file(s) changed",
+      "description": "Detected automatically from code: 13 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "9ab91e9a9b2f435b2e84a28fac24537906fde22f",
+          "sha": "a63c1115ac21cec38e73aecf7377977de8c56b8f",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 41,
+  "seq": 42,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "ffadc084ddff6e5df3dfb7f6340a376aca5306cc",
-    "to_sha": "9ab91e9a9b2f435b2e84a28fac24537906fde22f"
+    "from_sha": "9ab91e9a9b2f435b2e84a28fac24537906fde22f",
+    "to_sha": "a63c1115ac21cec38e73aecf7377977de8c56b8f"
   },
-  "generated_at": "2026-10-20T13:22:14Z",
+  "generated_at": "2026-10-20T13:29:48Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -78,5 +78,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "89f2826a790357e34770d61f91ff2ed69398c64195a4de843388496e63573784"
+  "signature": "256b8818456655fb34cd2708a8cb32942907f33d3fe9bad3522d670df243d39b"
 }
