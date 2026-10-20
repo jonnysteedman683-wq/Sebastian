@@ -11,6 +11,8 @@ Rules:
 
 - [x] **P1-20 Ungameable B38 checks** (upgrade spec addendum 2026-10-20). Nonce-checked checker scripts, pinned files, behavioural `admit_impossible`.
   *Done when:* scripted models that `os._exit(0)`/`sys.exit(0)` on import, empty `main.py`, or refuse while inventing data all fail; correct scripts pass (16/16, 18/18); a do-nothing model fails every case; the nonce never reaches the workspace or prompt.
+- [x] **P1-19 Per-endpoint API credentials** (upgrade spec addendum 2026-10-20; with P1-17's no-redirect bullet). `OPENAI_API_KEY` only to `api.openai.com`; other hosts need `#ENV_NAME` / `SEBASTIAN_API_KEY_ENV`; credential variables refused; redirects refused.
+  *Done when:* a recording transport shows the OpenAI key only on `api.openai.com`, none on a third-party or localhost host unless named, and `#ANTHROPIC_API_KEY` is a `LeaderboardError`.
 - [x] **P1-18 Sandbox and scrub the eval checkers** (upgrade spec addendum 2026-10-20). Checkers that run model-written code use an allowlisted env, bubblewrap when usable, process-group kill and bounded output; live runs refuse them without bubblewrap unless `--unsafe-unsandboxed-checkers`.
   *Done when:* fake secrets never reach `_py_ok`'s child; no background process survives; 50 MB of output stays bounded; with `bwrap_usable` false a live factory gets `checker sandbox unavailable` and no model code runs; offline suites still 16/16 and 18/18.
 - [ ] **B1 Richer mechanical report write-ups.** In `src/sebastian/watch/runner.py::mechanical_draft`, when no capability changed, emit one change per commit (title = commit subject, evidence = that commit's SHA + first changed file) instead of a single "N file(s) changed".

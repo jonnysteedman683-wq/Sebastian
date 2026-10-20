@@ -54,7 +54,7 @@ def main(argv: Sequence[str] | None = None, live_llm: Callable[[str], LLM] | Non
         if live_llm is None:  # pragma: no cover - needs a real backend
 
             def factory() -> LLM:
-                return make_llm(model, cfg.backend, cfg.base_url)
+                return make_llm(model, cfg.backend, cfg.base_url, cfg.api_key_env)
         else:
 
             def factory() -> LLM:
