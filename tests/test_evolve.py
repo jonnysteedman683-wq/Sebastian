@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import re
 import shutil
 import subprocess
 import sys
@@ -171,6 +172,7 @@ def test_accepted_cycle_commits_on_a_branch(repo: Path, tmp_path: Path) -> None:
     assert report.gates == {
         "non_empty": True,
         "guarded_paths": True,
+        "tests_kept": True,
         "check:" + Path(PY).name + " -c " + CHECK_GREET[2]: True,
         "eval_no_regression": True,
     }
@@ -514,3 +516,109 @@ def test_budget_stopped_agent_is_resumed(repo: Path, tmp_path: Path) -> None:
     assert report.resumes == 0
     assert report.run_stop == "budget_exhausted"
     assert report.reason.startswith("check failed")
+
+
+# --- P1-03: the safety TCB is guarded; tests are never deleted or renamed ------------------
+
+REAL_ROOT = Path(__file__).resolve().parents[1]
+TCB = [
+    "src/sebastian/approval.py",
+    "src/sebastian/agent.py",
+    "src/sebastian/budget.py",
+    "src/sebastian/evolve.py",
+    "src/sebastian/gauntlet.py",
+    "src/sebastian/checkpoint.py",
+    "src/sebastian/session.py",
+    "src/sebastian/trace.py",
+    "src/sebastian/tools/builtin.py",
+    "src/sebastian/llm/base.py",
+    "src/sebastian/evals/cases.py",
+    "src/sebastian/watch/report.py",
+    "pyproject.toml",
+    "scripts/resign_examples.py",
+    ".github/workflows/guard.yml",
+    "AGENTS.md",
+    "CLAUDE.md",
+]
+NOT_TCB = [
+    "src/sebastian/memory.py",
+    "src/sebastian/prompts.py",
+    "tests/test_x.py",
+    "docs/BACKLOG.md",
+]
+
+
+def test_real_guard_regex_matches_default() -> None:
+    """guard.yml and DEFAULT_GUARDED are one guarded set (the fallback never drifts)."""
+    assert load_guarded(REAL_ROOT).pattern == DEFAULT_GUARDED
+
+
+@pytest.mark.parametrize("path", TCB)
+def test_tcb_paths_are_guarded(path: str) -> None:
+    assert re.compile(DEFAULT_GUARDED).search(path), path
+
+
+@pytest.mark.parametrize("path", NOT_TCB)
+def test_ordinary_paths_stay_writable(path: str) -> None:
+    assert not re.compile(DEFAULT_GUARDED).search(path), path
+
+
+def test_scoped_approver_denies_tcb_writes(tmp_path: Path) -> None:
+    tools = {t.name: t for t in file_tools(Workspace(tmp_path))}
+    ap = ScopedApprover(tmp_path, re.compile(DEFAULT_GUARDED), frozenset())
+    for path in ("src/sebastian/approval.py", "pyproject.toml", "src/sebastian/tools/x.py"):
+        assert not ap.approve(tools["write_file"], write("1", path, "pwned")), path
+    assert ap.approve(tools["write_file"], write("1", "src/sebastian/memory.py", "ok"))
+
+
+def test_codeowners_covers_the_guarded_set() -> None:
+    lines = (REAL_ROOT / ".github/CODEOWNERS").read_text().splitlines()
+    owned = {ln.split()[0]: ln.split()[1:] for ln in lines if ln.strip() and not ln.startswith("#")}
+    for owners in owned.values():
+        assert owners == ["@jonnysteedman683-wq"]
+    for path in TCB:
+        assert any(
+            ("/" + path).startswith(pat) if pat.endswith("/") else "/" + path == pat
+            for pat in owned
+        ), f"{path} has no CODEOWNERS entry"
+
+
+def _with_tests(repo: Path) -> None:
+    (repo / "tests").mkdir()
+    (repo / "tests/test_keep.py").write_text("def test_keep():\n    assert True\n")
+    git(repo, "add", "-A")
+    git(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "tests")
+
+
+@pytest.mark.parametrize(
+    "command", ["rm tests/test_keep.py", "mv tests/test_keep.py tests/test_moved.py"]
+)
+def test_deleting_or_renaming_a_test_is_rejected(repo: Path, tmp_path: Path, command: str) -> None:
+    _with_tests(repo)
+    run = ToolCall("9", "run_command", {"command": command})
+    config = cfg(tmp_path, agent_commands=frozenset({"rm", "mv"}), eval_cmd=None)
+    report = evolve_once(repo, agent(run, write("1", "greet.txt", "hello")), config)
+    assert not report.accepted, report.summary()
+    assert report.gates.get("tests_kept") is False
+    assert "tests/test_keep.py" in report.reason
+
+
+def test_adding_and_editing_tests_is_fine(repo: Path, tmp_path: Path) -> None:
+    _with_tests(repo)
+    llm = agent(
+        write("1", "tests/test_keep.py", "def test_keep():\n    assert 1\n"),
+        write("2", "tests/test_new.py", "def test_new():\n    assert 1\n"),
+        write("3", "greet.txt", "hello"),
+    )
+    report = evolve_once(repo, llm, cfg(tmp_path, eval_cmd=None))
+    assert report.accepted, report.summary()
+    assert report.gates["tests_kept"] is True
+
+
+def test_command_side_channel_on_guarded_path_is_rejected(repo: Path, tmp_path: Path) -> None:
+    run = ToolCall("9", "run_command", {"command": "rm .github/workflows/guard.yml"})
+    config = cfg(tmp_path, agent_commands=frozenset({"rm"}), eval_cmd=None)
+    report = evolve_once(repo, agent(run, write("1", "greet.txt", "hello")), config)
+    assert not report.accepted
+    assert report.gates["guarded_paths"] is False
+    assert ".github/workflows/guard.yml" in report.reason

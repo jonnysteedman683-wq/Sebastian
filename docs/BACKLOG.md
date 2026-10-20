@@ -123,6 +123,9 @@ Rules:
 - [x] **B44 No CHANGELOG conflicts between parallel PRs.** `.gitattributes` sets `CHANGELOG.md merge=union`.
   *Done when:* a test merges two branches that each add an Unreleased line and gets both lines with no conflict.
 
+- [x] 🔒 **P1-03 Guard the safety TCB** (upgrade spec 2026-10-19). Approval, agent, budget, evolve, Gauntlet, checkpoints, sessions, traces, tools, LLM backends, evals, packaging and scripts are guarded; evolve can't delete or rename tests; CODEOWNERS.
+  *Done when:* guard.yml and `DEFAULT_GUARDED` include the TCB and match; ScopedApprover denies `src/sebastian/approval.py` and `pyproject.toml`; a cycle that deletes or renames a test is rejected; `.github/CODEOWNERS` lists the same paths.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
