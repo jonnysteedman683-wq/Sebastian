@@ -72,7 +72,7 @@ Rules:
 - [x] **B27 Sandboxed evolve gates.** Run `evolve`'s check and eval commands under bubblewrap (no network, worktree-only) when available.
   *Done when:* gate commands run via the bwrap wrapper when usable; tests cover both paths.
 - [ ] **B26 Trust ladder.** Autonomy level (L0 suggest .. L3 auto-merge code) derived from the eval and PR record; a failed eval drops a level. Auto-merge levels need owner sign-off.
-- [ ] 🔒 **B21 Docstrings for `watch/`.** B7 excluded `src/sebastian/watch/` (guarded). Add docstrings there and drop its `D1` ignore in `pyproject.toml`.
+- [x] 🔒 **B21 Docstrings for `watch/`.** B7 excluded `src/sebastian/watch/` (guarded). Add docstrings there and drop its `D1` ignore in `pyproject.toml`.
   *Done when:* `ruff check .` passes with no `D1` ignore for `watch/`.
 
 - [x] **B28 Resume.** Save each run's conversation; `sebastian resume <run_id>` continues a stopped run under a fresh budget.
@@ -102,13 +102,17 @@ Rules:
 - [x] **B37 OpenAI-compatible backend.** Stdlib-only Chat Completions client; `SEBASTIAN_BACKEND=openai`, `SEBASTIAN_BASE_URL`.
   *Done when:* request/response wire format, tool calls, retries and URL policy are tested with a fake transport; a CLI run uses the configured backend.
 
+- [x] **B42 Run timeline.** `sebastian show <run_id> [-o file] [--text]`: one run's trace as an HTML or text timeline, including every Gauntlet stage.
+  *Done when:* every trace event kind renders, untrusted text is escaped, prefix lookup and errors are tested.
+- [x] **B41 Dashboard: Gauntlet and critic views.** Plain vs Gauntlet score and agent vs critic resistance on shared charts, Gauntlet/critic tiles, daily needs-help trend.
+  *Done when:* multi-series charts, latest-model trend filtering and the needs-help series are tested.
 - [x] **B40 Cost tracking.** Owner-kept `prices.json`, `Usage.cost`, `Budget.max_cost` / `--max-cost`, cost in traces and the dashboard.
   *Done when:* a priced run stops at its dollar limit; an unpriced model with a dollar limit is refused; traces and dashboard show spend.
 - [x] **B39 Model leaderboard.** `sebastian models [backend:]model[@base_url] ...` runs the eval suite per model and ranks them.
   *Done when:* ranking, spec parsing, Gauntlet columns, limits and history records are tested with scripted models.
 - [x] **B38 Harder eval cases.** Six realistic capability cases: fix a failing test, rename across files, find a bug with no hint, edit JSON, summarise CSV, admit an impossible task.
   *Done when:* all pass offline; a do-nothing model fails each; behaviour is checked by running code, not by matching text.
-- [ ] **B43 No stale bytecode in agent commands.** `run_command` should set `PYTHONDONTWRITEBYTECODE=1` (or a per-run `PYTHONPYCACHEPREFIX`) so a same-size edit within one second never runs a stale `.pyc`. Found while building B38.
+- [x] **B43 No stale bytecode in agent commands.** `run_command` should set `PYTHONDONTWRITEBYTECODE=1` (or a per-run `PYTHONPYCACHEPREFIX`) so a same-size edit within one second never runs a stale `.pyc`. Found while building B38.
   *Done when:* a scripted run that edits then re-runs a module sees the new behaviour.
 
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->

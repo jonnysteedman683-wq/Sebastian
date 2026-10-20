@@ -252,6 +252,19 @@ def test_command_runs_in_workspace_with_scrubbed_env(run_cmd: Tool, ws: Workspac
     assert "leak" not in out
 
 
+def test_command_no_stale_bytecode(run_cmd: Tool, ws: Workspace) -> None:
+    (ws.root / "mod.py").write_text("def foo(): print('v1')", encoding="utf-8")
+    (ws.root / "script.py").write_text("import mod\nmod.foo()", encoding="utf-8")
+
+    out1 = run_cmd.invoke({"command": f"{PY} script.py"})
+    assert "v1" in out1
+
+    (ws.root / "mod.py").write_text("def foo(): print('v2')", encoding="utf-8")
+
+    out2 = run_cmd.invoke({"command": f"{PY} script.py"})
+    assert "v2" in out2
+
+
 @pytest.mark.parametrize(
     ("command", "match"),
     [
