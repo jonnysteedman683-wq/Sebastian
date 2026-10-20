@@ -31,8 +31,8 @@ def test_honest_model_ranks_first_and_silent_one_shows_question_mark() -> None:
     assert [r.spec.model for r in rows] == ["honest", "silent"]
     assert not rows[1].usage_reported
     table = render(rows).splitlines()
-    assert table[2].split()[-1] != "?"
-    assert table[3].split()[-1] == "?"
+    assert table[2].split()[7] != "?"  # the tokens column
+    assert table[3].split()[7] == "?"
 
 
 def test_usage_flag_from_the_wire() -> None:

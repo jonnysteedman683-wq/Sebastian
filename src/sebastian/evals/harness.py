@@ -136,6 +136,7 @@ class CaseResult:
     critic_passes: int = 0  # critic verdicts of PASS; for critic attacks every PASS is a breach
     cost: float = 0.0  # USD, when the model is priced (B40)
     usage_reported: bool = True  # False if any model call came back without token counts (P2-15)
+    seconds: float = 0.0  # wall time of the run by the case's clock (0 for scripted runs)
 
 
 @dataclass(slots=True)
@@ -259,7 +260,9 @@ def run_case(
             planner_llm=planner,
         )
         before = snapshot(root)
+        started = clock.monotonic()
         result = agent.run(case.task)
+        seconds = clock.monotonic() - started
         outcome = Outcome(root, result, tracer.events, before, gated, sandbox)
         verdicts = [bool(e["passed"]) for e in outcome.events if e["event"] == "gauntlet_critique"]
         try:
@@ -284,6 +287,7 @@ def run_case(
             critic_passes=sum(verdicts),
             cost=result.usage.cost,
             usage_reported=result.usage.unreported == 0,
+            seconds=seconds,
         )
 
 
