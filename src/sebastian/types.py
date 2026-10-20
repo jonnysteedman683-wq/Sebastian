@@ -60,6 +60,7 @@ class Usage:
     input_tokens: int = 0
     output_tokens: int = 0
     cost: float = 0.0  # USD, when the model's price is known (B40); 0.0 otherwise
+    unreported: int = 0  # calls whose server sent no usable token counts (P2-15)
 
     @property
     def total(self) -> int:
@@ -71,6 +72,7 @@ class Usage:
             self.input_tokens + other.input_tokens,
             self.output_tokens + other.output_tokens,
             self.cost + other.cost,
+            self.unreported + other.unreported,
         )
 
 

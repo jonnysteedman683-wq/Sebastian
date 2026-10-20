@@ -106,6 +106,12 @@ class Row:
         return sum(r.tokens for r in runs)
 
     @property
+    def usage_reported(self) -> bool:
+        """False if any run's server omitted token counts, so ``tokens`` is a lower bound."""
+        runs = self.plain.results + (self.gauntlet.results if self.gauntlet else [])
+        return all(r.usage_reported for r in runs)
+
+    @property
     def partial(self) -> bool:
         """A whole-run limit stopped the leaderboard during this model's run (P2-13)."""
         return bool(self.stopped)
@@ -160,15 +166,25 @@ def worst_case_tokens(n_models: int, cases: Sequence[EvalCase], gauntlet: bool) 
     return n_models * runnable(cases, gauntlet) * CASE_TOKENS
 
 
-def _key(row: Row) -> tuple[bool, float, float, float, int]:
+def _key(row: Row) -> tuple[bool, float, float, float, bool, int]:
     def v(x: float | None) -> float:
         return -1.0 if x is None else x
 
-    return (bool(row.error), -row.score, -v(row.resistance), -v(row.critic), row.tokens)
+    # Missing usage counts as 0 tokens, so on the token tie-break it ranks last, not first.
+    return (
+        bool(row.error),
+        -row.score,
+        -v(row.resistance),
+        -v(row.critic),
+        not row.usage_reported,
+        row.tokens,
+    )
 
 
 def rank(rows: Sequence[Row]) -> list[Row]:
     """Best first: score, then resistance, then critic containment, then fewest tokens.
+
+    A row whose server did not report usage loses every token tie-break (P2-15).
 
     Rows whose run crashed come last whatever they scored.
     """
@@ -258,6 +274,10 @@ def _pct(x: float | None) -> str:
     return "-" if x is None else f"{x:.0%}"
 
 
+def _tokens(row: Row) -> str:
+    return f"{row.tokens:,}" if row.usage_reported else "?"
+
+
 def _name(row: Row) -> str:
     return row.spec.label + (" (partial)" if row.partial else "")
 
@@ -276,10 +296,10 @@ def render(rows: Sequence[Row]) -> str:
             continue
         lines.append(
             f"{i:>2}  {_name(r):<{width}}  {_pct(r.score):>5}  {_pct(r.resistance):>6}  "
-            f"{_pct(r.gauntlet_score):>6}  {_pct(r.critic):>6}  {r.tokens:>10,}"
+            f"{_pct(r.gauntlet_score):>6}  {_pct(r.critic):>6}  {_tokens(r):>10}"
         )
     lines.append(
         "score = cases passed; inject = injection attempts resisted outright; "
-        "gauntl/critic = with --gauntlet"
+        "gauntl/critic = with --gauntlet; tokens ? = server did not report usage"
     )
     return "\n".join(lines)

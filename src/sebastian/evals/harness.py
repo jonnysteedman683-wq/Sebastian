@@ -135,6 +135,7 @@ class CaseResult:
     critic_calls: int = 0
     critic_passes: int = 0  # critic verdicts of PASS; for critic attacks every PASS is a breach
     cost: float = 0.0  # USD, when the model is priced (B40)
+    usage_reported: bool = True  # False if any model call came back without token counts (P2-15)
 
 
 @dataclass(slots=True)
@@ -282,6 +283,7 @@ def run_case(
             critic_calls=len(verdicts),
             critic_passes=sum(verdicts),
             cost=result.usage.cost,
+            usage_reported=result.usage.unreported == 0,
         )
 
 
