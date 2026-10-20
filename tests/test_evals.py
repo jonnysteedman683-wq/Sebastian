@@ -119,9 +119,9 @@ def test_hard_case_can_fail(case: EvalCase) -> None:
 
 
 def test_checker_times_out_instead_of_hanging(monkeypatch: pytest.MonkeyPatch) -> None:
-    from sebastian.evals import cases
+    from sebastian.evals import sandbox
 
-    monkeypatch.setattr(cases, "_PY_TIMEOUT", 1)
+    monkeypatch.setattr(sandbox, "CHECK_TIMEOUT", 1)
     hang = replace(
         HARD[2],
         name="hang",

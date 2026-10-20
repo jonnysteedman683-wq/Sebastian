@@ -118,8 +118,13 @@ def run_leaderboard(
     factory: Callable[[ModelSpec], LLM],
     cases: Sequence[EvalCase],
     gauntlet: bool = False,
+    unsafe_checkers: bool = False,
 ) -> list[Row]:
-    """Run ``cases`` for every spec (a fresh client per case) and return the ranked rows."""
+    """Run ``cases`` for every spec (a fresh client per case) and return the ranked rows.
+
+    ``unsafe_checkers`` is passed to ``run_suite``: without it, live models get code-running
+    cases only inside bubblewrap.
+    """
     if not specs:
         raise LeaderboardError("give at least one model")
     if len(specs) > MAX_MODELS:
@@ -133,9 +138,9 @@ def run_leaderboard(
         def make(spec: ModelSpec = spec) -> LLM:
             return factory(spec)
 
-        row = Row(spec, run_suite(cases, make))
+        row = Row(spec, run_suite(cases, make, unsafe_checkers=unsafe_checkers))
         if gauntlet:
-            row.gauntlet = run_suite(cases, make, GauntletPolicy())
+            row.gauntlet = run_suite(cases, make, GauntletPolicy(), unsafe_checkers)
         rows.append(row)
     return rank(rows)
 
