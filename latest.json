@@ -1,23 +1,40 @@
 {
-  "summary": "No changes in last 24h; head = 07f3eab",
-  "changes": [],
+  "summary": "2 commit(s): fix: no stale bytecode in agent commands (B43); Merge pull request #49 from jonnysteedman683-wq/sebastian/daily-B43-bytecode-4608673948473475773",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "4 file(s) changed",
+      "description": "Detected automatically from code: 4 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "eaf694b72084092ed64a9f0fea3f87c000f559f1",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
   "prs": [],
   "security_alerts": [],
   "breaking_changes": [],
-  "open_questions": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 37,
+  "seq": 38,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
     "from_sha": "07f3eab70011c8f133f131e02b2f50b5097ddce8",
-    "to_sha": "07f3eab70011c8f133f131e02b2f50b5097ddce8"
+    "to_sha": "eaf694b72084092ed64a9f0fea3f87c000f559f1"
   },
-  "generated_at": "2026-10-20T00:51:11Z",
+  "generated_at": "2026-10-20T12:38:04Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -59,6 +76,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "LOW",
-  "signature": "e546c27156113a95020bbee46095a69cfc036559ae181db05152cac3b5640c35"
+  "priority": "NORMAL",
+  "signature": "d487f315938565a5480adc1be5c6eaa79d08d56b32f232f1068382116eac5b88"
 }
