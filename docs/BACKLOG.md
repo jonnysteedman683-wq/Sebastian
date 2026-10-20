@@ -118,6 +118,9 @@ Rules:
 - [x] 🔒 **P1-01 `--sandbox auto` fails closed** (upgrade spec 2026-10-19). No silent fallback to unsandboxed `run_command`; `--sandbox none` warns, is traced and cuts the network with `unshare` unless `--allow-network`.
   *Done when:* `resolve_command_sandbox("auto")` raises without bwrap and the CLI exits 2; `--sandbox none` warns every run and traces `sandbox="none"`; without unshare it needs `--allow-network`; SECURITY residuals 1-2 updated.
 
+- [x] **B44 No CHANGELOG conflicts between parallel PRs.** `.gitattributes` sets `CHANGELOG.md merge=union`.
+  *Done when:* a test merges two branches that each add an Unreleased line and gets both lines with no conflict.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
