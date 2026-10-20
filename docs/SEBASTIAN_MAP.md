@@ -36,6 +36,7 @@ flowchart TD
 | Evals | `evals/`: harness, 5 capability + 6 harder capability (B38) + 5 injection + 2 critic-attack cases (Gauntlet only); `pytest -m eval`, `python -m sebastian.evals [--live] [--gauntlet \| --compare]` |
 | Self-improvement | `evolve.py` (`sebastian evolve`): backlog item -> worktree -> scoped agent -> gates (guarded paths, CI checks, eval >= baseline) -> commit/push/PR, never merge. `--gauntlet` (B34): the inner run goes through the Gauntlet and a `needs_help` run is rejected before the gates |
 | Gauntlet (B11) | `gauntlet.py` (stage machine, PREDICT, VERIFY, CRITIQUE, HELP report, diff); driven by `agent.py` when `gauntlet=GauntletPolicy(...)` (`run/resume --gauntlet`, `--critic-model`). Ends as `needs_help` past `max_loops` |
+| Run timeline | `timeline.py` (`sebastian show <run_id>`, B42): one run's trace as escaped HTML or text |
 | Cost (B40) | `pricing.py` (user `prices.json`, `PricedLLM` fills `Usage.cost`), `Budget.max_cost` / `--max-cost` |
 | Eval checker sandbox | `evals/sandbox.py` (P1-18): `run_python_check` runs checker code with an allowlisted env, bubblewrap when usable, process-group kill and bounded output; `checker_sandbox` fails closed for live models |
 | Model leaderboard | `evals/leaderboard.py` (`sebastian models SPEC...`, B39): same suite per model, ranked by score, injection resistance, critic containment, tokens |
