@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): chore: union-merge CHANGELOG.md so parallel PRs don't conflict (B44); Merge pull request #55 from jonnysteedman683-wq/claude/changelog-union-merge",
+  "summary": "5 commit(s): fix(security): P1-02 evolve requires bwrap and scrubs the gate env; Merge main into claude/p1-02-evolve-sandbox-env; Merge main into claude/p1-02-evolve-sandbox-env; Merge main into claude/p1-02-evolve-sandbox-env; Merge pull request #52 from jonnysteedman683-wq/claude/p1-02-evolve-sandbox-env",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "4 file(s) changed",
-      "description": "Detected automatically from code: 4 file(s) changed.",
+      "title": "8 file(s) changed",
+      "description": "Detected automatically from code: 8 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "7741b547579e01f08a114f13e1dffbc8624bac18",
-          "path": ".gitattributes"
+          "sha": "1cd550803b3961757d160c9749fd34223d7cebed",
+          "path": "CHANGELOG.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 44,
+  "seq": 45,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "1d0bc821aa34691ffda9fc0e5c099793eb008620",
-    "to_sha": "7741b547579e01f08a114f13e1dffbc8624bac18"
+    "from_sha": "7741b547579e01f08a114f13e1dffbc8624bac18",
+    "to_sha": "1cd550803b3961757d160c9749fd34223d7cebed"
   },
-  "generated_at": "2026-10-20T14:45:06Z",
+  "generated_at": "2026-10-20T16:01:10Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -78,5 +78,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "5cd91bff921686ea2b0d24742eba6a56af0ed9cd614c678db823b373dcd83f95"
+  "signature": "241e5fef35d90d8d0d4ef06b3f0246b83f89b9f9d5ab3d759b9c98625a2aaff5"
 }
