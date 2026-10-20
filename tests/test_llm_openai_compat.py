@@ -110,12 +110,12 @@ def test_tool_free_calls_omit_tools_and_no_key_means_no_auth_header(
 
 
 def test_key_comes_from_env_and_never_shows_in_repr(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv(oc.API_KEY_ENV, "sk-env-secret")
+    monkeypatch.setenv(oc.API_KEY_ENV, "sk-test-FAKE-env")
     server = FakeServer((200, reply("x")))
-    client = llm(server)
+    client = OpenAICompatLLM("gpt-x", "https://api.openai.com/v1", transport=server)
     client.complete("S", [Message(Role.USER, text="t")], [])
-    assert server.requests[0]["headers"]["Authorization"] == "Bearer sk-env-secret"
-    assert "sk-env" not in repr(client)
+    assert server.requests[0]["headers"]["Authorization"] == "Bearer sk-test-FAKE-env"
+    assert "sk-test" not in repr(client)
 
 
 # --- response parsing -----------------------------------------------------------------------
@@ -237,14 +237,14 @@ def test_urllib_transport_maps_errors(monkeypatch: pytest.MonkeyPatch) -> None:
         calls.append((req.full_url, req.get_header("Content-type"), timeout))
         return Resp()
 
-    monkeypatch.setattr(urllib.request, "urlopen", ok)
+    monkeypatch.setattr(oc, "_open", ok)
     assert oc._urllib_transport("https://h/v1", {"Content-Type": "x"}, b"{}", 5) == (200, b"{}")
     assert calls == [("https://h/v1", "x", 5)]
 
     def down(req: Any, timeout: float) -> Resp:
         raise urllib.error.URLError("refused")
 
-    monkeypatch.setattr(urllib.request, "urlopen", down)
+    monkeypatch.setattr(oc, "_open", down)
     with pytest.raises(TransientLLMError, match="cannot reach h"):
         oc._urllib_transport("https://h/v1", {}, b"{}", 5)
 
@@ -255,7 +255,7 @@ def test_http_error_body_is_returned(monkeypatch: pytest.MonkeyPatch) -> None:
     def http_error(req: Any, timeout: float) -> Any:
         raise urllib.error.HTTPError(req.full_url, 429, "slow", {}, io.BytesIO(b"rate"))  # type: ignore[arg-type]
 
-    monkeypatch.setattr(urllib.request, "urlopen", http_error)
+    monkeypatch.setattr(oc, "_open", http_error)
     assert oc._urllib_transport("https://h/v1", {}, b"{}", 5) == (429, b"rate")
 
 
@@ -283,7 +283,7 @@ def test_allowed_base_urls(url: str) -> None:
         ("http://10.0.0.5:8000/v1", "only allowed for localhost"),
         ("ftp://localhost/v1", "must be http"),
         ("localhost:11434", "must be http"),
-        ("https://user:key@host/v1", "OPENAI_API_KEY"),
+        ("https://user:key@host/v1", "SEBASTIAN_API_KEY_ENV"),
     ],
 )
 def test_rejected_base_urls(url: str, why: str) -> None:
@@ -349,10 +349,10 @@ def test_cli_uses_the_configured_backend(
     monkeypatch.setenv("SEBASTIAN_BASE_URL", "http://localhost:11434/v1")
     monkeypatch.setattr(sys, "stdin", io.StringIO(""))
     server = FakeServer((200, reply("hello from a local model")))
-    seen: list[tuple[str, str, str]] = []
+    seen: list[tuple[str, str, str, str]] = []
 
-    def fake_make(model: str, backend: str, base_url: str) -> OpenAICompatLLM:
-        seen.append((model, backend, base_url))
+    def fake_make(model: str, backend: str, base_url: str, key_env: str) -> OpenAICompatLLM:
+        seen.append((model, backend, base_url, key_env))
         return OpenAICompatLLM(model, base_url, transport=server)
 
     monkeypatch.setattr(cli, "make_llm", fake_make)
@@ -360,5 +360,5 @@ def test_cli_uses_the_configured_backend(
     ws.mkdir()
     args = ["run", "hi", "-w", str(ws), "--no-memory", "--model", "qwen3"]
     assert cli.main(args) == 0
-    assert seen == [("qwen3", "openai", "http://localhost:11434/v1")]
+    assert seen == [("qwen3", "openai", "http://localhost:11434/v1", "")]
     assert "hello from a local model" in capsys.readouterr().out

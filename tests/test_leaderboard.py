@@ -173,10 +173,10 @@ def test_cli_models_real_factory_uses_make_llm(
 
     monkeypatch.setenv("SEBASTIAN_HOME", str(tmp_path / "home"))
     monkeypatch.setenv("SEBASTIAN_BACKEND", "openai")
-    seen: list[tuple[str, str, str]] = []
+    seen: list[tuple[str, str, str, str]] = []
 
-    def fake(model: str, backend: str, base_url: str) -> LLM:
-        seen.append((model, backend, base_url))
+    def fake(model: str, backend: str, base_url: str, key_env: str) -> LLM:
+        seen.append((model, backend, base_url, key_env))
         return failing()
 
     monkeypatch.setattr(cli, "make_llm", fake)
@@ -185,7 +185,7 @@ def test_cli_models_real_factory_uses_make_llm(
     assert cli.main(args) == 0
     capsys.readouterr()
     assert set(seen) == {
-        ("claude-x", "anthropic", ""),
-        ("local", "openai", "http://localhost:1/v1"),
-        ("plain", "openai", ""),  # no prefix: SEBASTIAN_BACKEND
+        ("claude-x", "anthropic", "", ""),
+        ("local", "openai", "http://localhost:1/v1", ""),
+        ("plain", "openai", "", ""),  # no prefix: SEBASTIAN_BACKEND
     }
