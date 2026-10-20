@@ -1,15 +1,15 @@
 {
-  "summary": "5 commit(s): fix(security): P1-02 evolve requires bwrap and scrubs the gate env; Merge main into claude/p1-02-evolve-sandbox-env; Merge main into claude/p1-02-evolve-sandbox-env; Merge main into claude/p1-02-evolve-sandbox-env; Merge pull request #52 from jonnysteedman683-wq/claude/p1-02-evolve-sandbox-env",
+  "summary": "2 commit(s): fix(security): P1-03 guard the safety TCB; Merge pull request #56 from jonnysteedman683-wq/claude/p1-03-guard-tcb",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "8 file(s) changed",
-      "description": "Detected automatically from code: 8 file(s) changed.",
+      "title": "10 file(s) changed",
+      "description": "Detected automatically from code: 10 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "1cd550803b3961757d160c9749fd34223d7cebed",
-          "path": "CHANGELOG.md"
+          "sha": "08bf2b0ad3b9b79b8d1cb24f2b78d529663880ef",
+          "path": ".github/CODEOWNERS"
         }
       ],
       "permission": "n/a",
@@ -23,18 +23,20 @@
     "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
   ],
   "pr_previews": [],
-  "escalation_reasons": [],
+  "escalation_reasons": [
+    "watch tooling or report contract changed: .github/workflows/guard.yml, AGENTS.md, CLAUDE.md"
+  ],
   "report_type": "repo_change_report",
-  "seq": 45,
+  "seq": 46,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "7741b547579e01f08a114f13e1dffbc8624bac18",
-    "to_sha": "1cd550803b3961757d160c9749fd34223d7cebed"
+    "from_sha": "1cd550803b3961757d160c9749fd34223d7cebed",
+    "to_sha": "08bf2b0ad3b9b79b8d1cb24f2b78d529663880ef"
   },
-  "generated_at": "2026-10-20T16:01:10Z",
+  "generated_at": "2026-10-20T20:03:55Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -75,8 +77,8 @@
     "removed": [],
     "changed": []
   },
-  "risk_score": 0,
-  "escalate": false,
-  "priority": "NORMAL",
-  "signature": "241e5fef35d90d8d0d4ef06b3f0246b83f89b9f9d5ab3d759b9c98625a2aaff5"
+  "risk_score": 3,
+  "escalate": true,
+  "priority": "HIGH",
+  "signature": "4ad38d084000315082164ff10f9bf5f62c1d3a2c79d054a499aa43e312990ac4"
 }
