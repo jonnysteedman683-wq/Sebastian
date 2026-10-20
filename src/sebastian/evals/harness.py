@@ -24,6 +24,13 @@ from sebastian.approval import AllowApprover, ApprovalGate, DenyApprover
 from sebastian.budget import Budget
 from sebastian.checkpoint import Checkpoints
 from sebastian.clock import FakeClock, SeededIdSource
+from sebastian.evals.sandbox import (
+    BWRAP,
+    UNAVAILABLE,
+    UNAVAILABLE_ERROR,
+    CheckerSandboxError,
+    checker_sandbox,
+)
 from sebastian.gauntlet import GauntletPolicy
 from sebastian.llm.base import LLM
 from sebastian.llm.scripted import ScriptedLLM, Step
@@ -35,6 +42,7 @@ from sebastian.tools import (
     command_tool,
     file_tools,
 )
+from sebastian.tools.builtin import python_roots
 from sebastian.trace import MemoryTracer
 from sebastian.types import LLMResponse, RunResult
 
@@ -56,6 +64,7 @@ class Outcome:
     events: list[dict[str, Any]]
     before: dict[str, str]
     gated_tools: frozenset[str]
+    checker_sandbox: str = "none"  # how checkers may run model code: bwrap | none | unavailable
 
     def read(self, rel: str) -> str | None:
         """Contents of a workspace file, or None if it does not exist."""
@@ -104,6 +113,7 @@ class EvalCase:
     planner_script: Sequence[Step] = ()  # offline PLAN/PREDICT replies under the Gauntlet
     critic_script: Sequence[Step] = ()  # offline critic replies under the Gauntlet
     critic_only: bool = False  # actor and planner always replay; a live model plays only critic
+    runs_code: bool = False  # the checker executes workspace code the model wrote (P1-18)
 
 
 @dataclass(frozen=True, slots=True)
@@ -185,12 +195,21 @@ def run_case(
     llm: LLM | None = None,
     budget: Budget | None = None,
     gauntlet: GauntletPolicy | None = None,
+    unsafe_checkers: bool = False,
 ) -> CaseResult:
     """Run one case. ``llm=None`` replays the case's offline script.
 
     With ``gauntlet``, the run goes through the Gauntlet with checkpoints on, so the critic sees
     the real diff, and gets ``GAUNTLET_EXTRA_STEPS`` more steps than a plain run.
+
+    A live model (anything but ``ScriptedLLM``) gets ``run_command`` and code-running checkers
+    only inside bubblewrap. Without it those cases fail closed with ``UNAVAILABLE_ERROR``,
+    before any model call, unless ``unsafe_checkers`` accepts unsandboxed host processes.
     """
+    live = llm is not None and not isinstance(llm, ScriptedLLM)
+    sandbox = checker_sandbox(live=live, unsafe=unsafe_checkers)
+    if sandbox == UNAVAILABLE and (case.runs_code or case.commands):
+        return _refused(case, gauntlet)
     planner: LLM | None = None
     actor = llm
     if case.critic_only:  # B35: the change is fixed; only the reviewer is under test
@@ -213,7 +232,7 @@ def run_case(
         checkpoints = Checkpoints(ckpt_dir) if gauntlet is not None else None
         registry = ToolRegistry(file_tools(ws, checkpoints))
         if case.commands:
-            registry.register(command_tool(ws, CommandPolicy.of(case.commands)))
+            registry.register(command_tool(ws, _command_policy(case, live, sandbox)))
         gated = frozenset(t.name for t in registry if t.permission >= Permission.WRITE)
         tracer = MemoryTracer()
         agent = Sebastian(
@@ -230,11 +249,13 @@ def run_case(
         )
         before = snapshot(root)
         result = agent.run(case.task)
-        outcome = Outcome(root, result, tracer.events, before, gated)
+        outcome = Outcome(root, result, tracer.events, before, gated, sandbox)
         verdicts = [bool(e["passed"]) for e in outcome.events if e["event"] == "gauntlet_critique"]
         try:
             passed = bool(case.check(outcome))
             error = ""
+        except CheckerSandboxError:
+            passed, error = False, UNAVAILABLE_ERROR
         except Exception as exc:  # a broken checker is a failed case, not a crashed suite
             passed, error = False, f"checker raised {type(exc).__name__}: {exc}"
         return CaseResult(
@@ -253,14 +274,39 @@ def run_case(
         )
 
 
+def _command_policy(case: EvalCase, live: bool, sandbox: str) -> CommandPolicy:
+    """Live models run commands in bubblewrap when it is usable; scripted runs on the host."""
+    if live and sandbox == BWRAP:
+        return CommandPolicy.of(case.commands, sandbox=BWRAP, extra_ro=tuple(python_roots()))
+    return CommandPolicy.of(case.commands)
+
+
+def _refused(case: EvalCase, gauntlet: GauntletPolicy | None) -> CaseResult:
+    """A case that would run model code with no sandbox: an error, not a model failure."""
+    return CaseResult(
+        name=case.name,
+        passed=False,
+        hostile=case.hostile,
+        resisted=True,
+        stop="error",
+        steps=0,
+        tokens=0,
+        error=UNAVAILABLE_ERROR,
+        mode=PLAIN if gauntlet is None else GAUNTLET,
+        targets_critic=case.targets_critic,
+    )
+
+
 def run_suite(
     cases: Sequence[EvalCase],
     llm_factory: Callable[[], LLM] | None = None,
     gauntlet: GauntletPolicy | None = None,
+    unsafe_checkers: bool = False,
 ) -> SuiteResult:
     """Run every case; ``llm_factory`` gives each live case a fresh model client.
 
     Plain runs leave out ``gauntlet_only`` cases (they have no critic to test).
+    ``unsafe_checkers`` lets live cases run model code without bubblewrap (see ``run_case``).
     """
     suite = SuiteResult()
     for case in cases:
@@ -270,7 +316,9 @@ def run_suite(
             suite.skipped.append(case.name)
             continue
         llm = llm_factory() if llm_factory else None
-        suite.results.append(run_case(case, llm, gauntlet=gauntlet))
+        suite.results.append(
+            run_case(case, llm, gauntlet=gauntlet, unsafe_checkers=unsafe_checkers)
+        )
     return suite
 
 
