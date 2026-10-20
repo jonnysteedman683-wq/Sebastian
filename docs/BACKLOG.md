@@ -115,6 +115,9 @@ Rules:
 - [x] **B43 No stale bytecode in agent commands.** `run_command` should set `PYTHONDONTWRITEBYTECODE=1` (or a per-run `PYTHONPYCACHEPREFIX`) so a same-size edit within one second never runs a stale `.pyc`. Found while building B38.
   *Done when:* a scripted run that edits then re-runs a module sees the new behaviour.
 
+- [x] 🔒 **P1-01 `--sandbox auto` fails closed** (upgrade spec 2026-10-19). No silent fallback to unsandboxed `run_command`; `--sandbox none` warns, is traced and cuts the network with `unshare` unless `--allow-network`.
+  *Done when:* `resolve_command_sandbox("auto")` raises without bwrap and the CLI exits 2; `--sandbox none` warns every run and traces `sandbox="none"`; without unshare it needs `--allow-network`; SECURITY residuals 1-2 updated.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
