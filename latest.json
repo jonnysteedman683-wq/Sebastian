@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): fix: no stale bytecode in agent commands (B43); Merge pull request #49 from jonnysteedman683-wq/sebastian/daily-B43-bytecode-4608673948473475773",
+  "summary": "6 commit(s): feat: sebastian show renders one run as a timeline (B42); Merge main into claude/b42-show-run; Merge main into claude/b42-show-run; Merge main into claude/b42-show-run; Merge branch 'main' into claude/b42-show-run; Merge pull request #41 from jonnysteedman683-wq/claude/b42-show-run",
   "changes": [
     {
-      "category": "ABILITY_CHANGE",
-      "title": "4 file(s) changed",
-      "description": "Detected automatically from code: 4 file(s) changed.",
+      "category": "NEW_FEATURE",
+      "title": "New CLI command show",
+      "description": "Detected automatically from code: New CLI command show.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "eaf694b72084092ed64a9f0fea3f87c000f559f1",
-          "path": "CHANGELOG.md"
+          "sha": "1d09d4a61f236bac39a85b932b37e3263981362e",
+          "path": "src/sebastian/cli.py"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 38,
+  "seq": 39,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "07f3eab70011c8f133f131e02b2f50b5097ddce8",
-    "to_sha": "eaf694b72084092ed64a9f0fea3f87c000f559f1"
+    "from_sha": "eaf694b72084092ed64a9f0fea3f87c000f559f1",
+    "to_sha": "1d09d4a61f236bac39a85b932b37e3263981362e"
   },
-  "generated_at": "2026-10-20T12:38:04Z",
+  "generated_at": "2026-10-20T12:57:37Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -58,6 +58,7 @@
       "resume",
       "run",
       "scar",
+      "show",
       "traces",
       "undo",
       "version"
@@ -70,12 +71,14 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [],
+    "added": [
+      "cli: show"
+    ],
     "removed": [],
     "changed": []
   },
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "d487f315938565a5480adc1be5c6eaa79d08d56b32f232f1068382116eac5b88"
+  "signature": "fc5c98822a61b38a7d717f4cca2adc66716b50297a52c777f8ff056d506d2c80"
 }
