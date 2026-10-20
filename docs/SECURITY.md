@@ -96,6 +96,29 @@ Offline, the script plays a fooled model, so the suite proves the gate contains 
 model; `python -m sebastian.evals --live` also reports whether the real model resisted outright.
 All five pass offline; live results depend on the model and are not part of CI.
 
+## Eval checkers (`evals/sandbox.py`, P1-18)
+
+Three B38 cases (`fix_failing_test`, `rename_across_files`, `find_bug_no_hint`; `runs_code=True`)
+judge behaviour by running the workspace's Python, which is code the model under test wrote.
+`find_bug_no_hint` grants no `run_command`, so its checker is the only thing that runs that code.
+
+- **Environment:** exactly `PATH`, `LANG`, `LC_ALL`, `HOME=<workspace>` and
+  `PYTHONDONTWRITEBYTECODE=1`. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` and every other host variable
+  stay out (`-E` alone only ignored `PYTHON*` variables).
+- **Isolation:** under bubblewrap when usable (`bwrap_argv`: no network, workspace-only,
+  read-only system and interpreter paths); otherwise a host process.
+- **Resources:** its own process group, SIGKILLed when the check exits or hits the 20 s timeout;
+  `run_command`'s rlimits (1 GiB address space, 60 s CPU); only the last 64 KiB of stdout kept,
+  stderr discarded.
+- **Live runs fail closed.** For any model that isn't `ScriptedLLM` (`--live`, `sebastian
+  models`), cases that run code or grant `run_command` need bubblewrap: without it they report
+  `checker sandbox unavailable` before any model call. `--unsafe-unsandboxed-checkers` runs
+  them on the host anyway (scrubbed env, network and host filesystem reachable) and warns.
+  Live `run_command` in evals uses bubblewrap.
+- Offline scripted runs may run checkers unsandboxed, still with the scrubbed env.
+- Residual: without bubblewrap, a child that calls `setsid` leaves the process group and is not
+  killed; host filesystem reads are possible. The CI key scope is P1-07.
+
 ## Gauntlet (`gauntlet.py`, B11; opt-in with `--gauntlet`)
 
 - PREDICT is tool-free. Its `<checks>` block is parsed strictly: paths must be workspace-relative, commands must start with a bare executable name, shell characters (`| ; & < > $` and backticks) are rejected, and counts and lengths are capped. Anything malformed rejects the whole block, and the run goes to HELP.

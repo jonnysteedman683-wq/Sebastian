@@ -234,7 +234,9 @@ def test_cli_models_are_priced(
     (home / "prices.json").write_text('{"m": {"input": 3, "output": 15}}')
     built: list[LLM] = []
 
-    def fake_run(specs: Any, factory: Any, cases: Any, gauntlet: bool = False) -> list[Any]:
+    def fake_run(
+        specs: Any, factory: Any, cases: Any, gauntlet: bool = False, **_: Any
+    ) -> list[Any]:
         from sebastian.evals.leaderboard import Row
 
         built.append(factory(specs[0]))
