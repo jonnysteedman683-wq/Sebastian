@@ -8,8 +8,11 @@ One cycle (``sebastian evolve``):
    except guarded paths (read from ``.github/workflows/guard.yml``, so there is one source of
    truth) and may run only the allowlisted check commands. Everything else is denied.
 4. Gates, all deterministic, in order: the diff is non-empty; it touches no guarded path (which
-   includes the safety TCB, P1-03); it deletes or renames no existing test; every check command
-   passes; the eval score is at least the baseline's.
+   includes the safety TCB, P1-03); it deletes or renames no existing test; it adds no top-level
+   module under ``src/``; every check command passes against the *baseline's* tests, evals and
+   config (P1-04), and the candidate's own tests too when it changed them; collected tests and
+   coverage don't drop; the eval score (scored by the baseline's evals) is at least the
+   baseline's, which must be readable unless ``allow_missing_baseline``.
 5. Only if every gate passes is the change committed. Pushing the branch and opening a PR are
    opt-in. Nothing is ever merged: a human (or a later trust level) does that.
 
@@ -105,6 +108,8 @@ class EvolveReport:
     run_stop: str = ""
     resumes: int = 0  # times the agent run was resumed after hitting its budget
     sandbox: str = ""  # how the gates ran: "bwrap" or "none"
+    baseline_metrics: tuple[int | None, float | None] | None = None  # P1-04: (tests, coverage)
+    candidate_metrics: tuple[int | None, float | None] | None = None
 
     def summary(self) -> str:
         """One readable block for the CLI."""
@@ -124,6 +129,11 @@ class EvolveReport:
         if self.baseline_score is not None or self.candidate_score is not None:
             base, cand = _pct(self.baseline_score), _pct(self.candidate_score)
             lines.append(f"  eval: baseline={base} candidate={cand}")
+        if self.baseline_metrics is not None or self.candidate_metrics is not None:
+            lines.append(
+                f"  tests/coverage: baseline={self.baseline_metrics} "
+                f"candidate={self.candidate_metrics}"
+            )
         if self.changed:
             lines.append(f"  changed: {', '.join(self.changed)}")
         if self.patch:
@@ -310,6 +320,85 @@ def default_eval() -> list[str]:
     return [sys.executable, "-m", "sebastian.evals", "--min-score", "0"]
 
 
+def default_metrics() -> list[str]:
+    """Test suite with coverage; prints the pytest summary and the coverage total.
+
+    No ``-q``: the repo's addopts already has one, and ``-qq`` drops the summary line.
+    """
+    return [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "--cov=sebastian"]
+
+
+_SUMMARY = re.compile(r"^.*\bin \d+(?:\.\d+)?s\b.*$", re.MULTILINE)
+_COUNT = re.compile(r"(\d+) (passed|failed|skipped|xfailed|xpassed|errors?)\b")
+_TOTAL_COV = re.compile(r"Total coverage: (\d+(?:\.\d+)?)%")
+_TOTAL_ROW = re.compile(r"^TOTAL\s.*?(\d+(?:\.\d+)?)%\s*$", re.MULTILINE)
+
+
+def parse_metrics(output: str) -> tuple[int | None, float | None]:
+    """``(collected tests, coverage %)`` from pytest/pytest-cov output; None when absent."""
+    count = None
+    summaries = _SUMMARY.findall(output)
+    if summaries:
+        found = _COUNT.findall(summaries[-1])
+        count = sum(int(n) for n, _ in found) if found else None
+    cov = _TOTAL_COV.findall(output) or _TOTAL_ROW.findall(output)
+    return count, float(cov[-1]) if cov else None
+
+
+# P1-04: what decides what the gates check. The independent gates always take these from the
+# baseline, so the candidate can't loosen its own tests, evals or tool configuration.
+GATE_CONFIG = (
+    "tests",
+    "evals",
+    "pyproject.toml",
+    "conftest.py",
+    "pytest.ini",
+    "tox.ini",
+    "setup.cfg",
+    "ruff.toml",
+    ".ruff.toml",
+    "mypy.ini",
+    ".mypy.ini",
+    ".coveragerc",
+)
+
+
+_NOT_COPIED = (".git", ".mypy_cache", ".ruff_cache", ".pytest_cache", "__pycache__", ".coverage")
+
+
+def build_overlay(cand: Path, base: Path, dest: Path, keep: tuple[str, ...] = ()) -> Path:
+    """The candidate's tree with the baseline's tests, evals and gate config (P1-04).
+
+    Names in ``keep`` stay the candidate's (the metrics gate keeps its ``tests``).
+    """
+    # Tool caches are dropped too: a planted .mypy_cache or __pycache__ could fake a clean run.
+    shutil.copytree(cand, dest, symlinks=True, ignore=shutil.ignore_patterns(*_NOT_COPIED))
+    for name in (n for n in GATE_CONFIG if n not in keep):
+        target, origin = dest / name, base / name
+        if target.is_dir() and not target.is_symlink():
+            shutil.rmtree(target)
+        elif target.exists() or target.is_symlink():
+            target.unlink()
+        if origin.is_dir() and not origin.is_symlink():
+            shutil.copytree(origin, target, symlinks=True)
+        elif origin.is_file() and not origin.is_symlink():
+            shutil.copy2(origin, target)
+    return dest
+
+
+def new_src_modules(cand: Path, base: Path) -> list[str]:
+    """Top-level names the candidate adds under ``src/`` (on PYTHONPATH, so they could shadow
+    ``pytest`` or add a ``sitecustomize`` that runs inside every gate)."""
+
+    def names(root: Path) -> set[str]:
+        src = root / "src"
+        if not src.is_dir():
+            return set()
+        return {p.name for p in src.iterdir() if p.name != "__pycache__"}
+
+    return sorted(n for n in names(cand) - names(base) if not n.endswith(".egg-info"))
+
+
 TASK_TEMPLATE = """\
 You are Sebastian, improving your own codebase (this workspace is a git worktree of it).
 
@@ -346,6 +435,9 @@ class EvolveConfig:
     push: bool = False
     sandbox: str = "auto"  # gate commands: auto | bwrap (both need bubblewrap) | none
     unsafe_no_sandbox: bool = False  # P1-02: the only way agent-written code runs unsandboxed
+    # P1-04: run in the baseline and the candidate; collected tests and coverage must not drop.
+    metrics_cmd: list[str] | None = field(default_factory=default_metrics)
+    allow_missing_baseline: bool = False  # P1-04: else an unreadable baseline score rejects
     max_resumes: int = (
         1  # budget-stopped agent runs continue this many times, each with a fresh budget
     )
@@ -469,7 +561,12 @@ def _gate(
     cfg: EvolveConfig,
     bwrap: str | None = None,
 ) -> bool:
-    """Run the gates in order, recording each; stop at the first failure."""
+    """Run the gates in order, recording each; stop at the first failure.
+
+    P1-04: checks and the candidate's eval run in an *overlay*: the candidate's tree with the
+    baseline's tests, evals and gate config, so the candidate can't pass by weakening them. The
+    candidate's own tests run as an extra gate when it changed ``tests/``.
+    """
     if report.run_stop == StopReason.NEEDS_HELP.value:
         # B34: the inner run could not prove its own work; the outer gates never rescue that.
         report.gates["gauntlet"] = False
@@ -479,28 +576,93 @@ def _gate(
     if not report.changed:
         report.reason = f"no changes (run stopped: {report.run_stop})"
         return False
-    if not _scope_gate(report, cand, guarded):
+    overlay = cand.parent / "overlay"
+    steps: tuple[Callable[[], bool], ...] = (
+        lambda: _scope_gate(report, cand, guarded),
+        lambda: _layout_gate(report, cand, base),
+        lambda: _checks_gate(report, build_overlay(cand, base, overlay), cfg, bwrap, "check"),
+        lambda: (
+            not any(p.startswith("tests/") for p in report.changed)
+            or _checks_gate(report, cand, cfg, bwrap, "own")
+        ),
+        lambda: _metrics_gate(report, cand, base, cfg, bwrap),
+        lambda: _eval_gate(report, overlay, base, cfg, bwrap),
+    )
+    if not all(step() for step in steps):
         return False
-    for argv in cfg.checks:
-        ok, out = _run(argv, cand, bwrap)
-        name = " ".join(Path(a).name if i == 0 else a for i, a in enumerate(argv))
-        report.gates[f"check:{name}"] = ok
-        if not ok:
-            report.reason = f"check failed: {name}\n{out[-1500:]}"
-            return False
-    if cfg.eval_cmd:
-        report.baseline_score = parse_score(_run(cfg.eval_cmd, base, bwrap)[1])
-        report.candidate_score = parse_score(_run(cfg.eval_cmd, cand, bwrap)[1])
-        ok = report.candidate_score is not None and (
-            report.baseline_score is None or report.candidate_score >= report.baseline_score
-        )
-        report.gates["eval_no_regression"] = ok
-        if not ok:
-            report.reason = "eval score regressed or could not be read"
-            return False
     report.accepted = True
     report.reason = "all gates passed" + (" (pushed)" if cfg.push else " (committed locally)")
     return True
+
+
+def _layout_gate(report: EvolveReport, cand: Path, base: Path) -> bool:
+    added = new_src_modules(cand, base)
+    report.gates["src_layout"] = not added
+    if added:
+        report.reason = f"adds top-level modules under src/ (could hijack the gates): {added}"
+    return not added
+
+
+def _checks_gate(
+    report: EvolveReport, tree: Path, cfg: EvolveConfig, bwrap: str | None, prefix: str
+) -> bool:
+    for argv in cfg.checks:
+        ok, out = _run(argv, tree, bwrap)
+        name = " ".join(Path(a).name if i == 0 else a for i, a in enumerate(argv))
+        report.gates[f"{prefix}:{name}"] = ok
+        if not ok:
+            where = "baseline tests" if prefix == "check" else "candidate's own tests"
+            report.reason = f"check failed ({where}): {name}\n{out[-1500:]}"
+            return False
+    return True
+
+
+def _metrics_gate(
+    report: EvolveReport, cand: Path, base: Path, cfg: EvolveConfig, bwrap: str | None
+) -> bool:
+    if not cfg.metrics_cmd:
+        return True
+    # The candidate's tests, but the baseline's config: a coverage `omit` can't hide a drop.
+    tree = build_overlay(cand, base, cand.parent / "metrics", keep=("tests",))
+    b = parse_metrics(_run(cfg.metrics_cmd, base, bwrap)[1])
+    c = parse_metrics(_run(cfg.metrics_cmd, tree, bwrap)[1])
+    report.baseline_metrics, report.candidate_metrics = b, c
+    problems = []
+    for label, old, new in (("collected tests", b[0], c[0]), ("coverage", b[1], c[1])):
+        if new is None:
+            problems.append(f"{label}: candidate unreadable")
+        elif old is None:
+            if not cfg.allow_missing_baseline:
+                problems.append(f"{label}: baseline unreadable (--allow-missing-baseline)")
+        elif new < old:
+            problems.append(f"{label} dropped {old} -> {new}")
+    report.gates["no_test_or_coverage_drop"] = not problems
+    if problems:
+        report.reason = "; ".join(problems)
+    return not problems
+
+
+def _eval_gate(
+    report: EvolveReport, overlay: Path, base: Path, cfg: EvolveConfig, bwrap: str | None
+) -> bool:
+    if not cfg.eval_cmd:
+        return True
+    report.baseline_score = parse_score(_run(cfg.eval_cmd, base, bwrap)[1])
+    report.candidate_score = parse_score(_run(cfg.eval_cmd, overlay, bwrap)[1])
+    if report.baseline_score is None and not cfg.allow_missing_baseline:
+        report.gates["eval_no_regression"] = False
+        report.reason = (
+            "baseline eval score could not be read; refusing to pass blind "
+            "(--allow-missing-baseline to accept)"
+        )
+        return False
+    ok = report.candidate_score is not None and (
+        report.baseline_score is None or report.candidate_score >= report.baseline_score
+    )
+    report.gates["eval_no_regression"] = ok
+    if not ok:
+        report.reason = "eval score regressed or could not be read"
+    return ok
 
 
 def _scope_gate(report: EvolveReport, cand: Path, guarded: re.Pattern[str]) -> bool:
@@ -546,8 +708,9 @@ def open_pr(worktree: Path, branch: str, item: BacklogItem) -> None:
         raise EvolveError("gh is not installed; the branch was pushed, open the PR manually")
     body = (
         f"Automated by `sebastian evolve` for {item.id}.\n\n{item.text}\n\n"
-        "Gates passed: non-empty diff, no guarded paths, no deleted tests, ruff, format, mypy, "
-        "pytest, eval score >= baseline. Review before merging."
+        "Gates passed: non-empty diff, no guarded paths, no deleted tests, ruff, format, mypy "
+        "and pytest against the baseline's tests and config, no drop in test count or "
+        "coverage, eval score >= baseline. Review before merging."
     )
     proc = subprocess.run(
         [

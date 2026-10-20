@@ -101,6 +101,12 @@ def _build_parser() -> argparse.ArgumentParser:
         "--unsafe-no-sandbox",
     )
     evo.add_argument(
+        "--allow-missing-baseline",
+        action="store_true",
+        help="accept a cycle when the baseline's eval score or test/coverage metrics can't be "
+        "read (default: reject)",
+    )
+    evo.add_argument(
         "--unsafe-no-sandbox",
         action="store_true",
         help="allow agent-written code to run on the host without bubblewrap (gate env is "
@@ -308,6 +314,7 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
         push=args.push or args.pr,
         sandbox=args.sandbox,
         unsafe_no_sandbox=args.unsafe_no_sandbox,
+        allow_missing_baseline=args.allow_missing_baseline,
         max_resumes=max(args.resumes, 0),
         home=cfg.home,
         gauntlet=gauntlet,

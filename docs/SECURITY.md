@@ -71,6 +71,18 @@ under `python -m sebastian.evals --live --gauntlet` or `--compare`, not plain `-
   renames an existing file under `tests/`. Adding and editing tests is still allowed.
 - **Gates before commit:** non-empty diff, no guarded path in the final diff (catches side
   channels), all CI checks pass, offline eval score >= the base commit's.
+- **Gates independent of the candidate (P1-04):** the checks and the candidate's eval run in
+  an overlay: the candidate's tree with the baseline's `tests/`, `evals/` and gate config
+  (`pyproject.toml`, `conftest.py`, `pytest.ini`, `tox.ini`, `setup.cfg`, ruff/mypy/coverage
+  config) put back, and tool caches (`.mypy_cache`, `__pycache__`, ...) dropped. So editing a
+  test, an eval case or a lint/coverage setting can't make a broken change pass. The
+  candidate's own tests run as an extra gate when it changed `tests/`. A new top-level module
+  under `src/` (on `PYTHONPATH`, so it could shadow `pytest` or add a `sitecustomize`) is
+  rejected. The collected test count and coverage % are measured in the baseline and in the
+  candidate's tests under the baseline's config (so a coverage `omit` can't hide a drop), and
+  any drop rejects the cycle. An unreadable baseline score or metric now
+  rejects too (no fail-open), unless `--allow-missing-baseline`; the candidate's own metrics
+  must always be readable.
 - **No merge:** the best outcome is a branch or PR for a human to review.
 - **Gauntlet (opt-in, `--gauntlet`, B34):** the inner run must also pass its own predicted checks and a tool-free critic. A `needs_help` run is rejected outright (the outer gates never rescue it) and its patch is kept for review. This only adds gates; the scope, the outer gates and the no-merge rule are unchanged. Predicted checks still go through the scoped approver, so they are limited to `pytest`, `ruff` and `mypy`.
 - **Gate sandbox (fails closed, P1-02):** the gates run code the agent just wrote. With
