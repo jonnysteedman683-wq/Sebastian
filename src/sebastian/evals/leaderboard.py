@@ -16,6 +16,7 @@ from __future__ import annotations
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from urllib.parse import urlsplit
 
 from sebastian.evals.harness import CASE_TOKENS, CaseResult, EvalCase, SuiteResult, run_suite
 from sebastian.gauntlet import GauntletPolicy
@@ -41,9 +42,15 @@ class ModelSpec:
 
     @property
     def label(self) -> str:
-        """Short display name."""
+        """Short display name; includes the server (host:port) so two servers stay distinct."""
         prefix = f"{self.backend}:" if self.backend else ""
-        return prefix + self.model
+        server = urlsplit(self.base_url).netloc if self.base_url else ""
+        return prefix + self.model + (f"@{server}" if server else "")
+
+    @property
+    def identity(self) -> tuple[str, str, str]:
+        """What makes two specs the same model: backend, model and server (P2-14)."""
+        return (self.backend, self.model, self.base_url.rstrip("/"))
 
 
 def parse_spec(text: str) -> ModelSpec:
@@ -245,8 +252,8 @@ def run_leaderboard(
         raise LeaderboardError("give at least one model")
     if len(specs) > MAX_MODELS:
         raise LeaderboardError(f"at most {MAX_MODELS} models per run")
-    labels = [s.label for s in specs]
-    if len(set(labels)) != len(labels):
+    ids = [s.identity for s in specs]
+    if len(set(ids)) != len(ids):
         raise LeaderboardError("each model may appear only once")
     meter = _Meter(ceilings or Ceilings(), clock, clock())
     rows = []
