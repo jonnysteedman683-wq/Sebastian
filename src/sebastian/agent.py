@@ -145,6 +145,7 @@ class Sebastian:
     sessions: SessionStore | None = None  # saves each step's conversation, enables ``resume``
     workspace: str = ""  # recorded in sessions so a resume targets the same directory
     gauntlet: GauntletPolicy | None = None  # B11: prove "done" with checks and a critic
+    run_info: dict[str, str] = field(default_factory=dict)  # e.g. sandbox; added to run_start
 
     def run(self, task: str) -> RunResult:
         """Run ``task`` and return how it ended. Always terminates (budget-bounded)."""
@@ -153,7 +154,7 @@ class Sebastian:
         run_id = self._new_run()
         governor = Governor(self.budget, self.clock)
         recalled = self.memory.recall(task, self.recall_k) if self.memory else []
-        self.tracer.emit(run_id, "run_start", task=task, recalled=len(recalled))
+        self.tracer.emit(run_id, "run_start", task=task, recalled=len(recalled), **self.run_info)
         result: RunResult | None = None
         plan = ""
         if self.plan or self.gauntlet is not None:
@@ -186,7 +187,14 @@ class Sebastian:
             + RESUME_NOTE.format(reason=why),
         )
         new_id = self._new_run()
-        self.tracer.emit(new_id, "run_start", task=old.task, recalled=0, resumed_from=run_id)
+        self.tracer.emit(
+            new_id,
+            "run_start",
+            task=old.task,
+            recalled=0,
+            resumed_from=run_id,
+            **self.run_info,
+        )
         session = Session(
             new_id, old.task, old.system, messages, workspace=old.workspace, resumed_from=run_id
         )
