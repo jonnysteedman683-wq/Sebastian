@@ -279,7 +279,7 @@ def test_models_cli_passes_the_unsafe_flag(
     real = run_suite
 
     def spy(*args: object, **kwargs: object) -> object:
-        seen.append(bool(kwargs.get("unsafe_checkers")))
+        seen.append(bool(kwargs.get("unsafe_checkers", args[3] if len(args) > 3 else False)))
         return real(*args, **kwargs)  # type: ignore[arg-type]
 
     monkeypatch.setattr("sebastian.evals.leaderboard.run_suite", spy)

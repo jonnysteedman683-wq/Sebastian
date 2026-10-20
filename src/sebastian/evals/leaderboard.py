@@ -13,16 +13,18 @@ tokens. Nothing here changes what a model is allowed to do; it only measures it.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
-from sebastian.evals.harness import EvalCase, SuiteResult, run_suite
+from sebastian.evals.harness import CASE_TOKENS, CaseResult, EvalCase, SuiteResult, run_suite
 from sebastian.gauntlet import GauntletPolicy
 from sebastian.llm.base import LLM
 from sebastian.types import Message, Role
 
 BACKENDS = ("anthropic", "openai")
 MAX_MODELS = 10
+CONFIRM_TOKENS = 5_000_000  # a worst case above this needs --yes (P2-13)
 
 
 class LeaderboardError(ValueError):
@@ -71,6 +73,7 @@ class Row:
     plain: SuiteResult
     gauntlet: SuiteResult | None = None
     error: str = ""  # the model's run crashed (P2-12): shown, ranked last, never recorded
+    stopped: str = ""  # which whole-run limit stopped the leaderboard here (P2-13)
 
     @property
     def score(self) -> float:
@@ -101,6 +104,60 @@ class Row:
         """Tokens across every run for this model."""
         runs = self.plain.results + (self.gauntlet.results if self.gauntlet else [])
         return sum(r.tokens for r in runs)
+
+    @property
+    def partial(self) -> bool:
+        """A whole-run limit stopped the leaderboard during this model's run (P2-13)."""
+        return bool(self.stopped)
+
+    @property
+    def cost(self) -> float:
+        """USD across every run for this model (0 when unpriced)."""
+        runs = self.plain.results + (self.gauntlet.results if self.gauntlet else [])
+        return sum(r.cost for r in runs)
+
+
+@dataclass(frozen=True, slots=True)
+class Ceilings:
+    """Whole-run limits for a leaderboard; 0 means no limit (P2-13)."""
+
+    max_total_tokens: int = 0
+    max_seconds: float = 0.0
+    max_cost_usd: float = 0.0
+
+
+@dataclass(slots=True)
+class _Meter:
+    ceilings: Ceilings
+    clock: Callable[[], float]
+    start: float
+    tokens: int = 0
+    cost: float = 0.0
+    tripped: str = ""
+
+    def add(self, result: CaseResult) -> bool:
+        """Count one finished case; True once any ceiling is reached."""
+        self.tokens += result.tokens
+        self.cost += result.cost
+        c = self.ceilings
+        if c.max_total_tokens and self.tokens >= c.max_total_tokens:
+            self.tripped = f"token limit {c.max_total_tokens:,} reached"
+        elif c.max_seconds and self.clock() - self.start >= c.max_seconds:
+            self.tripped = f"time limit {c.max_seconds:g}s reached"
+        elif c.max_cost_usd and self.cost >= c.max_cost_usd:
+            self.tripped = f"cost limit ${c.max_cost_usd:.2f} reached"
+        return bool(self.tripped)
+
+
+def runnable(cases: Sequence[EvalCase], gauntlet: bool) -> int:
+    """How many cases one model runs (plain, plus every case again under the Gauntlet)."""
+    plain = sum(not c.gauntlet_only for c in cases)
+    return plain + (len(cases) if gauntlet else 0)
+
+
+def worst_case_tokens(n_models: int, cases: Sequence[EvalCase], gauntlet: bool) -> int:
+    """Models x cases x the per-case token cap: the most the run could spend."""
+    return n_models * runnable(cases, gauntlet) * CASE_TOKENS
 
 
 def _key(row: Row) -> tuple[bool, float, float, float, int]:
@@ -156,13 +213,17 @@ def run_leaderboard(
     gauntlet: bool = False,
     unsafe_checkers: bool = False,
     on_row: Callable[[Row], None] | None = None,
+    ceilings: Ceilings | None = None,
+    clock: Callable[[], float] = time.monotonic,
 ) -> list[Row]:
     """Run ``cases`` for every spec (a fresh client per case) and return the ranked rows.
 
     ``unsafe_checkers`` is passed to ``run_suite``: without it, live models get code-running
     cases only inside bubblewrap. A model whose run raises becomes an error row instead of
     ending the whole leaderboard. ``on_row`` sees each row as soon as its model finishes, so
-    results already paid for survive a later crash or Ctrl-C (P2-12).
+    results already paid for survive a later crash or Ctrl-C (P2-12). ``ceilings`` caps the
+    whole run's tokens, seconds and dollars: the model that crosses one keeps its finished
+    cases as a ``partial`` row and no further model starts (P2-13).
     """
     if not specs:
         raise LeaderboardError("give at least one model")
@@ -171,6 +232,7 @@ def run_leaderboard(
     labels = [s.label for s in specs]
     if len(set(labels)) != len(labels):
         raise LeaderboardError("each model may appear only once")
+    meter = _Meter(ceilings or Ceilings(), clock, clock())
     rows = []
     for spec in specs:
 
@@ -178,14 +240,17 @@ def run_leaderboard(
             return factory(spec)
 
         try:
-            row = Row(spec, run_suite(cases, make, unsafe_checkers=unsafe_checkers))
-            if gauntlet:
-                row.gauntlet = run_suite(cases, make, GauntletPolicy(), unsafe_checkers)
+            row = Row(spec, run_suite(cases, make, None, unsafe_checkers, meter.add))
+            if gauntlet and not meter.tripped:
+                row.gauntlet = run_suite(cases, make, GauntletPolicy(), unsafe_checkers, meter.add)
         except Exception as exc:
             row = Row(spec, SuiteResult(), error=f"{type(exc).__name__}: {exc}")
+        row.stopped = meter.tripped
         rows.append(row)
         if on_row is not None:
             on_row(row)
+        if meter.tripped:
+            break
     return rank(rows)
 
 
@@ -193,9 +258,13 @@ def _pct(x: float | None) -> str:
     return "-" if x is None else f"{x:.0%}"
 
 
+def _name(row: Row) -> str:
+    return row.spec.label + (" (partial)" if row.partial else "")
+
+
 def render(rows: Sequence[Row]) -> str:
     """The leaderboard as a fixed-width table."""
-    width = max([5, *(len(r.spec.label) for r in rows)])
+    width = max([5, *(len(_name(r)) for r in rows)])
     header = (
         f"{'#':>2}  {'model':<{width}}  {'score':>5}  {'inject':>6}  "
         f"{'gauntl':>6}  {'critic':>6}  {'tokens':>10}"
@@ -206,7 +275,7 @@ def render(rows: Sequence[Row]) -> str:
             lines.append(f"{i:>2}  {r.spec.label:<{width}}  error: {r.error}"[:200])
             continue
         lines.append(
-            f"{i:>2}  {r.spec.label:<{width}}  {_pct(r.score):>5}  {_pct(r.resistance):>6}  "
+            f"{i:>2}  {_name(r):<{width}}  {_pct(r.score):>5}  {_pct(r.resistance):>6}  "
             f"{_pct(r.gauntlet_score):>6}  {_pct(r.critic):>6}  {r.tokens:>10,}"
         )
     lines.append(

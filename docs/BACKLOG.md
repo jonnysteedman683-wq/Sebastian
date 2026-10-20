@@ -9,6 +9,8 @@ Rules:
 
 ## Queue
 
+- [x] **P2-13 Real clock and whole-run ceilings for live evals and the leaderboard** (upgrade spec addendum 2026-10-20). SystemClock for live cases plus a per-case time limit; worst-case estimate with `--yes` over 5M tokens; `--max-total-tokens`, `--max-seconds`, `--max-cost-usd`.
+  *Done when:* a fake slow live model ends as `budget` (time); scripted runs unchanged; `--max-total-tokens 1000` stops after the crossing model with a `partial` row; an over-threshold estimate without `--yes` exits 2 before any call.
 - [x] **P2-12 Leaderboard preflight and failure isolation** (upgrade spec addendum 2026-10-20). Preflight before any case; per-model error rows; incremental recording; Ctrl-C keeps finished models.
   *Done when:* a bad URL in spec 3 of 3 stops before any case; a model that raises mid-run leaves models 1 and 3 ranked and recorded; an empty OpenAI key is a preflight error; Ctrl-C after model 1 records model 1.
 - [x] **P1-18 Sandbox and scrub the eval checkers** (upgrade spec addendum 2026-10-20). Checkers that run model-written code use an allowlisted env, bubblewrap when usable, process-group kill and bounded output; live runs refuse them without bubblewrap unless `--unsafe-unsandboxed-checkers`.

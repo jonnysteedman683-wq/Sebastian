@@ -147,6 +147,21 @@ def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser])
         help="before running, send each model one tiny request (costs a few tokens)",
     )
     mods.add_argument(
+        "--max-total-tokens", type=int, default=0, help="stop the whole run at this many tokens"
+    )
+    mods.add_argument(
+        "--max-seconds", type=float, default=0.0, help="stop the whole run after this long"
+    )
+    mods.add_argument(
+        "--max-cost-usd",
+        type=float,
+        default=0.0,
+        help="stop the whole run at this spend (every model needs a price in prices.json)",
+    )
+    mods.add_argument(
+        "--yes", action="store_true", help="run even if the worst-case token estimate is large"
+    )
+    mods.add_argument(
         "--unsafe-unsandboxed-checkers",
         action="store_true",
         help="run code-executing checkers and commands without bubblewrap (host process, "
@@ -398,7 +413,10 @@ def _models(
     prices: Mapping[str, Price],
 ) -> int:
     from sebastian.evals.cases import ALL  # noqa: PLC0415
+    from sebastian.evals.harness import CASE_TOKENS  # noqa: PLC0415
     from sebastian.evals.leaderboard import (  # noqa: PLC0415
+        CONFIRM_TOKENS,
+        Ceilings,
         LeaderboardError,
         ModelSpec,
         parse_spec,
@@ -406,6 +424,8 @@ def _models(
         rank,
         render,
         run_leaderboard,
+        runnable,
+        worst_case_tokens,
     )
     from sebastian.evals.sandbox import UNSAFE_WARNING  # noqa: PLC0415
     from sebastian.evals.scar import ScarError, load_scars  # noqa: PLC0415
@@ -423,13 +443,33 @@ def _models(
     def finished(row: Row) -> None:  # print and record each model as soon as it is done
         done.append(row)
         status = f"error: {row.error}" if row.error else f"score {row.score:.0%}"
+        if row.partial:
+            status += f" (partial: {row.stopped}; not recorded)"
         print(f"models: [{len(done)}/{len(specs)}] {row.spec.label}: {status}", file=sys.stderr)
-        if not args.no_record and not row.error:
+        if not args.no_record and not row.error and not row.partial:
             _record_row(cfg, now, row)
 
     try:
         specs = [parse_spec(s) for s in args.specs]
         cases = [*ALL, *load_scars(args.scars)]
+        ceilings = Ceilings(args.max_total_tokens, args.max_seconds, args.max_cost_usd)
+        if args.max_cost_usd:
+            require_prices([s.model for s in specs], prices)
+        worst = worst_case_tokens(len(specs), cases, args.gauntlet)
+        capped = min(worst, args.max_total_tokens) if args.max_total_tokens else worst
+        print(
+            f"models: worst case {worst:,} tokens ({len(specs)} model(s) x "
+            f"{runnable(cases, args.gauntlet)} cases x {CASE_TOKENS:,})"
+            + (f", capped at {capped:,}" if capped < worst else ""),
+            file=sys.stderr,
+        )
+        if capped > CONFIRM_TOKENS and not args.yes:
+            print(
+                f"models: that is over {CONFIRM_TOKENS:,} tokens; pass --yes to run it, "
+                "or cap it with --max-total-tokens",
+                file=sys.stderr,
+            )
+            return 2
         problems = preflight(specs, factory, ping=args.preflight_ping)
         if problems:
             print("models: preflight failed; nothing was run:", file=sys.stderr)
@@ -445,8 +485,9 @@ def _models(
             gauntlet=args.gauntlet,
             unsafe_checkers=args.unsafe_unsandboxed_checkers,
             on_row=finished,
+            ceilings=ceilings,
         )
-    except (LeaderboardError, ScarError) as exc:
+    except (LeaderboardError, ScarError, PricingError) as exc:
         print(f"models: {exc}", file=sys.stderr)
         return 2
     except KeyboardInterrupt:
