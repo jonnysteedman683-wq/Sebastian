@@ -99,7 +99,7 @@ class EvolveReport:
         if self.branch:
             lines.append(f"  branch: {self.branch}")
         if self.sandbox:
-            lines.append(f"  gate sandbox: {self.sandbox}")
+            lines.append(f"  gate sandbox: {self.sandbox} (no secrets in gate env)")
         if self.resumes:
             lines.append(f"  agent resumed: {self.resumes}x after hitting its budget")
         if self.gates:
@@ -201,34 +201,60 @@ def _git(repo: Path, *args: str) -> str:
     return proc.stdout
 
 
-def resolve_sandbox(mode: str) -> str | None:
-    """Path to a usable bwrap for ``mode`` (auto | bwrap | none); None means unsandboxed."""
+def resolve_sandbox(mode: str, *, unsafe: bool = False) -> str | None:
+    """Path to a usable bwrap for ``mode`` (auto | bwrap | none); None means unsandboxed.
+
+    Fails closed (P1-02): evolve runs code the agent just wrote, so it never runs it on the
+    host unless ``unsafe`` (``--unsafe-no-sandbox``) confirms that. ``auto`` without a usable
+    bubblewrap and ``none`` both need it; ``bwrap`` always requires bubblewrap.
+    """
     if mode not in {"auto", "bwrap", "none"}:
         raise EvolveError(f"unknown sandbox mode {mode!r}; use auto, bwrap or none")
     if mode == "none":
+        if not unsafe:
+            raise EvolveError(
+                "--sandbox none runs agent-written code on the host; "
+                "confirm with --unsafe-no-sandbox"
+            )
         return None
     exe = shutil.which("bwrap")
     if exe is not None and bwrap_usable(exe):
         return exe
     if mode == "bwrap":
         raise EvolveError("sandbox 'bwrap' required but bubblewrap is missing or blocked here")
-    return None
+    if unsafe:
+        return None
+    raise EvolveError(
+        "bubblewrap is missing or blocked here, so evolve will not run agent-written code "
+        "(--sandbox auto fails closed); install bubblewrap, or pass --unsafe-no-sandbox"
+    )
+
+
+# The only variables a gate command (or bwrap itself) inherits: no API keys or tokens.
+GATE_ENV_PASSTHROUGH = frozenset({"PATH", "LANG", "LC_ALL"})
+
+
+def gate_env(cwd: Path) -> dict[str, str]:
+    """A scrubbed environment for gate commands: no secrets from the parent process."""
+    env = {k: v for k, v in os.environ.items() if k in GATE_ENV_PASSTHROUGH}
+    return env | {"HOME": str(cwd), "PYTHONPATH": str(cwd / "src")}
 
 
 def _run(
     argv: Sequence[str], cwd: Path, bwrap: str | None = None, timeout: float = CHECK_TIMEOUT
 ) -> tuple[bool, str]:
-    """Run a gate command in ``cwd``; inside bubblewrap when ``bwrap`` is given."""
+    """Run a gate command in ``cwd``; inside bubblewrap when ``bwrap`` is given.
+
+    Either way the command never sees the parent's environment (P1-02): only ``PATH``,
+    ``LANG``, ``LC_ALL``, ``HOME`` and ``PYTHONPATH`` are passed.
+    """
     cmd = list(argv)
-    if bwrap is None:
-        env = dict(os.environ)
-        env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(cwd / "src"), env.get("PYTHONPATH")]))
-    else:
+    env = gate_env(cwd)
+    if bwrap is not None:
         exe = cmd[0] if os.path.isabs(cmd[0]) else shutil.which(cmd[0]) or cmd[0]
-        inner = {k: v for k, v in os.environ.items() if k in {"PATH", "LANG", "LC_ALL"}}
+        inner = {k: v for k, v in env.items() if k in GATE_ENV_PASSTHROUGH}
         inner |= {"HOME": SANDBOX_WORKDIR, "PYTHONPATH": f"{SANDBOX_WORKDIR}/src"}
         cmd = bwrap_argv(bwrap, cwd, exe, cmd[1:], inner, extra_ro=python_roots())
-        env = dict(os.environ)  # bwrap's own env; --clearenv keeps it out of the sandbox
     try:
         proc = subprocess.run(
             cmd,
@@ -302,7 +328,8 @@ class EvolveConfig:
         default_factory=lambda: Budget(max_steps=60, max_tokens=1_500_000, max_seconds=3600)
     )
     push: bool = False
-    sandbox: str = "auto"  # gate commands: auto (bwrap if usable) | bwrap (required) | none
+    sandbox: str = "auto"  # gate commands: auto | bwrap (both need bubblewrap) | none
+    unsafe_no_sandbox: bool = False  # P1-02: the only way agent-written code runs unsandboxed
     max_resumes: int = (
         1  # budget-stopped agent runs continue this many times, each with a fresh budget
     )
@@ -329,7 +356,7 @@ def evolve_once(
         report.reason = "no unlocked backlog item" + (f" {cfg.item_id}" if cfg.item_id else "")
         return report
 
-    bwrap = resolve_sandbox(cfg.sandbox)
+    bwrap = resolve_sandbox(cfg.sandbox, unsafe=cfg.unsafe_no_sandbox)
     report.sandbox = "bwrap" if bwrap else "none"
     clock = clock or SystemClock()
     report.branch = _free_branch(root, f"sebastian/evolve-{item.id.lower()}-{int(clock.now())}")

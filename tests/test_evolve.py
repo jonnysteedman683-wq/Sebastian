@@ -85,7 +85,14 @@ def write(cid: str, path: str, content: str) -> ToolCall:
 
 
 def cfg(tmp_path: Path, **kw: object) -> EvolveConfig:
-    base = EvolveConfig(checks=[CHECK_GREET], eval_cmd=EVAL, home=tmp_path / "home")
+    # CI hosts may lack bubblewrap; P1-02 makes that an error unless explicitly opted out.
+    base = EvolveConfig(
+        checks=[CHECK_GREET],
+        eval_cmd=EVAL,
+        home=tmp_path / "home",
+        sandbox="none",
+        unsafe_no_sandbox=True,
+    )
     for k, v in kw.items():
         setattr(base, k, v)
     return base
@@ -269,13 +276,21 @@ def test_cli_evolve(repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 
     monkeypatch.setattr(evo, "evolve_once", fast)
     llm = agent(write("1", "greet.txt", "hello"))
-    code = main(["evolve", "--repo", str(repo), "--no-evals"], llm_factory=lambda m: llm)
+    unsafe = ["--sandbox", "none", "--unsafe-no-sandbox"]
+    code = main(["evolve", "--repo", str(repo), "--no-evals", *unsafe], llm_factory=lambda m: llm)
     out = capsys.readouterr().out
     assert code == 0, out
     assert "ACCEPTED B3" in out
     llm2 = agent()
-    assert main(["evolve", "--repo", str(repo), "--no-evals"], llm_factory=lambda m: llm2) == 1
-    assert main(["evolve", "--repo", str(tmp_path)], llm_factory=lambda m: agent()) == 2
+    args = ["evolve", "--repo", str(repo), "--no-evals", *unsafe]
+    assert main(args, llm_factory=lambda m: llm2) == 1
+    assert main(["evolve", "--repo", str(tmp_path), *unsafe], llm_factory=lambda m: agent()) == 2
+    # P1-02: --sandbox none alone is refused; it needs the explicit confirmation flag.
+    monkeypatch.setattr("shutil.which", lambda n, *a, **k: None if n == "bwrap" else GIT)
+    code = main(["evolve", "--repo", str(repo), "--no-evals", "--sandbox", "none"],
+                llm_factory=lambda m: agent())  # fmt: skip
+    assert code == 2
+    assert "--unsafe-no-sandbox" in capsys.readouterr().err
 
 
 def test_open_pr_uses_gh(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -338,15 +353,76 @@ def fake_bwrap(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def test_resolve_sandbox_modes(fake_bwrap: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from sebastian.evolve import resolve_sandbox
 
-    assert resolve_sandbox("none") is None
+    assert resolve_sandbox("none", unsafe=True) is None
     assert resolve_sandbox("auto") is not None
     assert resolve_sandbox("bwrap") is not None
     with pytest.raises(EvolveError, match="unknown sandbox"):
         resolve_sandbox("docker")
     monkeypatch.setattr("shutil.which", lambda *a, **k: None)
-    assert resolve_sandbox("auto") is None
     with pytest.raises(EvolveError, match="missing or blocked"):
         resolve_sandbox("bwrap")
+
+
+def test_auto_without_bwrap_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """P1-02: agent-written code never runs unsandboxed unless explicitly confirmed."""
+    from sebastian.evolve import resolve_sandbox
+
+    monkeypatch.setattr("shutil.which", lambda *a, **k: None)
+    with pytest.raises(EvolveError, match="--unsafe-no-sandbox"):
+        resolve_sandbox("auto")
+    with pytest.raises(EvolveError, match="--unsafe-no-sandbox"):
+        resolve_sandbox("none")
+    assert resolve_sandbox("auto", unsafe=True) is None
+    assert resolve_sandbox("none", unsafe=True) is None
+
+
+def test_auto_without_bwrap_fails_before_any_work(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("shutil.which", lambda n, *a, **k: None if n == "bwrap" else GIT)
+    config = cfg(tmp_path, sandbox="auto", unsafe_no_sandbox=False)
+    with pytest.raises(EvolveError, match="--unsafe-no-sandbox"):
+        evolve_once(repo, agent(write("1", "greet.txt", "x")), config)
+    assert git(repo, "worktree", "list").count("\n") == 1
+
+
+FAKE_SECRETS = {
+    "ANTHROPIC_API_KEY": "sk-ant-test-FAKE0000",
+    "OPENAI_API_KEY": "sk-test-FAKE0000",
+    "GH_TOKEN": "ghp_FAKE0000000000000000000000000000",
+}
+DUMP_ENV = [PY, "-c", "import json, os; open('env.json', 'w').write(json.dumps(dict(os.environ)))"]
+
+
+@pytest.mark.parametrize("sandboxed", [False, True])
+def test_gate_env_has_no_secrets(
+    sandboxed: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fake_bwrap: Path
+) -> None:
+    """P1-02: a gate command's environment never carries the parent's secrets."""
+    import json
+
+    from sebastian.evolve import _run
+
+    for k, v in FAKE_SECRETS.items():
+        monkeypatch.setenv(k, v)
+    work = tmp_path / "wt"
+    work.mkdir()
+    ok, out = _run(DUMP_ENV, work, shutil.which("bwrap") if sandboxed else None)
+    assert ok, out
+    env = json.loads((work / "env.json").read_text())
+    for k in FAKE_SECRETS:
+        assert k not in env
+    assert not any(v in json.dumps(env) for v in FAKE_SECRETS.values())
+    if not sandboxed:
+        assert set(env) <= {"PATH", "LANG", "LC_ALL", "HOME", "PYTHONPATH"} | {"LC_CTYPE"}
+        assert env["HOME"] == str(work)
+        assert env["PYTHONPATH"] == str(work / "src")
+
+
+def test_report_says_no_secrets_in_gate_env(repo: Path, tmp_path: Path) -> None:
+    report = evolve_once(repo, agent(write("1", "greet.txt", "hello")), cfg(tmp_path))
+    assert report.accepted, report.summary()
+    assert "no secrets in gate env" in report.summary()
 
 
 def test_bwrap_usable_probe(fake_bwrap: Path, tmp_path: Path) -> None:
