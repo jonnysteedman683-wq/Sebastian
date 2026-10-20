@@ -127,19 +127,91 @@ def _usable(monkeypatch: pytest.MonkeyPatch, ok: bool) -> None:
     monkeypatch.setattr(b, "bwrap_usable", lambda exe: ok)
 
 
+def _unshare(monkeypatch: pytest.MonkeyPatch, ok: bool) -> None:
+    import sebastian.tools.builtin as b
+
+    real = shutil.which
+
+    def which(name: str, *a: object, **k: object) -> str | None:
+        if name == "unshare":
+            return "/usr/bin/unshare" if ok else None
+        found: str | None = real(name, *a, **k)  # type: ignore[call-overload]
+        return found
+
+    monkeypatch.setattr(shutil, "which", which)
+    monkeypatch.setattr(b, "unshare_usable", lambda exe: ok)
+
+
 def test_resolve_command_sandbox(monkeypatch: pytest.MonkeyPatch) -> None:
-    assert resolve_command_sandbox("none") == ("none", "")
     with pytest.raises(ValueError, match="unknown sandbox"):
         resolve_command_sandbox("docker")
     _usable(monkeypatch, True)
     assert resolve_command_sandbox("auto") == ("bwrap", "")
     assert resolve_command_sandbox("bwrap") == ("bwrap", "")
+    # --allow-network never loosens bwrap: it always unshares the network.
+    assert resolve_command_sandbox("auto", allow_network=True) == ("bwrap", "")
     _usable(monkeypatch, False)
-    mode, note = resolve_command_sandbox("auto")
-    assert mode == "none"
-    assert "NOT sandboxed" in note
     with pytest.raises(ToolError, match="missing or blocked"):
         resolve_command_sandbox("bwrap")
+
+
+def test_auto_fails_closed_without_bwrap(monkeypatch: pytest.MonkeyPatch) -> None:
+    """P1-01: auto never silently falls back to running commands on the host."""
+    _usable(monkeypatch, False)
+    with pytest.raises(ToolError, match="--sandbox none"):
+        resolve_command_sandbox("auto")
+    with pytest.raises(ToolError):
+        resolve_command_sandbox("auto", allow_network=True)
+
+
+def test_sandbox_none_isolates_network_or_needs_opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
+    _unshare(monkeypatch, True)
+    mode, note = resolve_command_sandbox("none")
+    assert mode == "unshare"
+    assert "NOT sandboxed" in note
+    assert "network" in note
+    mode, note = resolve_command_sandbox("none", allow_network=True)
+    assert mode == "none"
+    assert "NOT sandboxed" in note
+    assert "network access" in note
+    _unshare(monkeypatch, False)
+    with pytest.raises(ToolError, match="--allow-network"):
+        resolve_command_sandbox("none")
+    assert resolve_command_sandbox("none", allow_network=True)[0] == "none"
+
+
+def test_unshare_policy_wraps_command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = tmp_path / "unshare"
+    fake.write_text('#!/bin/sh\nfor a in "$@"; do echo "$a"; done\n')
+    fake.chmod(0o755)
+    real = shutil.which
+    monkeypatch.setattr(
+        shutil,
+        "which",
+        lambda n, *a, **k: str(fake) if n == "unshare" else real(n, *a, **k),
+    )
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    tool = command_tool(Workspace(ws), CommandPolicy.of(["echo"], sandbox="unshare"))
+    out = tool.invoke({"command": "echo hi"}).splitlines()
+    assert out[0] == "exit_code=0"
+    assert out[1:] == ["--user", "--map-root-user", "--net", "--", "echo", "hi"]
+
+
+def test_unshare_policy_missing_binary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(shutil, "which", lambda *a, **k: None)
+    tool = command_tool(Workspace(tmp_path), CommandPolicy.of(["echo"], sandbox="unshare"))
+    with pytest.raises(ToolError, match="unshare"):
+        tool.invoke({"command": "echo hi"})
+
+
+@pytest.mark.skipif(shutil.which("unshare") is None, reason="needs util-linux unshare")
+def test_unshare_usable_probe(tmp_path: Path) -> None:
+    from sebastian.tools.builtin import unshare_usable
+
+    assert not unshare_usable(str(tmp_path / "missing"))
+    # The real probe either works or reports False; it never raises.
+    assert unshare_usable(shutil.which("unshare") or "") in {True, False}
 
 
 def test_python_roots_cover_this_interpreter() -> None:
@@ -182,10 +254,34 @@ def test_cli_defaults_to_sandboxed_commands(
     assert seen[-1].sandbox == "bwrap"
     assert sys.prefix in seen[-1].extra_ro
     _usable(monkeypatch, False)
-    assert go() == 0
-    assert seen[-1].sandbox == "none"
-    assert "NOT sandboxed" in capsys.readouterr().err
-    assert go("--sandbox", "none") == 0
-    assert "NOT sandboxed" not in capsys.readouterr().err
+    n = len(seen)
+    assert go() == 2  # P1-01: auto fails closed, nothing is registered
+    assert len(seen) == n
+    assert "--sandbox none" in capsys.readouterr().err
     assert go("--sandbox", "bwrap") == 2
     assert "required" in capsys.readouterr().err
+    _unshare(monkeypatch, True)
+    assert go("--sandbox", "none") == 0
+    assert seen[-1].sandbox == "unshare"
+    assert "NOT sandboxed" in capsys.readouterr().err  # warned on every run
+    assert go("--sandbox", "none") == 0
+    assert "NOT sandboxed" in capsys.readouterr().err
+    _unshare(monkeypatch, False)
+    assert go("--sandbox", "none") == 2
+    assert "--allow-network" in capsys.readouterr().err
+    assert go("--sandbox", "none", "--allow-network") == 0
+    assert seen[-1].sandbox == "none"
+    assert "network access" in capsys.readouterr().err
+    import json
+
+    starts = [
+        json.loads(line)
+        for line in (tmp_path / "home" / "traces.jsonl").read_text().splitlines()
+        if '"run_start"' in line
+    ]
+    assert starts[0]["sandbox"] == "bwrap"
+    assert starts[0]["network"] == "isolated"
+    assert starts[-2]["sandbox"] == "none"
+    assert starts[-2]["network"] == "isolated"
+    assert starts[-1]["sandbox"] == "none"
+    assert starts[-1]["network"] == "host"

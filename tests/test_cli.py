@@ -78,7 +78,20 @@ def test_run_registers_command_tool_and_no_memory(tmp_path: Path, home: Path) ->
         return made[0]
 
     code = main(
-        ["run", "t", "-w", str(ws), "--allow-cmd", "pytest", "--unattended", "--no-memory"],
+        [
+            "run",
+            "t",
+            "-w",
+            str(ws),
+            "--allow-cmd",
+            "pytest",
+            "--unattended",
+            "--no-memory",
+            # P1-01: no bwrap in CI means auto refuses; opt out explicitly for this test.
+            "--sandbox",
+            "none",
+            "--allow-network",
+        ],
         llm_factory=make,
     )
     assert code == 1  # scripted LLM exhausted -> error stop
