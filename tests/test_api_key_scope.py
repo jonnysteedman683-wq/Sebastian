@@ -152,7 +152,7 @@ def test_leaderboard_sends_each_key_only_to_its_host(
         f"openai:loc@{LOCAL}",
         f"openai:mine@{THIRD}#MY_KEY",
     ]
-    cli.main(["models", *specs, "--no-record", "--scars", str(tmp_path / "none")])
+    cli.main(["models", *specs, "--no-record", "--yes", "--scars", str(tmp_path / "none")])
     capsys.readouterr()
     assert built == {"gpt-x": "sk-test-FAKE", "qwen": "", "loc": "", "mine": "sk-test-FAKE-mine"}
 
