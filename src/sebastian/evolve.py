@@ -7,8 +7,9 @@ One cycle (``sebastian evolve``):
 3. Run the agent in the candidate worktree under a *scoped approver*: it may write any file
    except guarded paths (read from ``.github/workflows/guard.yml``, so there is one source of
    truth) and may run only the allowlisted check commands. Everything else is denied.
-4. Gates, all deterministic, in order: the diff is non-empty; it touches no guarded path; every
-   check command passes; the eval score is at least the baseline's.
+4. Gates, all deterministic, in order: the diff is non-empty; it touches no guarded path (which
+   includes the safety TCB, P1-03); it deletes or renames no existing test; every check command
+   passes; the eval score is at least the baseline's.
 5. Only if every gate passes is the change committed. Pushing the branch and opening a PR are
    opt-in. Nothing is ever merged: a human (or a later trust level) does that.
 
@@ -49,10 +50,25 @@ from sebastian.tools.builtin import SANDBOX_WORKDIR, bwrap_argv, bwrap_usable, p
 from sebastian.trace import NullTracer, Tracer
 from sebastian.types import StopReason, ToolCall
 
-# Fallback when guard.yml cannot be read: the guarded set from AGENTS.md.
+# Fallback when guard.yml cannot be read; must equal its `guarded=` regex (a test checks).
+# P1-03: also the safety TCB, so neither evolve nor an unlabelled PR can change it.
 DEFAULT_GUARDED = (
-    r"^(\.github/|src/sebastian/watch/|schemas/repo_change_report\.schema\.json$|"
-    r"schemas/README\.md$|docs/watch/|docs/WORK_ORDER\.md$|AGENTS\.md$|CLAUDE\.md$)"
+    r"^("
+    r"\.github/|"
+    r"src/sebastian/watch/|"
+    r"src/sebastian/tools/|"
+    r"src/sebastian/llm/|"
+    r"src/sebastian/evals/|"
+    r"src/sebastian/(approval|agent|budget|evolve|gauntlet|checkpoint|session|trace)\.py$|"
+    r"pyproject\.toml$|"
+    r"scripts/|"
+    r"schemas/repo_change_report\.schema\.json$|"
+    r"schemas/README\.md$|"
+    r"docs/watch/|"
+    r"docs/WORK_ORDER\.md$|"
+    r"AGENTS\.md$|"
+    r"CLAUDE\.md$"
+    r")"
 )
 _GUARD_LINE = re.compile(r"""guarded='([^']+)'""")
 _ITEM = re.compile(r"^- \[ \] (?:🔒\s*)?\*\*(?P<id>B\d+)\b(?P<title>[^*]*)\*\*(?P<rest>.*)$")
@@ -99,7 +115,7 @@ class EvolveReport:
         if self.branch:
             lines.append(f"  branch: {self.branch}")
         if self.sandbox:
-            lines.append(f"  gate sandbox: {self.sandbox}")
+            lines.append(f"  gate sandbox: {self.sandbox} (no secrets in gate env)")
         if self.resumes:
             lines.append(f"  agent resumed: {self.resumes}x after hitting its budget")
         if self.gates:
@@ -201,34 +217,60 @@ def _git(repo: Path, *args: str) -> str:
     return proc.stdout
 
 
-def resolve_sandbox(mode: str) -> str | None:
-    """Path to a usable bwrap for ``mode`` (auto | bwrap | none); None means unsandboxed."""
+def resolve_sandbox(mode: str, *, unsafe: bool = False) -> str | None:
+    """Path to a usable bwrap for ``mode`` (auto | bwrap | none); None means unsandboxed.
+
+    Fails closed (P1-02): evolve runs code the agent just wrote, so it never runs it on the
+    host unless ``unsafe`` (``--unsafe-no-sandbox``) confirms that. ``auto`` without a usable
+    bubblewrap and ``none`` both need it; ``bwrap`` always requires bubblewrap.
+    """
     if mode not in {"auto", "bwrap", "none"}:
         raise EvolveError(f"unknown sandbox mode {mode!r}; use auto, bwrap or none")
     if mode == "none":
+        if not unsafe:
+            raise EvolveError(
+                "--sandbox none runs agent-written code on the host; "
+                "confirm with --unsafe-no-sandbox"
+            )
         return None
     exe = shutil.which("bwrap")
     if exe is not None and bwrap_usable(exe):
         return exe
     if mode == "bwrap":
         raise EvolveError("sandbox 'bwrap' required but bubblewrap is missing or blocked here")
-    return None
+    if unsafe:
+        return None
+    raise EvolveError(
+        "bubblewrap is missing or blocked here, so evolve will not run agent-written code "
+        "(--sandbox auto fails closed); install bubblewrap, or pass --unsafe-no-sandbox"
+    )
+
+
+# The only variables a gate command (or bwrap itself) inherits: no API keys or tokens.
+GATE_ENV_PASSTHROUGH = frozenset({"PATH", "LANG", "LC_ALL"})
+
+
+def gate_env(cwd: Path) -> dict[str, str]:
+    """A scrubbed environment for gate commands: no secrets from the parent process."""
+    env = {k: v for k, v in os.environ.items() if k in GATE_ENV_PASSTHROUGH}
+    return env | {"HOME": str(cwd), "PYTHONPATH": str(cwd / "src")}
 
 
 def _run(
     argv: Sequence[str], cwd: Path, bwrap: str | None = None, timeout: float = CHECK_TIMEOUT
 ) -> tuple[bool, str]:
-    """Run a gate command in ``cwd``; inside bubblewrap when ``bwrap`` is given."""
+    """Run a gate command in ``cwd``; inside bubblewrap when ``bwrap`` is given.
+
+    Either way the command never sees the parent's environment (P1-02): only ``PATH``,
+    ``LANG``, ``LC_ALL``, ``HOME`` and ``PYTHONPATH`` are passed.
+    """
     cmd = list(argv)
-    if bwrap is None:
-        env = dict(os.environ)
-        env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(cwd / "src"), env.get("PYTHONPATH")]))
-    else:
+    env = gate_env(cwd)
+    if bwrap is not None:
         exe = cmd[0] if os.path.isabs(cmd[0]) else shutil.which(cmd[0]) or cmd[0]
-        inner = {k: v for k, v in os.environ.items() if k in {"PATH", "LANG", "LC_ALL"}}
+        inner = {k: v for k, v in env.items() if k in GATE_ENV_PASSTHROUGH}
         inner |= {"HOME": SANDBOX_WORKDIR, "PYTHONPATH": f"{SANDBOX_WORKDIR}/src"}
         cmd = bwrap_argv(bwrap, cwd, exe, cmd[1:], inner, extra_ro=python_roots())
-        env = dict(os.environ)  # bwrap's own env; --clearenv keeps it out of the sandbox
     try:
         proc = subprocess.run(
             cmd,
@@ -302,7 +344,8 @@ class EvolveConfig:
         default_factory=lambda: Budget(max_steps=60, max_tokens=1_500_000, max_seconds=3600)
     )
     push: bool = False
-    sandbox: str = "auto"  # gate commands: auto (bwrap if usable) | bwrap (required) | none
+    sandbox: str = "auto"  # gate commands: auto | bwrap (both need bubblewrap) | none
+    unsafe_no_sandbox: bool = False  # P1-02: the only way agent-written code runs unsandboxed
     max_resumes: int = (
         1  # budget-stopped agent runs continue this many times, each with a fresh budget
     )
@@ -329,7 +372,7 @@ def evolve_once(
         report.reason = "no unlocked backlog item" + (f" {cfg.item_id}" if cfg.item_id else "")
         return report
 
-    bwrap = resolve_sandbox(cfg.sandbox)
+    bwrap = resolve_sandbox(cfg.sandbox, unsafe=cfg.unsafe_no_sandbox)
     report.sandbox = "bwrap" if bwrap else "none"
     clock = clock or SystemClock()
     report.branch = _free_branch(root, f"sebastian/evolve-{item.id.lower()}-{int(clock.now())}")
@@ -436,10 +479,7 @@ def _gate(
     if not report.changed:
         report.reason = f"no changes (run stopped: {report.run_stop})"
         return False
-    hits = [p for p in report.changed if guarded.search(p)]
-    report.gates["guarded_paths"] = not hits
-    if hits:
-        report.reason = f"touches guarded paths: {', '.join(hits)}"
+    if not _scope_gate(report, cand, guarded):
         return False
     for argv in cfg.checks:
         ok, out = _run(argv, cand, bwrap)
@@ -463,6 +503,32 @@ def _gate(
     return True
 
 
+def _scope_gate(report: EvolveReport, cand: Path, guarded: re.Pattern[str]) -> bool:
+    """No guarded path in the diff, and no existing test deleted or renamed (P1-03)."""
+    hits = [p for p in report.changed if guarded.search(p)]
+    report.gates["guarded_paths"] = not hits
+    if hits:
+        report.reason = f"touches guarded paths: {', '.join(hits)}"
+        return False
+    lost = removed_tests(cand)
+    report.gates["tests_kept"] = not lost
+    if lost:
+        report.reason = f"deletes or renames existing tests: {', '.join(lost)}"
+        return False
+    return True
+
+
+def removed_tests(cand: Path) -> list[str]:
+    """Existing files under ``tests/`` that the staged change deletes or renames (P1-03)."""
+    out = _git(cand, "diff", "--cached", "--name-status", "-M", "--", "tests/")
+    lost = []
+    for line in out.splitlines():
+        status, _, paths = line.partition("\t")
+        if status[:1] in {"D", "R"}:
+            lost.append(paths.split("\t")[0])
+    return lost
+
+
 def _save_patch(cand: Path, home: Path, branch: str) -> Path | None:
     diff = _git(cand, "diff", "--cached")
     if not diff:
@@ -480,8 +546,8 @@ def open_pr(worktree: Path, branch: str, item: BacklogItem) -> None:
         raise EvolveError("gh is not installed; the branch was pushed, open the PR manually")
     body = (
         f"Automated by `sebastian evolve` for {item.id}.\n\n{item.text}\n\n"
-        "Gates passed: non-empty diff, no guarded paths, ruff, format, mypy, pytest, "
-        "eval score >= baseline. Review before merging."
+        "Gates passed: non-empty diff, no guarded paths, no deleted tests, ruff, format, mypy, "
+        "pytest, eval score >= baseline. Review before merging."
     )
     proc = subprocess.run(
         [

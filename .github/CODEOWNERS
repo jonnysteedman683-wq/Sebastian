@@ -1,0 +1,24 @@
+# Owner review for the guarded set (P1-03). Keep in sync with the `guarded=` regex in
+# .github/workflows/guard.yml and evolve.DEFAULT_GUARDED. Takes effect once branch protection
+# requires code-owner review on main (owner action, see docs/SECURITY.md).
+/.github/ @jonnysteedman683-wq
+/src/sebastian/watch/ @jonnysteedman683-wq
+/src/sebastian/tools/ @jonnysteedman683-wq
+/src/sebastian/llm/ @jonnysteedman683-wq
+/src/sebastian/evals/ @jonnysteedman683-wq
+/src/sebastian/approval.py @jonnysteedman683-wq
+/src/sebastian/agent.py @jonnysteedman683-wq
+/src/sebastian/budget.py @jonnysteedman683-wq
+/src/sebastian/evolve.py @jonnysteedman683-wq
+/src/sebastian/gauntlet.py @jonnysteedman683-wq
+/src/sebastian/checkpoint.py @jonnysteedman683-wq
+/src/sebastian/session.py @jonnysteedman683-wq
+/src/sebastian/trace.py @jonnysteedman683-wq
+/pyproject.toml @jonnysteedman683-wq
+/scripts/ @jonnysteedman683-wq
+/schemas/repo_change_report.schema.json @jonnysteedman683-wq
+/schemas/README.md @jonnysteedman683-wq
+/docs/watch/ @jonnysteedman683-wq
+/docs/WORK_ORDER.md @jonnysteedman683-wq
+/AGENTS.md @jonnysteedman683-wq
+/CLAUDE.md @jonnysteedman683-wq
