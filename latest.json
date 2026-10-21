@@ -1,15 +1,15 @@
 {
-  "summary": "8 commit(s): fix(ci): P1-07 scope the live-evals API key to the eval step; fix(ci): P1-07 allow bubblewrap's user namespaces on the live-evals runner; Merge main into claude/p1-07-live-evals-key-scope; Merge main into claude/p1-07-live-evals-key-scope; Merge main into claude/p1-07-live-evals-key-scope; Merge origin/main into claude/p1-07-live-evals-key-scope; Merge branch 'main' into claude/p1-07-live-evals-key-scope; Merge pull request #45 from jonnysteedman683-wq/claude/p1-07-live-evals-key-scope",
+  "summary": "8 commit(s): fix(evals): P1-20 make the B38 behaviour checks ungameable; Merge main into claude/p1-20-ungameable-checks; Merge main into claude/p1-20-ungameable-checks; Merge main into claude/p1-20-ungameable-checks; Merge origin/main into claude/p1-20-ungameable-checks; Merge origin/main into claude/p1-20-ungameable-checks; Merge branch 'main' into claude/p1-20-ungameable-checks; Merge pull request #47 from jonnysteedman683-wq/claude/p1-20-ungameable-checks",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "4 file(s) changed",
-      "description": "Detected automatically from code: 4 file(s) changed.",
+      "title": "7 file(s) changed",
+      "description": "Detected automatically from code: 7 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "a0aa69f0a75fb8656d2df637da0e2d9de1149c31",
-          "path": ".github/workflows/live-evals.yml"
+          "sha": "13b2d800caa05e57f158cf7f6c89c612a99d8897",
+          "path": "CHANGELOG.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 48,
+  "seq": 49,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "08bf2b0ad3b9b79b8d1cb24f2b78d529663880ef",
-    "to_sha": "a0aa69f0a75fb8656d2df637da0e2d9de1149c31"
+    "from_sha": "a0aa69f0a75fb8656d2df637da0e2d9de1149c31",
+    "to_sha": "13b2d800caa05e57f158cf7f6c89c612a99d8897"
   },
-  "generated_at": "2026-10-21T00:43:55Z",
+  "generated_at": "2026-10-21T00:46:12Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -78,5 +78,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "615b474d499068d8eba7d8939b62c96bc64623a6e33f97a3855a6b1b8f8841c4"
+  "signature": "de8e85ee942eb9c78890619708b519ed1f5a2ed190e5e1a0e59503262b7449b1"
 }
