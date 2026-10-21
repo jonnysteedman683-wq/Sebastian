@@ -1,14 +1,14 @@
 {
-  "summary": "7 commit(s): feat(models): P2-13 real clock and whole-run ceilings for live evals; Merge main into claude/p2-13-live-clock-ceilings; Merge claude/p2-12-leaderboard-preflight into claude/p2-13-live-clock-ceilings; Merge claude/p2-12-leaderboard-preflight into claude/p2-13-live-clock-ceilings; test: P2-13 pass --yes in the 4-model P1-19 key-scope test; Merge claude/p2-12-leaderboard-preflight into claude/p2-13-live-clock-ceilings; Merge pull request #50 from jonnysteedman683-wq/claude/p2-13-live-clock-ceilings",
+  "summary": "6 commit(s): fix(models): P2-15 don't let missing usage win the leaderboard; Merge branch 'claude/p2-13-live-clock-ceilings' into claude/p2-15-missing-usage; Merge claude/p2-13-live-clock-ceilings into claude/p2-15-missing-usage; Merge claude/p2-13-live-clock-ceilings into claude/p2-15-missing-usage; Merge claude/p2-13-live-clock-ceilings into claude/p2-15-missing-usage; Merge pull request #51 from jonnysteedman683-wq/claude/p2-15-missing-usage",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "10 file(s) changed",
-      "description": "Detected automatically from code: 10 file(s) changed.",
+      "title": "8 file(s) changed",
+      "description": "Detected automatically from code: 8 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "c7b9c97d54f853911461cb55d436f5c16bd3ee00",
+          "sha": "fb1751c795dc87b934f54c24499db286e4cea24b",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 51,
+  "seq": 52,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "d5b28a7549c7f82baa8499efbefdb4a5f572d215",
-    "to_sha": "c7b9c97d54f853911461cb55d436f5c16bd3ee00"
+    "from_sha": "c7b9c97d54f853911461cb55d436f5c16bd3ee00",
+    "to_sha": "fb1751c795dc87b934f54c24499db286e4cea24b"
   },
-  "generated_at": "2026-10-21T00:48:56Z",
+  "generated_at": "2026-10-21T00:49:23Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -78,5 +78,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "1234a4d0deb6d6758622153df01f79931c44dd94083c4496daf78815b0b17382"
+  "signature": "cd4430be2ce22866d8f5d9a9dc821add396a5442d1a270f3c1fca36ab90c8362"
 }
