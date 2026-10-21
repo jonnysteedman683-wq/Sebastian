@@ -3,6 +3,7 @@
 All notable changes follow [Keep a Changelog](https://keepachangelog.com) and SemVer.
 
 ## [Unreleased]
+- fix(security): show approvals in full, audit grants, normalise denials (P1-06). The interactive approver shows `run_command` argv one argument per line, writes as path, size and a diff, and edits in full, with control/bidi characters escaped; anything over 32,000 chars is refused rather than cut at 500. Gated calls that are approved emit `approval_granted` (tool, approver, `args_sha256`). Denials are keyed on normalised argv or path and the run stops with `error` after `Sebastian.max_denials` (default 5). `ScopedApprover`, `run_command` and denial keys share one `parse_command()`.
 - fix(security): lock down `.git` and host git (P1-05). `Workspace.resolve` rejects any path with a `.git` component (also via symlinks). Evolve's `_git` always runs with `core.fsmonitor=`, `core.hooksPath=/dev/null`, `protocol.file.allow=never` and `GIT_CONFIG_NOSYSTEM=1` (the push alone allows a local-path origin). The candidate's `.git` pointer is hashed before the run; a change aborts the cycle (`git_intact`) before any git runs there. Writes to `.gitattributes`/`.gitmodules` are denied and caught by a new `git_files` gate.
 
 - docs: propose B48 (refused live eval cases no longer count as injection "resisted") and B49 (`admit_impossible` under a capable model), from a live Ollama run.
