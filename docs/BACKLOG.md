@@ -151,5 +151,12 @@ Rules:
 
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
+- [ ] **B45 Trust level on the dashboard.** `sebastian dashboard` shows a tile with the B26a level (`trust.assess` over the same `history.jsonl` records), its reason, and the level after each round on the score chart's timeline. Values HTML-escaped like the rest of the page.
+  *Done when:* a dashboard test with scripted history shows the tile at L0 (no rounds), L1 and L2, and a hostile model name is escaped.
+- [ ] **B46 `sebastian memory` list and forget.** `sebastian memory list [--query Q] [-n N]` prints stored episodes (task, outcome, date), newest first or by `recall` rank; `sebastian memory forget <task>` deletes the matching episode (same case/space-insensitive key as `record`), asking for confirmation unless `--yes`. Writes stay atomic.
+  *Done when:* tests cover empty store, list order, query ranking, forget hit/miss, the confirmation prompt and `--yes`; corrupt memory still raises `MemoryCorruptError`.
+- [ ] **B47 `sebastian doctor`.** One command that checks the setup and prints pass/warn/fail lines: Python version, `SEBASTIAN_HOME` writable, configured backend's key variable present (never print its value), `prices.json` valid, bubblewrap usable for `--sandbox auto`, memory and history files parse. Exit 1 on any fail. No network.
+  *Done when:* tests with a temp home cover each check passing and failing (bwrap probe stubbed), the key value never appears in output, and `capability_inventory` lists `doctor`.
+
 - [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
   *Done when:* a `JsonlTracer` test shows the per-step counts in the file; redaction tests unchanged.
