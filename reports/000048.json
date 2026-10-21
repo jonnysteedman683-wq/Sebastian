@@ -1,0 +1,82 @@
+{
+  "summary": "8 commit(s): fix(ci): P1-07 scope the live-evals API key to the eval step; fix(ci): P1-07 allow bubblewrap's user namespaces on the live-evals runner; Merge main into claude/p1-07-live-evals-key-scope; Merge main into claude/p1-07-live-evals-key-scope; Merge main into claude/p1-07-live-evals-key-scope; Merge origin/main into claude/p1-07-live-evals-key-scope; Merge branch 'main' into claude/p1-07-live-evals-key-scope; Merge pull request #45 from jonnysteedman683-wq/claude/p1-07-live-evals-key-scope",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "4 file(s) changed",
+      "description": "Detected automatically from code: 4 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "a0aa69f0a75fb8656d2df637da0e2d9de1149c31",
+          "path": ".github/workflows/live-evals.yml"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 48,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "08bf2b0ad3b9b79b8d1cb24f2b78d529663880ef",
+    "to_sha": "a0aa69f0a75fb8656d2df637da0e2d9de1149c31"
+  },
+  "generated_at": "2026-10-21T00:43:55Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "615b474d499068d8eba7d8939b62c96bc64623a6e33f97a3855a6b1b8f8841c4"
+}
