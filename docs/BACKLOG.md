@@ -128,6 +128,14 @@ Rules:
 - [x] 🔒 **P1-01 `--sandbox auto` fails closed** (upgrade spec 2026-10-19). No silent fallback to unsandboxed `run_command`; `--sandbox none` warns, is traced and cuts the network with `unshare` unless `--allow-network`.
   *Done when:* `resolve_command_sandbox("auto")` raises without bwrap and the CLI exits 2; `--sandbox none` warns every run and traces `sandbox="none"`; without unshare it needs `--allow-network`; SECURITY residuals 1-2 updated.
 
+- [x] 🔒 **P1-02 Evolve requires bwrap and scrubs the gate env** (upgrade spec 2026-10-19). No unsandboxed agent-written code without `--unsafe-no-sandbox`; gate commands never inherit host secrets.
+  *Done when:* `evolve --sandbox auto` without bwrap ends with `EvolveError`; `--sandbox none` needs `--unsafe-no-sandbox`; a test with fake `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`/`GH_TOKEN` shows a gate command's env lacks them; report and SECURITY say "no secrets in gate env".
+- [x] **B44 No CHANGELOG conflicts between parallel PRs.** `.gitattributes` sets `CHANGELOG.md merge=union`.
+  *Done when:* a test merges two branches that each add an Unreleased line and gets both lines with no conflict.
+
+- [x] 🔒 **P1-03 Guard the safety TCB** (upgrade spec 2026-10-19). Approval, agent, budget, evolve, Gauntlet, checkpoints, sessions, traces, tools, LLM backends, evals, packaging and scripts are guarded; evolve can't delete or rename tests; CODEOWNERS.
+  *Done when:* guard.yml and `DEFAULT_GUARDED` include the TCB and match; ScopedApprover denies `src/sebastian/approval.py` and `pyproject.toml`; a cycle that deletes or renames a test is rejected; `.github/CODEOWNERS` lists the same paths.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).

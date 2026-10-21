@@ -102,7 +102,14 @@ def _build_parser() -> argparse.ArgumentParser:
         "--sandbox",
         choices=["auto", "bwrap", "none"],
         default="auto",
-        help="run the gate checks under bubblewrap: auto (if usable), bwrap (required), none",
+        help="run the gate checks under bubblewrap: auto and bwrap require it; none needs "
+        "--unsafe-no-sandbox",
+    )
+    evo.add_argument(
+        "--unsafe-no-sandbox",
+        action="store_true",
+        help="allow agent-written code to run on the host without bubblewrap (gate env is "
+        "still scrubbed of secrets)",
     )
 
     red = sub.add_parser("redteam", help="attack Sebastian with generated prompt injections")
@@ -331,6 +338,7 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
         item_id=args.item,
         push=args.push or args.pr,
         sandbox=args.sandbox,
+        unsafe_no_sandbox=args.unsafe_no_sandbox,
         max_resumes=max(args.resumes, 0),
         home=cfg.home,
         gauntlet=gauntlet,
