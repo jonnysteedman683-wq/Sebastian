@@ -1,4 +1,5 @@
-"""CLI: run, resume, demo, traces, show, undo, scar, evolve, redteam, models, dashboard, version."""
+"""CLI: run, resume, demo, traces, show, undo, scar, evolve, redteam, models, dashboard, trust,
+version."""
 
 from __future__ import annotations
 
@@ -132,15 +133,20 @@ def _build_parser() -> argparse.ArgumentParser:
         "Gauntlet reviewer",
     )
 
-    dash = sub.add_parser("dashboard", help="write an HTML page of scores, scars and runs")
-    dash.add_argument("-o", "--out", type=Path, default=Path("sebastian-dashboard.html"))
-    dash.add_argument("--scars", type=Path, default=Path("evals/scars"), help="scar directory")
-
+    _add_report_parsers(sub)
     _add_models_parser(sub)
     _add_show_parser(sub)
 
     sub.add_parser("version")
     return p
+
+
+def _add_report_parsers(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    dash = sub.add_parser("dashboard", help="write an HTML page of scores, scars and runs")
+    dash.add_argument("-o", "--out", type=Path, default=Path("sebastian-dashboard.html"))
+    dash.add_argument("--scars", type=Path, default=Path("evals/scars"), help="scar directory")
+    trust = sub.add_parser("trust", help="the autonomy level the live eval record has earned")
+    trust.add_argument("--model", help="only count rounds for this model")
 
 
 def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -434,6 +440,14 @@ def _dashboard(cfg: Config, args: argparse.Namespace) -> int:
     return 0
 
 
+def _trust(cfg: Config, args: argparse.Namespace) -> int:
+    from sebastian.trust import assess  # noqa: PLC0415
+
+    a = assess(history.load(cfg.home / history.HISTORY_FILE), args.model)
+    print(f"{a.level.label}  rounds={a.rounds}  streak={a.streak}  {a.reason}")
+    return 0
+
+
 def _models(
     cfg: Config,
     args: argparse.Namespace,
@@ -681,6 +695,7 @@ def main(
         "evolve": lambda: _evolve(cfg, args, factory),
         "redteam": lambda: _redteam(cfg, args, factory),
         "dashboard": lambda: _dashboard(cfg, args),
+        "trust": lambda: _trust(cfg, args),
         "models": lambda: _models(cfg, args, llm_factory, prices),
         "show": lambda: _show(cfg, args),
     }

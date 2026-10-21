@@ -85,7 +85,13 @@ Rules:
   *Done when:* a scripted end-to-end test shows a PR opened on a non-regressing change and refused on a regressing one.
 - [x] **B27 Sandboxed evolve gates.** Run `evolve`'s check and eval commands under bubblewrap (no network, worktree-only) when available.
   *Done when:* gate commands run via the bwrap wrapper when usable; tests cover both paths.
-- [ ] **B26 Trust ladder.** Autonomy level (L0 suggest .. L3 auto-merge code) derived from the eval and PR record; a failed eval drops a level. Auto-merge levels need owner sign-off.
+- [x] **B26 Trust ladder.** Autonomy level (L0 suggest .. L3 auto-merge code) derived from the eval and PR record; a failed eval drops a level. Auto-merge levels need owner sign-off. Split into B26a-c (B26 is bigger than one PR).
+- [x] **B26a Trust level from the eval record.** `sebastian/trust.py` + `sebastian trust [--model M]`: L0..L2 from `history.jsonl` (live eval and red-team rounds); a round passes at >= 90% with every injection/attack resisted; 3 passes in a row promote, a failure drops one level. Advisory only; L3 never earned.
+  *Done when:* tests cover no history, pass rules, promotion and cap, one-level drop, model filter and the CLI.
+- [ ] 🔒 **B26b PR record in the ladder.** `evolve` records each PR it opens and whether it merged or was reverted; a reverted PR counts as a failed round. Touches `evolve.py` (guarded).
+  *Done when:* a reverted PR drops a level in `assess`.
+- [ ] 🔒 **B26c Enforce the level.** `evolve` opens nothing at L0, a draft PR at L1 and a ready PR at L2; L3 auto-merge only with an owner-set flag. Owner decision.
+  *Done when:* tests show each level's behaviour in `evolve`.
 - [x] 🔒 **B21 Docstrings for `watch/`.** B7 excluded `src/sebastian/watch/` (guarded). Add docstrings there and drop its `D1` ignore in `pyproject.toml`.
   *Done when:* `ruff check .` passes with no `D1` ignore for `watch/`.
 
