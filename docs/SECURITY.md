@@ -8,6 +8,7 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 | Threat | Control | Evidence |
 |---|---|---|
 | Path escape (`..`, absolute, symlink) | `Workspace.resolve` resolves symlinks, rejects anything outside root | `tests/test_tools.py::test_workspace_rejects_*` |
+| Git metadata tampering (P1-05) | `Workspace.resolve` rejects any path with a `.git` component, before or after resolving symlinks, so no file tool reads or writes git config, hooks or the worktree pointer | `test_workspace_rejects_git_paths`, `test_workspace_rejects_symlink_into_git` |
 | Search walking out of the jail | `search_files` never follows directory symlinks and re-resolves every file through `Workspace.resolve`, skipping escapes; skips `.git/`, binary and oversized files; capped at 200 matches | `test_search_stays_in_jail`, `test_search_skips_binary_large_and_git`, `test_search_caps_matches` |
 | Shell injection | No shell; `shlex.split` + exec of allowlisted basename only | `test_command_no_shell_injection`, `test_command_rejections` |
 | Env/secret leakage to subprocess | Env scrubbed to `PATH`, `LANG`, `LC_ALL`; `HOME` = workspace | `test_command_runs_in_workspace_with_scrubbed_env` |
@@ -85,6 +86,16 @@ under `python -m sebastian.evals --live --gauntlet` or `--compare`, not plain `-
   must always be readable.
 - **No merge:** the best outcome is a branch or PR for a human to review.
 - **Gauntlet (opt-in, `--gauntlet`, B34):** the inner run must also pass its own predicted checks and a tool-free critic. A `needs_help` run is rejected outright (the outer gates never rescue it) and its patch is kept for review. This only adds gates; the scope, the outer gates and the no-merge rule are unchanged. Predicted checks still go through the scoped approver, so they are limited to `pytest`, `ruff` and `mypy`.
+- **Host git is hardened (P1-05):** evolve's own git calls run outside any sandbox, in
+  worktrees the agent could write to. Every call passes `-c core.fsmonitor=`,
+  `-c core.hooksPath=/dev/null` and `-c protocol.file.allow=never` and sets
+  `GIT_CONFIG_NOSYSTEM=1`, so repo hooks and an fsmonitor command never run. The one push
+  re-allows a local-path `origin` (`protocol.file.allow=user`), because the remote is the
+  owner's config, which the agent can't reach. Evolve records the candidate worktree's `.git`
+  file (contents and SHA-256) before the run; if it changed, the cycle aborts with
+  `git_intact=false` before any git command runs in that worktree, and the original pointer is
+  put back only so the worktree can be removed. `.gitattributes` and `.gitmodules` (filters,
+  diff drivers, submodules) are denied to the agent and rejected by a `git_files` gate.
 - **Gate sandbox (fails closed, P1-02):** the gates run code the agent just wrote. With
   `--sandbox auto` (default) or `bwrap` they run under bubblewrap: no network, only the worktree
   writable, cleared environment. With no usable bubblewrap, `auto` ends with an `EvolveError`

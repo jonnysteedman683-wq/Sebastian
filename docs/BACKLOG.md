@@ -149,6 +149,9 @@ Rules:
 - [x] 🔒 **P1-04 Evolve gates independent of the candidate** (upgrade spec 2026-10-19). Baseline tests/evals/config judge the candidate's src; no fail-open on a missing baseline; no drop in test count or coverage.
   *Done when:* a candidate that loosens a test, edits an eval to inflate its score, adds gate config, guts a test file or lowers coverage is rejected; a missing baseline score rejects unless `--allow-missing-baseline`.
 
+- [x] 🔒 **P1-05 Lock down `.git` and host git** (upgrade spec 2026-10-19). File tools can't touch `.git`; evolve's git never runs hooks/fsmonitor or system config; a rewritten `.git` pointer aborts the cycle; `.gitattributes`/`.gitmodules` are denied.
+  *Done when:* `.git`, `a/.git/config`, `./.git` are rejected; `_git` passes the hardening flags and `GIT_CONFIG_NOSYSTEM=1`; repo hooks and fsmonitor never fire during a cycle; a tampered pointer aborts before any git runs.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [ ] **B45 Trust level on the dashboard.** `sebastian dashboard` shows a tile with the B26a level (`trust.assess` over the same `history.jsonl` records), its reason, and the level after each round on the score chart's timeline. Values HTML-escaped like the rest of the page.

@@ -34,7 +34,7 @@ flowchart TD
 | Entry points | `sebastian` console script, `python -m sebastian` -> `cli.main`; `sebastian-watch` -> `watch.cli.main` |
 | Agent loop | `agent.py` |
 | Evals | `evals/`: harness, 5 capability + 6 harder capability (B38) + 5 injection + 2 critic-attack cases (Gauntlet only); `pytest -m eval`, `python -m sebastian.evals [--live] [--gauntlet \| --compare]` |
-| Self-improvement | `evolve.py` (`sebastian evolve`): backlog item -> worktree -> scoped agent -> gates (guarded paths incl. the safety TCB, no deleted/renamed tests, no new `src/` modules, CI checks against the baseline's tests/evals/config, no test-count or coverage drop, eval >= baseline) -> commit/push/PR, never merge. `--gauntlet` (B34): the inner run goes through the Gauntlet and a `needs_help` run is rejected before the gates |
+| Self-improvement | `evolve.py` (`sebastian evolve`): backlog item -> worktree -> scoped agent -> gates (`.git` pointer intact, guarded paths incl. the safety TCB, no `.gitattributes`/`.gitmodules`, no deleted/renamed tests, no new `src/` modules, CI checks against the baseline's tests/evals/config, no test-count or coverage drop, eval >= baseline) -> commit/push/PR, never merge. `--gauntlet` (B34): the inner run goes through the Gauntlet and a `needs_help` run is rejected before the gates |
 | Gauntlet (B11) | `gauntlet.py` (stage machine, PREDICT, VERIFY, CRITIQUE, HELP report, diff); driven by `agent.py` when `gauntlet=GauntletPolicy(...)` (`run/resume --gauntlet`, `--critic-model`). Ends as `needs_help` past `max_loops` |
 | Run timeline | `timeline.py` (`sebastian show <run_id>`, B42): one run's trace as escaped HTML or text |
 | Cost (B40) | `pricing.py` (user `prices.json`, `PricedLLM` fills `Usage.cost`), `Budget.max_cost` / `--max-cost` |

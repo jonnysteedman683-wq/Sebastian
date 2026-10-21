@@ -27,6 +27,11 @@ class Workspace:
         resolved = (self.root / candidate).resolve(strict=False)
         if resolved != self.root and self.root not in resolved.parents:
             raise WorkspaceError(f"path escapes workspace: {relative}")
+        # P1-05: no tool reads or writes git metadata. A rewritten .git file, config or hook
+        # would run code the next time the host (outside any sandbox) runs git here.
+        inside = resolved.relative_to(self.root).parts
+        if any(p.lower() == ".git" for p in (*candidate.parts, *inside)):
+            raise WorkspaceError(f"paths inside .git are not allowed: {relative}")
         return resolved
 
     def display(self, path: Path) -> str:

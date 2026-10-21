@@ -22,6 +22,7 @@ A rejected attempt leaves no branch behind; its diff is saved under
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import shutil
@@ -195,7 +196,11 @@ class ScopedApprover:
         if tool.permission is Permission.WRITE:
             path = call.arguments.get("path")
             rel = self._relative(path) if isinstance(path, str) else None
-            ok = rel is not None and not self.guarded.search(rel)
+            ok = (
+                rel is not None
+                and not self.guarded.search(rel)
+                and Path(rel).name not in GIT_CONFIG_FILES
+            )
         elif tool.permission is Permission.EXEC:
             cmd = call.arguments.get("command")
             words = cmd.split() if isinstance(cmd, str) else []
@@ -215,12 +220,28 @@ class ScopedApprover:
 # --- git and commands --------------------------------------------------------------------
 
 
+# P1-05: host git (outside any sandbox) runs in worktrees the agent could write to. Never run
+# hooks or an fsmonitor command, never follow file:// remotes, never read /etc/gitconfig.
+GIT_HARDENING = (
+    "-c", "core.fsmonitor=",
+    "-c", "core.hooksPath=/dev/null",
+    "-c", "protocol.file.allow=never",
+)  # fmt: skip
+# Files that make git run filters/diff drivers or fetch submodules; evolve never writes them.
+GIT_CONFIG_FILES = frozenset({".gitattributes", ".gitmodules"})
+
+
 def _git(repo: Path, *args: str) -> str:
     exe = shutil.which("git")
     if exe is None:
         raise EvolveError("git is not installed")
+    env = dict(os.environ, GIT_CONFIG_NOSYSTEM="1")
     proc = subprocess.run(
-        [exe, "-C", str(repo), *args], capture_output=True, text=True, check=False
+        [exe, *GIT_HARDENING, "-C", str(repo), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
     )
     if proc.returncode != 0:
         raise EvolveError(f"git {' '.join(args)} failed: {proc.stderr.strip()[:300]}")
@@ -474,25 +495,12 @@ def evolve_once(
     _git(root, "worktree", "add", "-q", "-b", report.branch, str(cand), base_sha)
     _git(root, "worktree", "add", "-q", "--detach", str(base), base_sha)
     keep_branch = False
+    pointer = _git_pointer(cand)  # P1-05: the worktree's .git file, checked after the run
     try:
         approver = ScopedApprover(cand, guarded, cfg.agent_commands)
-        ws = Workspace(cand)
         # The Gauntlet's critic needs the run's diff, and revert-on-loop needs the originals.
         checkpoints = Checkpoints(scratch / "checkpoints") if cfg.gauntlet else None
-        tools = ToolRegistry(file_tools(ws, checkpoints))
-        tools.register(
-            command_tool(
-                ws,
-                CommandPolicy.of(
-                    cfg.agent_commands,
-                    timeout_seconds=CHECK_TIMEOUT,
-                    env=(("PYTHONPATH", "src"),),
-                    # Same sandbox as the gates: the agent's own commands run its new code too.
-                    sandbox="bwrap" if bwrap else "none",
-                    extra_ro=tuple(python_roots()) if bwrap else (),
-                ),
-            )
-        )
+        tools = _agent_tools(cand, cfg, bwrap, checkpoints)
         agent = Sebastian(
             llm=llm,
             tools=tools,
@@ -517,6 +525,8 @@ def evolve_once(
             result = agent.resume(result.run_id)
         report.run_stop = result.stop_reason.value
 
+        if _pointer_tampered(report, cand, pointer):
+            return report
         _git(cand, "add", "-A")
         report.changed = [
             p for p in _git(cand, "diff", "--cached", "--name-only").splitlines() if p
@@ -530,7 +540,10 @@ def evolve_once(
                 "commit", "-q", "-m", f"feat: {item.title} ({item.id}, evolve)",
             )  # fmt: skip
             if cfg.push:
-                _git(cand, "push", "-q", "-u", "origin", report.branch)
+                # The remote is the owner's own config (the agent can't reach .git), so a
+                # local-path origin is allowed for this one user-initiated push.
+                _git(cand, "-c", "protocol.file.allow=user", "push", "-q", "-u", "origin",
+                     report.branch)  # fmt: skip
                 if opener is not None:
                     opener(cand, report.branch, item)
         else:
@@ -542,6 +555,54 @@ def evolve_once(
         shutil.rmtree(scratch, ignore_errors=True)
         if not keep_branch:
             _git(root, "branch", "-q", "-D", report.branch)
+
+
+def _git_pointer(cand: Path) -> tuple[bytes, str]:
+    """The candidate worktree's ``.git`` file and its SHA-256 (empty if not a plain file)."""
+    dotgit = cand / ".git"
+    data = dotgit.read_bytes() if dotgit.is_file() and not dotgit.is_symlink() else b""
+    return data, hashlib.sha256(data).hexdigest()
+
+
+def _agent_tools(
+    cand: Path, cfg: EvolveConfig, bwrap: str | None, checkpoints: Checkpoints | None
+) -> ToolRegistry:
+    """File tools plus ``run_command`` for the cycle's agent, jailed to the candidate."""
+    ws = Workspace(cand)
+    tools = ToolRegistry(file_tools(ws, checkpoints))
+    tools.register(
+        command_tool(
+            ws,
+            CommandPolicy.of(
+                cfg.agent_commands,
+                timeout_seconds=CHECK_TIMEOUT,
+                env=(("PYTHONPATH", "src"),),
+                # Same sandbox as the gates: the agent's own commands run its new code too.
+                sandbox="bwrap" if bwrap else "none",
+                extra_ro=tuple(python_roots()) if bwrap else (),
+            ),
+        )
+    )
+    return tools
+
+
+def _pointer_tampered(report: EvolveReport, cand: Path, pointer: tuple[bytes, str]) -> bool:
+    """True (and the gate recorded) if the agent rewrote the worktree's ``.git`` (P1-05).
+
+    Host git never runs in such a worktree; the original pointer is put back only so the
+    worktree can be removed.
+    """
+    if _git_pointer(cand) == pointer:
+        return False
+    dotgit = cand / ".git"
+    if dotgit.is_dir() and not dotgit.is_symlink():
+        shutil.rmtree(dotgit)
+    else:
+        dotgit.unlink(missing_ok=True)
+    dotgit.write_bytes(pointer[0])
+    report.gates["git_intact"] = False
+    report.reason = "the agent changed the worktree's .git pointer; aborted without running git"
+    return True
 
 
 def _free_branch(root: Path, name: str) -> str:
@@ -671,6 +732,11 @@ def _scope_gate(report: EvolveReport, cand: Path, guarded: re.Pattern[str]) -> b
     report.gates["guarded_paths"] = not hits
     if hits:
         report.reason = f"touches guarded paths: {', '.join(hits)}"
+        return False
+    gitfiles = [p for p in report.changed if Path(p).name in GIT_CONFIG_FILES]
+    report.gates["git_files"] = not gitfiles
+    if gitfiles:
+        report.reason = f"touches git config files: {', '.join(gitfiles)}"
         return False
     lost = removed_tests(cand)
     report.gates["tests_kept"] = not lost

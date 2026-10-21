@@ -335,3 +335,26 @@ def test_edit_file_is_jailed(ws: Workspace) -> None:
     edit = {tool.name: tool for tool in file_tools(ws)}["edit_file"]
     with pytest.raises(WorkspaceError):
         edit.invoke({"path": "../etc/passwd", "old": "root", "new": "x"})
+
+
+# --- P1-05: .git is never reachable through the file tools -------------------------------
+
+
+@pytest.mark.parametrize(
+    "bad", [".git", "./.git", "a/.git/config", ".git/hooks/pre-commit", "sub/.GIT/x", ".git/"]
+)
+def test_workspace_rejects_git_paths(ws: Workspace, bad: str) -> None:
+    with pytest.raises(WorkspaceError, match=r"\.git"):
+        ws.resolve(bad)
+
+
+def test_workspace_rejects_symlink_into_git(tmp_path: Path) -> None:
+    (tmp_path / ".git").mkdir()
+    (tmp_path / "link").symlink_to(tmp_path / ".git")
+    with pytest.raises(WorkspaceError, match=r"\.git"):
+        Workspace(tmp_path).resolve("link/config")
+
+
+@pytest.mark.parametrize("ok", [".gitignore", ".github/x.yml", "a.git", "x/.gitkeep", "git/x"])
+def test_workspace_allows_git_lookalikes(ws: Workspace, ok: str) -> None:
+    assert ws.resolve(ok).name == Path(ok).name

@@ -173,6 +173,7 @@ def test_accepted_cycle_commits_on_a_branch(repo: Path, tmp_path: Path) -> None:
     assert report.gates == {
         "non_empty": True,
         "guarded_paths": True,
+        "git_files": True,
         "tests_kept": True,
         "src_layout": True,
         "check:" + Path(PY).name + " -c " + CHECK_GREET[2]: True,
@@ -888,3 +889,80 @@ def test_metrics_use_baseline_config_with_candidate_tests(repo: Path, tmp_path: 
     report = evolve_once(repo, llm, icfg(tmp_path, checks=[], eval_cmd=None, metrics_cmd=metrics))
     assert report.accepted, report.summary()
     assert report.candidate_metrics == (3, 90.0)  # the candidate's test counts, baseline config
+
+
+# --- P1-05: lock down .git and host git ------------------------------------------------
+
+
+def test_scoped_approver_denies_git_config_files(tmp_path: Path) -> None:
+    tools = {t.name: t for t in file_tools(Workspace(tmp_path))}
+    ap = ScopedApprover(tmp_path, re.compile(r"^secret/"), frozenset())
+    for path in (".gitattributes", "sub/.gitattributes", ".gitmodules", "a/b/.gitmodules"):
+        assert not ap.approve(tools["write_file"], write("1", path, "x")), path
+    assert ap.approve(tools["write_file"], write("1", ".gitignore", "x"))
+
+
+def test_git_config_file_side_channel_is_rejected(repo: Path, tmp_path: Path) -> None:
+    run = ToolCall("9", "run_command", {"command": "cp greet.txt .gitattributes"})
+    config = cfg(tmp_path, agent_commands=frozenset({"cp"}), eval_cmd=None)
+    report = evolve_once(repo, agent(write("1", "greet.txt", "hello"), run), config)
+    assert not report.accepted
+    assert report.gates["git_files"] is False
+    assert ".gitattributes" in report.reason
+
+
+def test_git_invocations_are_hardened(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    import sebastian.evolve as evo
+
+    seen: list[tuple[list[str], dict[str, str]]] = []
+
+    def fake_run(argv: list[str], **kw: object) -> subprocess.CompletedProcess[str]:
+        seen.append((argv, kw["env"]))  # type: ignore[arg-type]
+        return subprocess.CompletedProcess(argv, 0, "ok", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    assert evo._git(tmp_path, "status") == "ok"
+    argv, env = seen[-1]
+    joined = " ".join(argv)
+    for flag in ("core.fsmonitor=", "core.hooksPath=/dev/null", "protocol.file.allow=never"):
+        assert f"-c {flag}" in joined
+    assert argv[-1] == "status"
+    assert env["GIT_CONFIG_NOSYSTEM"] == "1"
+
+
+def test_repo_hooks_and_fsmonitor_never_run(repo: Path, tmp_path: Path) -> None:
+    marker = tmp_path / "pwned"
+    hook = f"#!/bin/sh\necho hook >> {marker}\n"
+    for name in ("pre-commit", "post-commit", "post-checkout", "reference-transaction"):
+        h = repo / ".git/hooks" / name
+        h.write_text(hook)
+        h.chmod(0o755)
+    monitor = tmp_path / "fsmon.sh"
+    monitor.write_text(f"#!/bin/sh\necho fsmonitor >> {marker}\n")
+    monitor.chmod(0o755)
+    git(repo, "config", "core.fsmonitor", str(monitor))
+    report = evolve_once(repo, agent(write("1", "greet.txt", "hello")), cfg(tmp_path))
+    assert report.accepted, report.summary()
+    assert not marker.exists(), marker.read_text()
+
+
+def test_tampered_git_pointer_aborts(repo: Path, tmp_path: Path) -> None:
+    run = ToolCall("9", "run_command", {"command": "cp evil .git"})
+    llm = agent(write("1", "evil", f"gitdir: {tmp_path}/attacker\n"), run)
+    config = cfg(tmp_path, agent_commands=frozenset({"cp"}), eval_cmd=None)
+    report = evolve_once(repo, llm, config)
+    assert not report.accepted
+    assert report.gates == {"git_intact": False}
+    assert ".git" in report.reason
+    assert report.patch is None  # no git ran in the tampered worktree
+    assert git(repo, "worktree", "list").count("\n") == 1  # still cleaned up
+    assert report.branch not in branches(repo)
+
+
+def test_git_pointer_replaced_by_a_directory_aborts(repo: Path, tmp_path: Path) -> None:
+    calls = [ToolCall(str(i), "run_command", {"command": c}) for i, c in enumerate(
+        ["rm .git", "mkdir .git"], start=1)]  # fmt: skip
+    config = cfg(tmp_path, agent_commands=frozenset({"rm", "mkdir"}), eval_cmd=None)
+    report = evolve_once(repo, agent(*calls), config)
+    assert report.gates == {"git_intact": False}
+    assert git(repo, "worktree", "list").count("\n") == 1
