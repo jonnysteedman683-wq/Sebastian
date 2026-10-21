@@ -125,6 +125,7 @@ def test_cli_evolve_gauntlet_flags(
 
     def fast(repo: Path, llm: object, config: EvolveConfig, **kw: object) -> object:
         config.checks = [CHECK_GREET]
+        config.metrics_cmd = None
         seen_policy.append(config.gauntlet)
         return real(repo, llm, config, **kw)  # type: ignore[arg-type]
 

@@ -140,6 +140,9 @@ Rules:
 - [x] 🔒 **P1-03 Guard the safety TCB** (upgrade spec 2026-10-19). Approval, agent, budget, evolve, Gauntlet, checkpoints, sessions, traces, tools, LLM backends, evals, packaging and scripts are guarded; evolve can't delete or rename tests; CODEOWNERS.
   *Done when:* guard.yml and `DEFAULT_GUARDED` include the TCB and match; ScopedApprover denies `src/sebastian/approval.py` and `pyproject.toml`; a cycle that deletes or renames a test is rejected; `.github/CODEOWNERS` lists the same paths.
 
+- [x] 🔒 **P1-04 Evolve gates independent of the candidate** (upgrade spec 2026-10-19). Baseline tests/evals/config judge the candidate's src; no fail-open on a missing baseline; no drop in test count or coverage.
+  *Done when:* a candidate that loosens a test, edits an eval to inflate its score, adds gate config, guts a test file or lowers coverage is rejected; a missing baseline score rejects unless `--allow-missing-baseline`.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).

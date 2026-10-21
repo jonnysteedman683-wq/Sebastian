@@ -93,6 +93,7 @@ def cfg(tmp_path: Path, **kw: object) -> EvolveConfig:
         home=tmp_path / "home",
         sandbox="none",
         unsafe_no_sandbox=True,
+        metrics_cmd=None,  # P1-04 metrics get their own tests below
     )
     for k, v in kw.items():
         setattr(base, k, v)
@@ -173,6 +174,7 @@ def test_accepted_cycle_commits_on_a_branch(repo: Path, tmp_path: Path) -> None:
         "non_empty": True,
         "guarded_paths": True,
         "tests_kept": True,
+        "src_layout": True,
         "check:" + Path(PY).name + " -c " + CHECK_GREET[2]: True,
         "eval_no_regression": True,
     }
@@ -274,6 +276,7 @@ def test_cli_evolve(repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 
     def fast(repo: Path, llm: object, config: EvolveConfig, **kw: object) -> object:
         config.checks = [CHECK_GREET]  # keep the CLI test independent of ruff/mypy/pytest
+        config.metrics_cmd = None
         return real(repo, llm, config, **kw)  # type: ignore[arg-type]
 
     monkeypatch.setattr(evo, "evolve_once", fast)
@@ -622,3 +625,266 @@ def test_command_side_channel_on_guarded_path_is_rejected(repo: Path, tmp_path: 
     assert not report.accepted
     assert report.gates["guarded_paths"] is False
     assert ".github/workflows/guard.yml" in report.reason
+
+
+# --- P1-04: gates are independent of the candidate --------------------------------------
+
+# A "test suite" for the fixture repo: tests/check.py decides what impl.txt must say.
+CHECK_IMPL = [PY, "tests/check.py"]
+CHECK_SRC = (
+    "import pathlib,sys\nsys.exit(0 if pathlib.Path('impl.txt').read_text() == 'a' else 1)\n"
+)
+# Eval: 1/1 when impl.txt matches evals/expect.txt.
+EVAL_IMPL = [PY, "-c", (
+    "import pathlib;ok=pathlib.Path('impl.txt').read_text()==pathlib.Path('evals/expect.txt')"
+    ".read_text();print(f'score {100 if ok else 0}% ({int(ok)}/1)')"
+)]  # fmt: skip
+# Metrics: one test per "def test_" in tests/, coverage from cov.txt.
+METRICS = [PY, "-c", (
+    "import pathlib;n=sum(p.read_text().count('def test_') for p in pathlib.Path('tests')"
+    ".glob('*.py'));c=pathlib.Path('cov.txt').read_text().strip();"
+    "print(f'TOTAL 10 1 2 1 {c}%');print(f'{n} passed in 0.1s')"
+)]  # fmt: skip
+
+
+def _impl_repo(repo: Path) -> None:
+    (repo / "tests").mkdir()
+    (repo / "evals").mkdir()
+    (repo / "impl.txt").write_text("a")
+    (repo / "cov.txt").write_text("90")
+    (repo / "tests/check.py").write_text(CHECK_SRC)
+    (repo / "tests/test_impl.py").write_text("def test_a():\n    pass\n\ndef test_b():\n    pass\n")
+    (repo / "evals/expect.txt").write_text("a")
+    git(repo, "add", "-A")
+    git(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "impl")
+
+
+def icfg(tmp_path: Path, **kw: object) -> EvolveConfig:
+    return cfg(tmp_path, **({"checks": [CHECK_IMPL], "eval_cmd": EVAL_IMPL} | kw))
+
+
+def test_honest_candidate_passes_independent_gates(repo: Path, tmp_path: Path) -> None:
+    _impl_repo(repo)
+    llm = agent(
+        write("1", "greet.txt", "hello"),
+        write("2", "tests/test_more.py", "def test_c():\n    pass\n"),
+    )
+    report = evolve_once(repo, llm, icfg(tmp_path, metrics_cmd=METRICS))
+    assert report.accepted, report.summary()
+    assert report.gates["no_test_or_coverage_drop"] is True
+    assert "own:" + Path(PY).name + " tests/check.py" in report.gates  # candidate touched tests/
+    assert report.baseline_metrics == (2, 90.0)
+    assert report.candidate_metrics == (3, 90.0)
+    assert "tests/coverage: baseline=(2, 90.0) candidate=(3, 90.0)" in report.summary()
+
+
+def test_baseline_gate_config_wins_over_the_candidates(repo: Path, tmp_path: Path) -> None:
+    _impl_repo(repo)
+    (repo / "pyproject.toml").write_text("strict = true\n")
+    git(repo, "add", "-A")
+    git(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "config")
+    probe = [
+        PY,
+        "-c",
+        "import pathlib,sys;"
+        "sys.exit(pathlib.Path('pyproject.toml').read_text()!='strict = true\\n')",
+    ]
+    llm = agent(write("1", "pyproject.toml", "strict = false\n"), write("2", "greet.txt", "x"))
+    report = evolve_once(repo, llm, icfg(tmp_path, checks=[probe], eval_cmd=None))
+    # pyproject.toml is not guarded in this fixture; the overlay still restores the baseline's.
+    assert report.accepted, report.summary()
+
+
+def test_unreadable_baseline_metrics(repo: Path, tmp_path: Path) -> None:
+    _impl_repo(repo)
+    (repo / "cov.txt").unlink()  # the baseline's metrics command crashes
+    git(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "no cov")
+
+    def llm() -> ScriptedLLM:
+        return agent(write("1", "cov.txt", "95"))
+
+    report = evolve_once(repo, llm(), icfg(tmp_path, metrics_cmd=METRICS))
+    assert not report.accepted
+    assert "baseline unreadable" in report.reason
+    report = evolve_once(
+        repo, llm(), icfg(tmp_path, metrics_cmd=METRICS, allow_missing_baseline=True)
+    )
+    assert report.accepted, report.summary()
+
+
+def test_candidate_cannot_weaken_its_tests(repo: Path, tmp_path: Path) -> None:
+    """Breaking impl.txt and loosening tests/check.py to match: baseline tests still run."""
+    _impl_repo(repo)
+    loose = "import sys\nsys.exit(0)\n"
+    llm = agent(write("1", "impl.txt", "b"), write("2", "tests/check.py", loose))
+    report = evolve_once(repo, llm, icfg(tmp_path, eval_cmd=None))
+    assert not report.accepted
+    assert report.gates["check:" + Path(PY).name + " tests/check.py"] is False
+
+
+def test_candidate_cannot_inflate_its_eval(repo: Path, tmp_path: Path) -> None:
+    """Changing impl.txt and evals/expect.txt together: the baseline's evals score it."""
+    _impl_repo(repo)
+    llm = agent(write("1", "impl.txt", "b"), write("2", "evals/expect.txt", "b"))
+    report = evolve_once(repo, llm, icfg(tmp_path, checks=[]))
+    assert not report.accepted
+    assert (report.baseline_score, report.candidate_score) == (1.0, 0.0)
+    assert report.gates["eval_no_regression"] is False
+
+
+@pytest.mark.parametrize("name", ["pyproject.toml", "pytest.ini", "conftest.py", "setup.cfg"])
+def test_candidate_gate_config_is_ignored(repo: Path, tmp_path: Path, name: str) -> None:
+    """A config file the candidate adds or edits never reaches the independent gates."""
+    _impl_repo(repo)
+    probe = [PY, "-c", f"import pathlib,sys;sys.exit(1 if pathlib.Path({name!r}).exists() else 0)"]
+    llm = agent(write("1", name, "[pytest]\naddopts = -k nothing\n"), write("2", "greet.txt", "x"))
+    report = evolve_once(repo, llm, icfg(tmp_path, checks=[probe], eval_cmd=None))
+    assert report.accepted, report.summary()
+
+
+def test_new_top_level_module_in_src_is_rejected(repo: Path, tmp_path: Path) -> None:
+    """src/ is on PYTHONPATH: a new src/pytest or src/sitecustomize.py would hijack the gates."""
+    (repo / "src/pkg").mkdir(parents=True)
+    (repo / "src/pkg/__init__.py").write_text("")
+    git(repo, "add", "-A")
+    git(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "src")
+    for path in ("src/sitecustomize.py", "src/pytest/__init__.py"):
+        report = evolve_once(repo, agent(write("1", path, "import os\n")), cfg(tmp_path))
+        assert not report.accepted, path
+        assert report.gates["src_layout"] is False
+        assert path.split("/")[1] in report.reason
+    report = evolve_once(repo, agent(write("1", "src/pkg/new.py", "x = 1\n"),
+                                     write("2", "greet.txt", "hi")), cfg(tmp_path))  # fmt: skip
+    assert report.accepted, report.summary()
+
+
+def test_missing_baseline_score_fails_closed(repo: Path, tmp_path: Path) -> None:
+    _impl_repo(repo)
+    (repo / "evals/expect.txt").unlink()  # the baseline eval crashes: no score line
+    git(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qam", "no expect")
+    fix = write("2", "evals/expect.txt", "a")  # the candidate "repairs" it in its own tree
+    report = evolve_once(repo, agent(write("1", "greet.txt", "hi"), fix), icfg(tmp_path, checks=[]))
+    assert not report.accepted
+    assert report.baseline_score is None
+    assert "--allow-missing-baseline" in report.reason
+    report = evolve_once(
+        repo,
+        agent(write("1", "greet.txt", "hi")),
+        icfg(tmp_path, checks=[], eval_cmd=EVAL, allow_missing_baseline=True),
+    )
+    assert report.accepted, report.summary()
+
+
+def test_metrics_drop_is_rejected(repo: Path, tmp_path: Path) -> None:
+    _impl_repo(repo)
+    gutted = "def test_a():\n    pass\n"  # test_b removed from the file, the file kept
+    report = evolve_once(
+        repo, agent(write("1", "tests/test_impl.py", gutted)), icfg(tmp_path, metrics_cmd=METRICS)
+    )
+    assert not report.accepted
+    assert report.gates["no_test_or_coverage_drop"] is False
+    assert "collected tests dropped 2 -> 1" in report.reason
+    report = evolve_once(
+        repo, agent(write("1", "cov.txt", "89.5")), icfg(tmp_path, metrics_cmd=METRICS)
+    )
+    assert not report.accepted
+    assert "coverage dropped 90.0 -> 89.5" in report.reason
+
+
+def test_unreadable_metrics_fail_closed(repo: Path, tmp_path: Path) -> None:
+    _impl_repo(repo)
+    silent = [PY, "-c", "print('nothing useful')"]
+    report = evolve_once(
+        repo, agent(write("1", "greet.txt", "x")), icfg(tmp_path, metrics_cmd=silent)
+    )
+    assert not report.accepted
+    assert "unreadable" in report.reason
+    report = evolve_once(
+        repo,
+        agent(write("1", "greet.txt", "x")),
+        icfg(tmp_path, metrics_cmd=silent, allow_missing_baseline=True),
+    )
+    assert not report.accepted  # the candidate's own metrics are never optional
+
+
+def test_parse_metrics() -> None:
+    from sebastian.evolve import parse_metrics
+
+    out = (
+        "TOTAL  3759  31  1010  28  99%\nRequired ... Total coverage: 98.76%\n"
+        "711 passed, 2 skipped, 1 xfailed in 39.81s\n"
+    )
+    assert parse_metrics(out) == (714, 98.76)
+    assert parse_metrics("TOTAL 10 1 2 1 87%\n3 passed, 1 failed in 0.1s") == (4, 87.0)
+    assert parse_metrics("junk") == (None, None)
+
+
+def test_default_metrics_keeps_the_summary_line() -> None:
+    """pyproject addopts has -q; another -q (-qq) hides the "N passed" line we parse."""
+    from sebastian.evolve import default_metrics
+
+    assert "-q" not in default_metrics()
+
+
+def test_overlay_drops_tool_caches(tmp_path: Path) -> None:
+    from sebastian.evolve import build_overlay
+
+    cand, base = tmp_path / "c", tmp_path / "b"
+    for d in (cand, base):
+        (d / "tests").mkdir(parents=True)
+    (base / "tests/test_a.py").write_text("base")
+    (cand / "tests/test_a.py").write_text("candidate")
+    (cand / ".git").write_text("gitdir: elsewhere")
+    for cache in (".mypy_cache", ".ruff_cache", ".pytest_cache", "src/pkg/__pycache__"):
+        (cand / cache).mkdir(parents=True)
+        (cand / cache / "planted").write_text("x")
+    (cand / ".coverage").write_text("x")
+    (cand / "src/pkg/mod.py").write_text("x = 1\n")
+    out = build_overlay(cand, base, tmp_path / "o")
+    assert (out / "tests/test_a.py").read_text() == "base"
+    assert (out / "src/pkg/mod.py").exists()
+    for gone in (".git", ".mypy_cache", ".ruff_cache", ".pytest_cache", "src/pkg/__pycache__",
+                 ".coverage"):  # fmt: skip
+        assert not (out / gone).exists(), gone
+
+
+@pytest.mark.parametrize("flag", [False, True])
+def test_cli_allow_missing_baseline(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, flag: bool
+) -> None:
+    monkeypatch.setenv("SEBASTIAN_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(sys, "stdin", io.StringIO(""))
+    import sebastian.evolve as evo
+
+    seen: list[EvolveConfig] = []
+
+    def spy(repo: Path, llm: object, config: EvolveConfig, **kw: object) -> object:
+        seen.append(config)
+        return evo.EvolveReport(None)
+
+    monkeypatch.setattr(evo, "evolve_once", spy)
+    args = ["evolve", "--repo", str(repo), "--sandbox", "none", "--unsafe-no-sandbox"]
+    main([*args, *(["--allow-missing-baseline"] if flag else [])], llm_factory=lambda m: agent())
+    assert seen[-1].allow_missing_baseline is flag
+    assert seen[-1].metrics_cmd  # metrics gate on by default
+
+
+def test_metrics_use_baseline_config_with_candidate_tests(repo: Path, tmp_path: Path) -> None:
+    """A candidate config that would inflate its coverage is ignored by the metrics gate."""
+    _impl_repo(repo)
+    (repo / "pyproject.toml").write_text("cov = 90\n")
+    git(repo, "add", "-A")
+    git(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "config")
+    # Coverage comes from pyproject.toml here, standing in for [tool.coverage] omit rules.
+    metrics = [PY, "-c", (
+        "import pathlib;n=sum(p.read_text().count('def test_') for p in pathlib.Path('tests')"
+        ".glob('*.py'));c=pathlib.Path('pyproject.toml').read_text().split('=')[1].strip();"
+        "print(f'TOTAL 1 1 1 1 {c}%');print(f'{n} passed in 0.1s')"
+    )]  # fmt: skip
+    llm = agent(
+        write("1", "pyproject.toml", "cov = 99\n"),
+        write("2", "tests/test_more.py", "def test_c():\n    pass\n"),
+    )
+    report = evolve_once(repo, llm, icfg(tmp_path, checks=[], eval_cmd=None, metrics_cmd=metrics))
+    assert report.accepted, report.summary()
+    assert report.candidate_metrics == (3, 90.0)  # the candidate's test counts, baseline config
