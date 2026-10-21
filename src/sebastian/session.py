@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from sebastian.config import ensure_home
+from sebastian.trace import redact, redact_text
 from sebastian.types import Message, Role, ToolCall, ToolResult
 
 SESSION_VERSION = 1
@@ -76,10 +78,15 @@ def message_from_json(raw: Any) -> Message:
 
 
 class SessionStore:
-    """Directory of saved sessions."""
+    """Directory of saved sessions.
 
-    def __init__(self, root: str | Path) -> None:
+    P1-08: secrets in the task, messages, tool arguments and results are redacted on save
+    unless ``raw`` (``--keep-raw-sessions``). Resume works on the redacted history.
+    """
+
+    def __init__(self, root: str | Path, raw: bool = False) -> None:
         self.root = Path(root)
+        self.raw = raw
 
     def _path(self, run_id: str) -> Path:
         if not _RUN_ID.match(run_id):
@@ -100,7 +107,11 @@ class SessionStore:
             "resumed_from": s.resumed_from,
             "messages": [message_to_json(m) for m in s.messages],
         }
-        path.parent.mkdir(parents=True, exist_ok=True)
+        if not self.raw:
+            for key in ("task", "system", "detail"):
+                payload[key] = redact_text(str(payload[key]))
+            payload["messages"] = redact(payload["messages"])
+        ensure_home(path.parent)
         fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".session-")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as fh:

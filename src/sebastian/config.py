@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import stat
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -78,3 +79,11 @@ def _backend(value: str) -> str:
     if value not in {"anthropic", "openai"}:
         raise ValueError(f"SEBASTIAN_BACKEND must be anthropic or openai, got {value!r}")
     return value
+
+
+def ensure_home(path: Path) -> Path:
+    """Create ``path`` (and parents) private to the user: 0700, tightened if looser (P1-08)."""
+    path.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if stat.S_IMODE(path.stat().st_mode) & 0o077:
+        path.chmod(0o700)
+    return path

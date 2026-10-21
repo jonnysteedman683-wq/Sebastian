@@ -21,7 +21,7 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 | Prompt injection via tool output / memory | System prompt marks them as data; memory wrapped in `<recalled_memory>` | Prompt review (behavioural evals: proposal U12) |
 | Runaway cost / infinite loop | Governor: steps, tokens, wall-clock | `test_step_budget_stops_run`, `test_token_and_time_budgets` |
 | Repeat-failure loops | Identical failed call is blocked within a run | `test_repeated_failed_call_is_blocked` |
-| Secrets in logs | `trace.redact` on keys and token-shaped values. The key match is broad on purpose (any key containing `token`), so non-secret counts must use other key names, e.g. `run_end.usage` | `test_redaction`, `test_jsonl_tracer`, `test_run_end_usage_survives_redaction` |
+| Secrets in logs and sessions | `trace.redact` on keys and token-shaped values, shared by traces and saved sessions (P1-08; see Sessions for the pattern list). The key match is broad on purpose (any key containing `token`), so non-secret counts must use other key names, e.g. `run_end.usage` | `test_redaction`, `test_jsonl_tracer`, `test_run_end_usage_survives_redaction` |
 | Corrupt / tampered memory | Schema-validated load, raises instead of wiping; atomic writes | `test_memory_corruption_raises` |
 | Untrusted deserialisation | JSON only. No pickle/eval anywhere. | `grep -rn "pickle\|eval(" src` is empty |
 
@@ -117,9 +117,24 @@ under `python -m sebastian.evals --live --gauntlet` or `--compare`, not plain `-
 
 ## Sessions (`session.py`)
 
-Saved sessions hold the full conversation, including file contents the agent read. They live in
-`$SEBASTIAN_HOME/sessions/` with the traces and memory; treat that directory as sensitive.
-Trace redaction does not apply to sessions, because resuming needs the exact history.
+Saved sessions hold the conversation, including file contents the agent read. They live in
+`$SEBASTIAN_HOME/sessions/` with the traces and memory.
+
+- **Redacted on save (P1-08):** the task, system prompt, detail, every message, tool argument
+  and tool result go through the same `redact()` as traces before they are written. Resume
+  works on the redacted history (the model sees `[REDACTED]` where a secret was).
+  `--keep-raw-sessions` writes them unredacted, for debugging only.
+- **Private home (P1-08):** the CLI creates `$SEBASTIAN_HOME` (and `sessions/`) as `0700` and
+  tightens an existing one that is group- or world-accessible. Session files are `0600`
+  (`mkstemp`).
+- **What the redactor catches:** `sk-` / `sk-ant-` keys, GitHub `ghp_`/`gho_`/`ghs_`/`ghu_`/
+  `ghr_` and `github_pat_` tokens, AWS `AKIA…` ids, Slack `xox[abpr]-`, JWTs, `Bearer …`,
+  PEM private-key blocks (even unterminated), `.env`/shell assignments to `*KEY*`/`*TOKEN*`/
+  `*SECRET*`/`*PASSWORD*` names, and any 32+ character token that mixes upper case, lower case
+  and digits with Shannon entropy of at least 4 bits/char. Hex strings (git SHAs, digests,
+  UUIDs) and URL/path segments that aren't individually random are left alone. It is a
+  heuristic: a secret that looks like ordinary text can still get through, so treat the home
+  directory as sensitive anyway.
 
 ## Undo (`checkpoint.py`)
 
