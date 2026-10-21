@@ -1,14 +1,14 @@
 {
-  "summary": "2 commit(s): fix(security): P1-08 redact secrets in sessions and widen the redactor; Merge pull request #64 from jonnysteedman683-wq/claude/p1-08-redact-sessions",
+  "summary": "3 commit(s): fix(security): P1-09 jail checkpoint rewind and the critic diff; refactor: drop resolve_strict's dead '.'-part branch; test absolute and empty paths (P1-09); Merge pull request #65 from jonnysteedman683-wq/claude/p1-09-jail-rewind",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "8 file(s) changed",
-      "description": "Detected automatically from code: 8 file(s) changed.",
+      "title": "7 file(s) changed",
+      "description": "Detected automatically from code: 7 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "f76002e26ff924630fe334120ceaa2fe76f22b0e",
+          "sha": "984e55057a97377ed6ca588cfa3075e9c26c50b1",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 62,
+  "seq": 63,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "32756ee6bcfd6b89a18a899deefc9463325ad6c4",
-    "to_sha": "f76002e26ff924630fe334120ceaa2fe76f22b0e"
+    "from_sha": "f76002e26ff924630fe334120ceaa2fe76f22b0e",
+    "to_sha": "984e55057a97377ed6ca588cfa3075e9c26c50b1"
   },
-  "generated_at": "2026-10-21T08:46:27Z",
+  "generated_at": "2026-10-21T10:06:34Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -79,5 +79,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "cf0c26006f2b7a1355d64913d3715d61a1120f61c7d53dd9c6ee566e24a802e0"
+  "signature": "93c6c756b84607865d716bf0184d56a812d45cf9df74ebfceb03f339bcf3f2a9"
 }

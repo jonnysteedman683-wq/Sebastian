@@ -1,0 +1,83 @@
+{
+  "summary": "3 commit(s): fix(security): P1-09 jail checkpoint rewind and the critic diff; refactor: drop resolve_strict's dead '.'-part branch; test absolute and empty paths (P1-09); Merge pull request #65 from jonnysteedman683-wq/claude/p1-09-jail-rewind",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "7 file(s) changed",
+      "description": "Detected automatically from code: 7 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "984e55057a97377ed6ca588cfa3075e9c26c50b1",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 63,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "f76002e26ff924630fe334120ceaa2fe76f22b0e",
+    "to_sha": "984e55057a97377ed6ca588cfa3075e9c26c50b1"
+  },
+  "generated_at": "2026-10-21T10:06:34Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "93c6c756b84607865d716bf0184d56a812d45cf9df74ebfceb03f339bcf3f2a9"
+}
