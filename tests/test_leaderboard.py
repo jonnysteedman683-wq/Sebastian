@@ -180,7 +180,7 @@ def test_cli_models_real_factory_uses_make_llm(
 
     monkeypatch.setattr(cli, "make_llm", fake)
     args = ["models", "anthropic:claude-x", "openai:local@http://localhost:1/v1", "plain",
-            "--no-record", "--scars", str(tmp_path / "none")]  # fmt: skip
+            "--no-record", "--yes", "--scars", str(tmp_path / "none")]  # fmt: skip
     assert cli.main(args) == 0
     capsys.readouterr()
     assert set(seen) == {

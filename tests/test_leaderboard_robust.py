@@ -32,7 +32,7 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _models(home: Path, *specs: str) -> list[str]:
-    return ["models", *specs, "--scars", str(home / "none")]
+    return ["models", *specs, "--yes", "--scars", str(home / "none")]
 
 
 def test_bad_url_in_third_spec_fails_preflight_before_any_case(
