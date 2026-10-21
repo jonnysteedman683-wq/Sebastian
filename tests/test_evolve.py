@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import re
 import shutil
 import subprocess
 import sys
@@ -85,7 +86,14 @@ def write(cid: str, path: str, content: str) -> ToolCall:
 
 
 def cfg(tmp_path: Path, **kw: object) -> EvolveConfig:
-    base = EvolveConfig(checks=[CHECK_GREET], eval_cmd=EVAL, home=tmp_path / "home")
+    # CI hosts may lack bubblewrap; P1-02 makes that an error unless explicitly opted out.
+    base = EvolveConfig(
+        checks=[CHECK_GREET],
+        eval_cmd=EVAL,
+        home=tmp_path / "home",
+        sandbox="none",
+        unsafe_no_sandbox=True,
+    )
     for k, v in kw.items():
         setattr(base, k, v)
     return base
@@ -164,6 +172,7 @@ def test_accepted_cycle_commits_on_a_branch(repo: Path, tmp_path: Path) -> None:
     assert report.gates == {
         "non_empty": True,
         "guarded_paths": True,
+        "tests_kept": True,
         "check:" + Path(PY).name + " -c " + CHECK_GREET[2]: True,
         "eval_no_regression": True,
     }
@@ -269,13 +278,21 @@ def test_cli_evolve(repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 
     monkeypatch.setattr(evo, "evolve_once", fast)
     llm = agent(write("1", "greet.txt", "hello"))
-    code = main(["evolve", "--repo", str(repo), "--no-evals"], llm_factory=lambda m: llm)
+    unsafe = ["--sandbox", "none", "--unsafe-no-sandbox"]
+    code = main(["evolve", "--repo", str(repo), "--no-evals", *unsafe], llm_factory=lambda m: llm)
     out = capsys.readouterr().out
     assert code == 0, out
     assert "ACCEPTED B3" in out
     llm2 = agent()
-    assert main(["evolve", "--repo", str(repo), "--no-evals"], llm_factory=lambda m: llm2) == 1
-    assert main(["evolve", "--repo", str(tmp_path)], llm_factory=lambda m: agent()) == 2
+    args = ["evolve", "--repo", str(repo), "--no-evals", *unsafe]
+    assert main(args, llm_factory=lambda m: llm2) == 1
+    assert main(["evolve", "--repo", str(tmp_path), *unsafe], llm_factory=lambda m: agent()) == 2
+    # P1-02: --sandbox none alone is refused; it needs the explicit confirmation flag.
+    monkeypatch.setattr("shutil.which", lambda n, *a, **k: None if n == "bwrap" else GIT)
+    code = main(["evolve", "--repo", str(repo), "--no-evals", "--sandbox", "none"],
+                llm_factory=lambda m: agent())  # fmt: skip
+    assert code == 2
+    assert "--unsafe-no-sandbox" in capsys.readouterr().err
 
 
 def test_open_pr_uses_gh(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -338,15 +355,76 @@ def fake_bwrap(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def test_resolve_sandbox_modes(fake_bwrap: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from sebastian.evolve import resolve_sandbox
 
-    assert resolve_sandbox("none") is None
+    assert resolve_sandbox("none", unsafe=True) is None
     assert resolve_sandbox("auto") is not None
     assert resolve_sandbox("bwrap") is not None
     with pytest.raises(EvolveError, match="unknown sandbox"):
         resolve_sandbox("docker")
     monkeypatch.setattr("shutil.which", lambda *a, **k: None)
-    assert resolve_sandbox("auto") is None
     with pytest.raises(EvolveError, match="missing or blocked"):
         resolve_sandbox("bwrap")
+
+
+def test_auto_without_bwrap_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """P1-02: agent-written code never runs unsandboxed unless explicitly confirmed."""
+    from sebastian.evolve import resolve_sandbox
+
+    monkeypatch.setattr("shutil.which", lambda *a, **k: None)
+    with pytest.raises(EvolveError, match="--unsafe-no-sandbox"):
+        resolve_sandbox("auto")
+    with pytest.raises(EvolveError, match="--unsafe-no-sandbox"):
+        resolve_sandbox("none")
+    assert resolve_sandbox("auto", unsafe=True) is None
+    assert resolve_sandbox("none", unsafe=True) is None
+
+
+def test_auto_without_bwrap_fails_before_any_work(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("shutil.which", lambda n, *a, **k: None if n == "bwrap" else GIT)
+    config = cfg(tmp_path, sandbox="auto", unsafe_no_sandbox=False)
+    with pytest.raises(EvolveError, match="--unsafe-no-sandbox"):
+        evolve_once(repo, agent(write("1", "greet.txt", "x")), config)
+    assert git(repo, "worktree", "list").count("\n") == 1
+
+
+FAKE_SECRETS = {
+    "ANTHROPIC_API_KEY": "sk-ant-test-FAKE0000",
+    "OPENAI_API_KEY": "sk-test-FAKE0000",
+    "GH_TOKEN": "ghp_FAKE0000000000000000000000000000",
+}
+DUMP_ENV = [PY, "-c", "import json, os; open('env.json', 'w').write(json.dumps(dict(os.environ)))"]
+
+
+@pytest.mark.parametrize("sandboxed", [False, True])
+def test_gate_env_has_no_secrets(
+    sandboxed: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fake_bwrap: Path
+) -> None:
+    """P1-02: a gate command's environment never carries the parent's secrets."""
+    import json
+
+    from sebastian.evolve import _run
+
+    for k, v in FAKE_SECRETS.items():
+        monkeypatch.setenv(k, v)
+    work = tmp_path / "wt"
+    work.mkdir()
+    ok, out = _run(DUMP_ENV, work, shutil.which("bwrap") if sandboxed else None)
+    assert ok, out
+    env = json.loads((work / "env.json").read_text())
+    for k in FAKE_SECRETS:
+        assert k not in env
+    assert not any(v in json.dumps(env) for v in FAKE_SECRETS.values())
+    if not sandboxed:
+        assert set(env) <= {"PATH", "LANG", "LC_ALL", "HOME", "PYTHONPATH"} | {"LC_CTYPE"}
+        assert env["HOME"] == str(work)
+        assert env["PYTHONPATH"] == str(work / "src")
+
+
+def test_report_says_no_secrets_in_gate_env(repo: Path, tmp_path: Path) -> None:
+    report = evolve_once(repo, agent(write("1", "greet.txt", "hello")), cfg(tmp_path))
+    assert report.accepted, report.summary()
+    assert "no secrets in gate env" in report.summary()
 
 
 def test_bwrap_usable_probe(fake_bwrap: Path, tmp_path: Path) -> None:
@@ -438,3 +516,109 @@ def test_budget_stopped_agent_is_resumed(repo: Path, tmp_path: Path) -> None:
     assert report.resumes == 0
     assert report.run_stop == "budget_exhausted"
     assert report.reason.startswith("check failed")
+
+
+# --- P1-03: the safety TCB is guarded; tests are never deleted or renamed ------------------
+
+REAL_ROOT = Path(__file__).resolve().parents[1]
+TCB = [
+    "src/sebastian/approval.py",
+    "src/sebastian/agent.py",
+    "src/sebastian/budget.py",
+    "src/sebastian/evolve.py",
+    "src/sebastian/gauntlet.py",
+    "src/sebastian/checkpoint.py",
+    "src/sebastian/session.py",
+    "src/sebastian/trace.py",
+    "src/sebastian/tools/builtin.py",
+    "src/sebastian/llm/base.py",
+    "src/sebastian/evals/cases.py",
+    "src/sebastian/watch/report.py",
+    "pyproject.toml",
+    "scripts/resign_examples.py",
+    ".github/workflows/guard.yml",
+    "AGENTS.md",
+    "CLAUDE.md",
+]
+NOT_TCB = [
+    "src/sebastian/memory.py",
+    "src/sebastian/prompts.py",
+    "tests/test_x.py",
+    "docs/BACKLOG.md",
+]
+
+
+def test_real_guard_regex_matches_default() -> None:
+    """guard.yml and DEFAULT_GUARDED are one guarded set (the fallback never drifts)."""
+    assert load_guarded(REAL_ROOT).pattern == DEFAULT_GUARDED
+
+
+@pytest.mark.parametrize("path", TCB)
+def test_tcb_paths_are_guarded(path: str) -> None:
+    assert re.compile(DEFAULT_GUARDED).search(path), path
+
+
+@pytest.mark.parametrize("path", NOT_TCB)
+def test_ordinary_paths_stay_writable(path: str) -> None:
+    assert not re.compile(DEFAULT_GUARDED).search(path), path
+
+
+def test_scoped_approver_denies_tcb_writes(tmp_path: Path) -> None:
+    tools = {t.name: t for t in file_tools(Workspace(tmp_path))}
+    ap = ScopedApprover(tmp_path, re.compile(DEFAULT_GUARDED), frozenset())
+    for path in ("src/sebastian/approval.py", "pyproject.toml", "src/sebastian/tools/x.py"):
+        assert not ap.approve(tools["write_file"], write("1", path, "pwned")), path
+    assert ap.approve(tools["write_file"], write("1", "src/sebastian/memory.py", "ok"))
+
+
+def test_codeowners_covers_the_guarded_set() -> None:
+    lines = (REAL_ROOT / ".github/CODEOWNERS").read_text().splitlines()
+    owned = {ln.split()[0]: ln.split()[1:] for ln in lines if ln.strip() and not ln.startswith("#")}
+    for owners in owned.values():
+        assert owners == ["@jonnysteedman683-wq"]
+    for path in TCB:
+        assert any(
+            ("/" + path).startswith(pat) if pat.endswith("/") else "/" + path == pat
+            for pat in owned
+        ), f"{path} has no CODEOWNERS entry"
+
+
+def _with_tests(repo: Path) -> None:
+    (repo / "tests").mkdir()
+    (repo / "tests/test_keep.py").write_text("def test_keep():\n    assert True\n")
+    git(repo, "add", "-A")
+    git(repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "tests")
+
+
+@pytest.mark.parametrize(
+    "command", ["rm tests/test_keep.py", "mv tests/test_keep.py tests/test_moved.py"]
+)
+def test_deleting_or_renaming_a_test_is_rejected(repo: Path, tmp_path: Path, command: str) -> None:
+    _with_tests(repo)
+    run = ToolCall("9", "run_command", {"command": command})
+    config = cfg(tmp_path, agent_commands=frozenset({"rm", "mv"}), eval_cmd=None)
+    report = evolve_once(repo, agent(run, write("1", "greet.txt", "hello")), config)
+    assert not report.accepted, report.summary()
+    assert report.gates.get("tests_kept") is False
+    assert "tests/test_keep.py" in report.reason
+
+
+def test_adding_and_editing_tests_is_fine(repo: Path, tmp_path: Path) -> None:
+    _with_tests(repo)
+    llm = agent(
+        write("1", "tests/test_keep.py", "def test_keep():\n    assert 1\n"),
+        write("2", "tests/test_new.py", "def test_new():\n    assert 1\n"),
+        write("3", "greet.txt", "hello"),
+    )
+    report = evolve_once(repo, llm, cfg(tmp_path, eval_cmd=None))
+    assert report.accepted, report.summary()
+    assert report.gates["tests_kept"] is True
+
+
+def test_command_side_channel_on_guarded_path_is_rejected(repo: Path, tmp_path: Path) -> None:
+    run = ToolCall("9", "run_command", {"command": "rm .github/workflows/guard.yml"})
+    config = cfg(tmp_path, agent_commands=frozenset({"rm"}), eval_cmd=None)
+    report = evolve_once(repo, agent(run, write("1", "greet.txt", "hello")), config)
+    assert not report.accepted
+    assert report.gates["guarded_paths"] is False
+    assert ".github/workflows/guard.yml" in report.reason
