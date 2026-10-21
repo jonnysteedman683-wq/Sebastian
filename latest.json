@@ -1,14 +1,14 @@
 {
-  "summary": "2 commit(s): docs: propose B48-B49 from live Ollama eval runs; Merge pull request #61 from jonnysteedman683-wq/ccr-f4350596-l6x8lj",
+  "summary": "3 commit(s): fix(security): P1-05 lock down .git and host git; Merge branch 'main' into claude/p1-05-lock-git; Merge pull request #58 from jonnysteedman683-wq/claude/p1-05-lock-git",
   "changes": [
     {
-      "category": "DOCS",
-      "title": "2 file(s) changed",
-      "description": "Detected automatically from code: 2 file(s) changed.",
+      "category": "ABILITY_CHANGE",
+      "title": "8 file(s) changed",
+      "description": "Detected automatically from code: 8 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "d04aeb04085a7abcacbfb842840f3d4a3273f68d",
+          "sha": "2b066f09cda9c9d624ce5aab8f6f830cf325b398",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 58,
+  "seq": 59,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "51f3e0dd96ca42e5d7baf63fdb6f6df7f4593704",
-    "to_sha": "d04aeb04085a7abcacbfb842840f3d4a3273f68d"
+    "from_sha": "d04aeb04085a7abcacbfb842840f3d4a3273f68d",
+    "to_sha": "2b066f09cda9c9d624ce5aab8f6f830cf325b398"
   },
-  "generated_at": "2026-10-21T01:43:46Z",
+  "generated_at": "2026-10-21T01:45:26Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -78,6 +78,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "LOW",
-  "signature": "610c6982ea1dd28564e5a3f13b81c03cb4f68aceac32dff5601590d7ef7343a4"
+  "priority": "NORMAL",
+  "signature": "e0aa38dcee503dc6c9a2251fb22004d08e28f52bb1eca06154ef5efffa40277a"
 }

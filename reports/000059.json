@@ -1,0 +1,83 @@
+{
+  "summary": "3 commit(s): fix(security): P1-05 lock down .git and host git; Merge branch 'main' into claude/p1-05-lock-git; Merge pull request #58 from jonnysteedman683-wq/claude/p1-05-lock-git",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "8 file(s) changed",
+      "description": "Detected automatically from code: 8 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "2b066f09cda9c9d624ce5aab8f6f830cf325b398",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 59,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "d04aeb04085a7abcacbfb842840f3d4a3273f68d",
+    "to_sha": "2b066f09cda9c9d624ce5aab8f6f830cf325b398"
+  },
+  "generated_at": "2026-10-21T01:45:26Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "e0aa38dcee503dc6c9a2251fb22004d08e28f52bb1eca06154ef5efffa40277a"
+}
