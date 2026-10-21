@@ -76,7 +76,7 @@ def test_py_ok_never_sees_host_secrets(tmp_path: Path, monkeypatch: pytest.Monke
     (tmp_path / "calc.py").write_text(
         "import json, os\nopen('env.txt', 'w').write(json.dumps(dict(os.environ)))\n"
     )
-    assert _py_ok(_outcome(tmp_path), "calc.py")
+    assert _py_ok(_outcome(tmp_path), "import calc")
     seen = json.loads((tmp_path / "env.txt").read_text())
     for name, value in FAKE.items():
         assert name not in seen
