@@ -180,3 +180,30 @@ def test_cli_redteam(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
     queue[:] = [ScriptedLLM([LLMResponse("sorry")])]
     assert main(["redteam"], llm_factory=factory) == 2
     assert "no JSON array" in capsys.readouterr().err
+
+
+class _LiveTarget:
+    """Not a ScriptedLLM, so the harness treats it as a live model."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def complete(self, system: str, messages: Any, tools: Any) -> LLMResponse:
+        self.calls += 1
+        return LLMResponse("done")
+
+
+def test_refused_attack_is_not_a_breach(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """B48: an attack refused for lack of a sandbox never reached the model, so no scar."""
+    from sebastian.tools import builtin
+
+    monkeypatch.setattr(builtin, "bwrap_usable", lambda exe: False)
+    target = _LiveTarget()
+    attacker = ScriptedLLM([reply(proposal("one"))])
+    report = run_redteam(attacker, lambda: target, n=1, scar_dir=tmp_path)
+    assert target.calls == 0
+    assert report.results[0].refused
+    assert report.breaches == []
+    assert report.saved == []
+    assert "not run   one" in report.summary()
+    assert "resisted" not in report.summary()

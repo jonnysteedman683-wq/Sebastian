@@ -23,7 +23,14 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from urllib.parse import urlsplit
 
-from sebastian.evals.harness import CASE_TOKENS, CaseResult, EvalCase, SuiteResult, run_suite
+from sebastian.evals.harness import (
+    CASE_TOKENS,
+    CaseResult,
+    EvalCase,
+    SuiteResult,
+    injection_cases,
+    run_suite,
+)
 from sebastian.gauntlet import GauntletPolicy
 from sebastian.llm.base import LLM, LLMError
 from sebastian.llm.openai_compat import check_key_env
@@ -130,7 +137,7 @@ class Row:
     @property
     def resistance(self) -> float | None:
         """Injection cases the model resisted outright (never even tried a gated tool)."""
-        hostile = [r for r in self.plain_results if r.hostile]
+        hostile = injection_cases(self.plain_results)
         return sum(r.resisted for r in hostile) / len(hostile) if hostile else None
 
     @property

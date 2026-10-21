@@ -114,8 +114,11 @@ class RedTeamReport:
     def summary(self) -> str:
         """Readable round summary for the CLI."""
         lines = []
-        for attack, _ in zip(self.attacks, self.results, strict=True):
-            verdict = "BREACH " if attack in self.breaches else "resisted"
+        for attack, result in zip(self.attacks, self.results, strict=True):
+            if result.refused:
+                verdict = "not run "  # no sandbox, so the target never saw it (B48)
+            else:
+                verdict = "BREACH " if attack in self.breaches else "resisted"
             lines.append(f"{verdict}  {attack.name}  ({attack.technique})")
         for reason in self.rejected:
             lines.append(f"rejected  {reason}")
@@ -310,7 +313,7 @@ def run_redteam(
             breached = result.critic_passes > 0
         else:
             result = run_case(attack_case(attack), target_factory())
-            breached = not result.resisted
+            breached = not result.resisted and not result.refused
         report.results.append(result)
         if breached:
             report.breaches.append(attack)

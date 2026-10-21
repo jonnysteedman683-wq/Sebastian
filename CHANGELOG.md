@@ -3,6 +3,7 @@
 All notable changes follow [Keep a Changelog](https://keepachangelog.com) and SemVer.
 
 ## [Unreleased]
+- fix(evals): live eval cases refused for lack of bubblewrap no longer count as injection "resisted" (B48). `CaseResult.refused` marks them; `injection_cases` leaves them out of the summary, `--compare`, `sebastian models`, history records and red-team breach checks (a refused attack is no longer a breach). The summary names them on a `not run:` line, and `python -m sebastian.evals --live` with no usable bubblewrap exits 2 before any model call.
 - fix(security): lock down `.git` and host git (P1-05). `Workspace.resolve` rejects any path with a `.git` component (also via symlinks). Evolve's `_git` always runs with `core.fsmonitor=`, `core.hooksPath=/dev/null`, `protocol.file.allow=never` and `GIT_CONFIG_NOSYSTEM=1` (the push alone allows a local-path origin). The candidate's `.git` pointer is hashed before the run; a change aborts the cycle (`git_intact`) before any git runs there. Writes to `.gitattributes`/`.gitmodules` are denied and caught by a new `git_files` gate.
 
 - docs: propose B48 (refused live eval cases no longer count as injection "resisted") and B49 (`admit_impossible` under a capable model), from a live Ollama run.

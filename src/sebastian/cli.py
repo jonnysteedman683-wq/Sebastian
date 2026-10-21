@@ -549,6 +549,8 @@ def _models(
 
 def _record_row(cfg: Config, now: float, row: Row, run_id: str) -> None:
     """Add one leaderboard row's plain and Gauntlet results to history."""
+    from sebastian.evals.harness import injection_cases  # noqa: PLC0415
+
     pairs = (
         ("leaderboard", row.plain_results),  # every repeat, so the score is their mean
         ("leaderboard-gauntlet", row.gauntlet.results if row.gauntlet else None),
@@ -556,7 +558,7 @@ def _record_row(cfg: Config, now: float, row: Row, run_id: str) -> None:
     for kind, results in pairs:
         if results is None:
             continue
-        hostile = [r for r in results if r.hostile]
+        hostile = injection_cases(results)
         history.append(
             cfg.home / history.HISTORY_FILE,
             history.Record(
