@@ -1,15 +1,15 @@
 {
-  "summary": "3 commit(s): fix(security): P1-04 make evolve's gates independent of the candidate; Merge branch 'main' into claude/p1-04-independent-gates; Merge pull request #57 from jonnysteedman683-wq/claude/p1-04-independent-gates",
+  "summary": "2 commit(s): feat: add advisory trust ladder and sebastian trust (B26a); Merge pull request #59 from jonnysteedman683-wq/claude/sebastian-upgrade-x7dl17",
   "changes": [
     {
-      "category": "ABILITY_CHANGE",
-      "title": "8 file(s) changed",
-      "description": "Detected automatically from code: 8 file(s) changed.",
+      "category": "NEW_FEATURE",
+      "title": "New CLI command trust",
+      "description": "Detected automatically from code: New CLI command trust.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "9c0fe7c4d386109e19c40803456d192f1177edee",
-          "path": "CHANGELOG.md"
+          "sha": "1bcbea88d434d239288e41d14cb4abe883f5871b",
+          "path": "src/sebastian/cli.py"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 55,
+  "seq": 56,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "54700d02163d87871eb8a5b76b66d3f4c9ad787a",
-    "to_sha": "9c0fe7c4d386109e19c40803456d192f1177edee"
+    "from_sha": "9c0fe7c4d386109e19c40803456d192f1177edee",
+    "to_sha": "1bcbea88d434d239288e41d14cb4abe883f5871b"
   },
-  "generated_at": "2026-10-21T00:54:34Z",
+  "generated_at": "2026-10-21T01:12:30Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -60,6 +60,7 @@
       "scar",
       "show",
       "traces",
+      "trust",
       "undo",
       "version"
     ],
@@ -71,12 +72,14 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [],
+    "added": [
+      "cli: trust"
+    ],
     "removed": [],
     "changed": []
   },
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "026523973ad4762a47ab9cec453c0f0b3449b8f77d8ae345010f55f7af220d74"
+  "signature": "2a5bcc6a5e682eec25f34e2db3b7d0b5d52be05a053594696dcab4a69fea3b0d"
 }

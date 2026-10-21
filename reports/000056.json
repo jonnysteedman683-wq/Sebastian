@@ -1,0 +1,85 @@
+{
+  "summary": "2 commit(s): feat: add advisory trust ladder and sebastian trust (B26a); Merge pull request #59 from jonnysteedman683-wq/claude/sebastian-upgrade-x7dl17",
+  "changes": [
+    {
+      "category": "NEW_FEATURE",
+      "title": "New CLI command trust",
+      "description": "Detected automatically from code: New CLI command trust.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "1bcbea88d434d239288e41d14cb4abe883f5871b",
+          "path": "src/sebastian/cli.py"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 56,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "9c0fe7c4d386109e19c40803456d192f1177edee",
+    "to_sha": "1bcbea88d434d239288e41d14cb4abe883f5871b"
+  },
+  "generated_at": "2026-10-21T01:12:30Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [
+      "cli: trust"
+    ],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "2a5bcc6a5e682eec25f34e2db3b7d0b5d52be05a053594696dcab4a69fea3b0d"
+}
