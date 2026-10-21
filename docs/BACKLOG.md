@@ -143,6 +143,9 @@ Rules:
 - [x] 🔒 **P1-04 Evolve gates independent of the candidate** (upgrade spec 2026-10-19). Baseline tests/evals/config judge the candidate's src; no fail-open on a missing baseline; no drop in test count or coverage.
   *Done when:* a candidate that loosens a test, edits an eval to inflate its score, adds gate config, guts a test file or lowers coverage is rejected; a missing baseline score rejects unless `--allow-missing-baseline`.
 
+- [x] 🔒 **P1-05 Lock down `.git` and host git** (upgrade spec 2026-10-19). File tools can't touch `.git`; evolve's git never runs hooks/fsmonitor or system config; a rewritten `.git` pointer aborts the cycle; `.gitattributes`/`.gitmodules` are denied.
+  *Done when:* `.git`, `a/.git/config`, `./.git` are rejected; `_git` passes the hardening flags and `GIT_CONFIG_NOSYSTEM=1`; repo hooks and fsmonitor never fire during a cycle; a tampered pointer aborts before any git runs.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
