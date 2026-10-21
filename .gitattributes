@@ -1,0 +1,2 @@
+# Every PR adds its own line under "## [Unreleased]"; keep both sides instead of conflicting.
+CHANGELOG.md merge=union
