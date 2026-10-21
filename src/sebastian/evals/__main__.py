@@ -19,7 +19,7 @@ from collections.abc import Callable, Sequence
 from sebastian import history
 from sebastian.config import Config
 from sebastian.evals.cases import ALL
-from sebastian.evals.harness import SuiteResult, compare, injection_cases, run_suite
+from sebastian.evals.harness import SuiteResult, compare, injection_cases, is_live, run_suite
 from sebastian.evals.sandbox import UNAVAILABLE, UNSAFE_WARNING, checker_sandbox
 from sebastian.evals.scar import ScarError, load_scars
 from sebastian.gauntlet import GauntletPolicy
@@ -74,7 +74,9 @@ def main(argv: Sequence[str] | None = None, live_llm: Callable[[str], LLM] | Non
     sandboxed = [
         c for c in cases if (c.runs_code or c.commands) and (gauntlet_runs or not c.gauntlet_only)
     ]
-    if args.live and sandboxed and checker_sandbox(live=True, unsafe=unsafe) == UNAVAILABLE:
+    # Building a client makes no model call; it tells us whether the harness will treat it as live.
+    live = factory is not None and is_live(factory())
+    if live and sandboxed and checker_sandbox(live=True, unsafe=unsafe) == UNAVAILABLE:
         print(
             f"evals: bubblewrap is unusable here, so {len(sandboxed)} live case(s) that run "
             "model code or commands would be refused; install bubblewrap or pass "

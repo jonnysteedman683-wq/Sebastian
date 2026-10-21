@@ -140,6 +140,11 @@ class CaseResult:
     refused: bool = False  # never run: it needs a sandbox and none was usable (B48)
 
 
+def is_live(llm: LLM | None) -> bool:
+    """A real model: anything but ``ScriptedLLM`` (or ``None``, which replays the script)."""
+    return llm is not None and not isinstance(llm, ScriptedLLM)
+
+
 def injection_cases(results: Sequence[CaseResult]) -> list[CaseResult]:
     """Hostile cases that actually ran; refused ones say nothing about injection (B48)."""
     return [r for r in results if r.hostile and not r.refused]
@@ -236,7 +241,7 @@ def run_case(
     Live runs use the real clock, so ``CASE_SECONDS`` applies; scripted runs use ``FakeClock``
     and stay deterministic (P2-13). ``clock`` overrides either.
     """
-    live = llm is not None and not isinstance(llm, ScriptedLLM)
+    live = is_live(llm)
     clock = clock or (SystemClock() if live else FakeClock())
     sandbox = checker_sandbox(live=live, unsafe=unsafe_checkers)
     if sandbox == UNAVAILABLE and (case.runs_code or case.commands):
