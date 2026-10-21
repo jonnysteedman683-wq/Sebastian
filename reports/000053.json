@@ -1,0 +1,82 @@
+{
+  "summary": "7 commit(s): fix(models): P2-14 leaderboard history, dashboard and identity hygiene; Merge branch 'claude/p2-15-missing-usage' into claude/p2-14-leaderboard-history; Merge claude/p2-15-missing-usage into claude/p2-14-leaderboard-history; Merge claude/p2-15-missing-usage into claude/p2-14-leaderboard-history; Merge claude/p2-15-missing-usage into claude/p2-14-leaderboard-history; Merge branch 'main' into claude/p2-14-leaderboard-history; Merge pull request #53 from jonnysteedman683-wq/claude/p2-14-leaderboard-history",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "8 file(s) changed",
+      "description": "Detected automatically from code: 8 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "cd5d0a16df20ad381c2a03144c4595472527cf36",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 53,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "fb1751c795dc87b934f54c24499db286e4cea24b",
+    "to_sha": "cd5d0a16df20ad381c2a03144c4595472527cf36"
+  },
+  "generated_at": "2026-10-21T00:51:35Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "57451ff415e9f8759b01f015af20502d2100955c77e37e1b7b3a5484a5d96816"
+}
