@@ -155,6 +155,9 @@ Rules:
 - [x] 🔒 **P1-06 Approvals in full, audited grants, normalised denials** (upgrade spec 2026-10-19).
   *Done when:* commands show one argv per line and writes a diff, nothing is truncated (too large is refused); `approval_granted` carries tool, approver and args SHA-256; denials key on normalised argv/path and stop the run after `max_denials`; one shared `parse_command()`.
 
+- [x] 🔒 **P1-08 Redact secrets in sessions; wider redactor** (upgrade spec 2026-10-19).
+  *Done when:* one shared `redact()` covers the spec's patterns plus a high-entropy heuristic, with UUIDs and git SHAs as negatives; sessions are redacted on save and resume still works; `--keep-raw-sessions` opts out; `SEBASTIAN_HOME` is `0700`.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [ ] **B45 Trust level on the dashboard.** `sebastian dashboard` shows a tile with the B26a level (`trust.assess` over the same `history.jsonl` records), its reason, and the level after each round on the score chart's timeline. Values HTML-escaped like the rest of the page.

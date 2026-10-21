@@ -18,7 +18,7 @@ from sebastian.approval import ApprovalGate, Approver, DenyApprover, Interactive
 from sebastian.budget import Budget
 from sebastian.checkpoint import CheckpointError, Checkpoints
 from sebastian.clock import SystemClock
-from sebastian.config import Config
+from sebastian.config import Config, ensure_home
 from sebastian.gauntlet import GauntletPolicy
 from sebastian.llm import make_llm
 from sebastian.llm.base import LLM
@@ -218,6 +218,11 @@ def _add_run_options(run: argparse.ArgumentParser) -> None:
         help="never prompt; every gated action is denied",
     )
     run.add_argument("--no-memory", action="store_true")
+    run.add_argument(
+        "--keep-raw-sessions",
+        action="store_true",
+        help="save session files unredacted (default: secrets are redacted on save)",
+    )
     run.add_argument(
         "--plan", action="store_true", help="plan before acting (one extra tool-free model call)"
     )
@@ -656,7 +661,7 @@ def _run_agent(
         tracer=JsonlTracer(cfg.home / "traces.jsonl", clock),
         clock=clock,
         checkpoints=checkpoints,
-        sessions=SessionStore(cfg.home / "sessions"),
+        sessions=SessionStore(cfg.home / "sessions", raw=args.keep_raw_sessions),
         workspace=str(ws.root),
         plan=args.plan or bool(args.plan_model),
         planner_llm=make(plan_model) if plan_model and plan_model != model else None,
@@ -680,6 +685,7 @@ def main(
         return 0
 
     cfg = Config.from_env()
+    ensure_home(cfg.home)  # P1-08: sessions, traces and memory live here; keep it private
     try:
         prices = load_prices(cfg.home)
     except PricingError as exc:

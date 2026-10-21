@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import math
 import re
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
@@ -11,8 +13,67 @@ from typing import Any, Protocol
 from sebastian.clock import Clock
 
 _SECRET_KEY = re.compile(r"(api[_-]?key|token|secret|password|authorization)", re.IGNORECASE)
-_SECRET_VALUE = re.compile(r"(sk-[A-Za-z0-9_\-]{16,}|ghp_[A-Za-z0-9]{20,}|Bearer\s+\S+)")
 REDACTED = "[REDACTED]"
+
+# P1-08: the one redactor for traces, sessions and anything else written to disk.
+_PRIVATE_KEY = re.compile(
+    r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----.*?(?:-----END [A-Z0-9 ]*PRIVATE KEY-----|\Z)",
+    re.DOTALL,
+)
+_SECRET_VALUE = re.compile(
+    "|".join(
+        (
+            r"sk-[A-Za-z0-9_\-]{16,}",  # OpenAI / Anthropic (sk-ant-...)
+            r"gh[pousr]_[A-Za-z0-9]{20,}",  # GitHub tokens
+            r"github_pat_[A-Za-z0-9_]{20,}",  # GitHub fine-grained PATs
+            r"\bAKIA[0-9A-Z]{16}\b",  # AWS access key ids
+            r"xox[abpr]-[A-Za-z0-9\-]{10,}",  # Slack
+            r"eyJ[A-Za-z0-9_\-]{5,}\.eyJ[A-Za-z0-9_\-]{5,}\.[A-Za-z0-9_\-]{5,}",  # JWTs
+            r"Bearer\s+\S+",
+        )
+    )
+)
+# .env / shell style: SOME_API_KEY=value, export GITHUB_TOKEN=value (the value is replaced).
+# No spaces around "=": that is how .env and shell assign, and it skips Python constants.
+_ENV_ASSIGN = re.compile(
+    r"(?m)^(\s*(?:export\s+)?[A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|PASSWD)[A-Z0-9_]*=)"
+    r"[\"']?[^\s\"']{6,}[\"']?"
+)
+_CANDIDATE = re.compile(r"[A-Za-z0-9+/=_\-]{32,}")
+_HEXISH = re.compile(r"[0-9a-fA-F\-]+")  # git SHAs, digests, UUIDs: identifiers, not secrets
+ENTROPY_BITS = 4.0  # per character; random base62 of 32+ chars is about 4.7 to 5.2
+
+
+def _entropy(text: str) -> float:
+    n = len(text)
+    return -sum(c / n * math.log2(c / n) for c in Counter(text).values())
+
+
+def _looks_random(tok: str) -> bool:
+    return (
+        len(tok) >= 32
+        and not _HEXISH.fullmatch(tok)
+        and any(c.isdigit() for c in tok)
+        and any(c.isupper() for c in tok)
+        and any(c.islower() for c in tok)
+        and _entropy(tok) >= ENTROPY_BITS
+    )
+
+
+def _high_entropy(m: re.Match[str]) -> str:
+    tok = m.group(0)
+    # A token with "/" may be a URL or path: judge each segment on its own, so
+    # github.com/owner/Repo stays readable while a long random segment is still caught.
+    parts = tok.split("/") if "/" in tok else [tok]
+    return REDACTED if any(_looks_random(p) for p in parts) else tok
+
+
+def redact_text(text: str) -> str:
+    """``text`` with secret-looking substrings replaced by ``[REDACTED]``."""
+    text = _PRIVATE_KEY.sub(REDACTED, text)
+    text = _SECRET_VALUE.sub(REDACTED, text)
+    text = _ENV_ASSIGN.sub(lambda m: m.group(1) + REDACTED, text)
+    return _CANDIDATE.sub(_high_entropy, text)
 
 
 def redact(value: Any) -> Any:
@@ -25,7 +86,7 @@ def redact(value: Any) -> Any:
     if isinstance(value, list | tuple):
         return [redact(v) for v in value]
     if isinstance(value, str):
-        return _SECRET_VALUE.sub(REDACTED, value)
+        return redact_text(value)
     return value
 
 
