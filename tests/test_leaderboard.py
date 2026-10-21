@@ -150,7 +150,8 @@ def test_cli_models(
     assert out[3].split()[:2] == ["2", "bad-model"]
     records = history.load(tmp_path / "home" / history.HISTORY_FILE)
     assert sorted(r.model for r in records) == ["bad-model", "good-model"]
-    assert {r.kind for r in records} == {"eval"}
+    assert {r.kind for r in records} == {"leaderboard"}  # P2-14: never "eval"
+    assert len({r.run_id for r in records}) == 1
 
 
 def test_cli_models_errors(

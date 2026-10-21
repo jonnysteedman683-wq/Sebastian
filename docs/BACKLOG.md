@@ -9,6 +9,8 @@ Rules:
 
 ## Queue
 
+- [x] **P2-14 Leaderboard history, dashboard and identity hygiene** (upgrade spec addendum 2026-10-20). Own history kinds + run id; dashboard leaderboard table; host:port in labels; duplicate check on (backend, model, base_url).
+  *Done when:* after a 3-model leaderboard the Eval tile still shows the last `evals --live`; two localhost ports rank together with distinct labels; old history loads.
 - [x] **P2-15 Don't let missing usage win the leaderboard** (upgrade spec addendum 2026-10-20). `usage_reported` per case; `?` in the tokens column; ranks last on the token tie-break.
   *Done when:* two equal-score scripted models, one reporting usage and one not: the honest one ranks first and the other shows `?`.
 - [x] **P2-13 Real clock and whole-run ceilings for live evals and the leaderboard** (upgrade spec addendum 2026-10-20). SystemClock for live cases plus a per-case time limit; worst-case estimate with `--yes` over 5M tokens; `--max-total-tokens`, `--max-seconds`, `--max-cost-usd`.

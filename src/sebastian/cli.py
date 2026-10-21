@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import secrets
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -458,6 +459,7 @@ def _models(
 
     done: list[Row] = []
     now = time.time()
+    run_id = f"lb-{int(now)}-{secrets.token_hex(3)}"
 
     def finished(row: Row) -> None:  # print and record each model as soon as it is done
         done.append(row)
@@ -466,7 +468,7 @@ def _models(
             status += f" (partial: {row.stopped}; not recorded)"
         print(f"models: [{len(done)}/{len(specs)}] {row.spec.label}: {status}", file=sys.stderr)
         if not args.no_record and not row.error and not row.partial:
-            _record_row(cfg, now, row)
+            _record_row(cfg, now, row, run_id)
 
     try:
         specs = [parse_spec(s) for s in args.specs]
@@ -517,9 +519,10 @@ def _models(
     return 0
 
 
-def _record_row(cfg: Config, now: float, row: Row) -> None:
+def _record_row(cfg: Config, now: float, row: Row, run_id: str) -> None:
     """Add one leaderboard row's plain and Gauntlet results to history."""
-    for kind, suite in (("eval", row.plain), ("gauntlet", row.gauntlet)):
+    pairs = (("leaderboard", row.plain), ("leaderboard-gauntlet", row.gauntlet))
+    for kind, suite in pairs:
         if suite is None:
             continue
         hostile = [r for r in suite.results if r.hostile]
@@ -528,7 +531,7 @@ def _record_row(cfg: Config, now: float, row: Row) -> None:
             history.Record(
                 now, kind, row.spec.label,
                 sum(r.passed for r in suite.results), len(suite.results),
-                sum(r.resisted for r in hostile), len(hostile),
+                sum(r.resisted for r in hostile), len(hostile), run_id,
             ),
         )  # fmt: skip
 
