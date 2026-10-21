@@ -158,6 +158,9 @@ Rules:
 - [x] 🔒 **P1-08 Redact secrets in sessions; wider redactor** (upgrade spec 2026-10-19).
   *Done when:* one shared `redact()` covers the spec's patterns plus a high-entropy heuristic, with UUIDs and git SHAs as negatives; sessions are redacted on save and resume still works; `--keep-raw-sessions` opts out; `SEBASTIAN_HOME` is `0700`.
 
+- [x] 🔒 **P1-09 Jail checkpoint rewind and the critic diff** (upgrade spec 2026-10-19).
+  *Done when:* with a tracked directory swapped for a symlink to outside, rewind raises `CheckpointError` and writes/deletes nothing outside, and the diff reports the file as skipped.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [ ] **B45 Trust level on the dashboard.** `sebastian dashboard` shows a tile with the B26a level (`trust.assess` over the same `history.jsonl` records), its reason, and the level after each round on the score chart's timeline. Values HTML-escaped like the rest of the page.

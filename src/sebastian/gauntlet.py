@@ -27,6 +27,7 @@ from pathlib import Path, PurePosixPath
 from sebastian.approval import ApprovalGate
 from sebastian.llm.base import LLM
 from sebastian.tools.base import ToolError, ToolRegistry
+from sebastian.tools.workspace import Workspace, WorkspaceError
 from sebastian.trace import NullTracer, Tracer
 from sebastian.types import LLMResponse, Message, Role, ToolCall
 
@@ -458,9 +459,14 @@ def workspace_diff(originals: dict[str, bytes | None], root: Path) -> str:
     if not originals:
         return "(no files changed)"
     parts: list[str] = []
+    ws = Workspace(root)
     for rel in sorted(originals):
         before = originals[rel]
-        path = root / rel
+        try:  # P1-09: never read through a symlink the run swapped in
+            path = ws.resolve_strict(rel)
+        except WorkspaceError:
+            parts.append(f"(skipped {rel}: not a plain path inside the workspace)\n")
+            continue
         after = path.read_bytes() if path.is_file() else None
         if before == after:
             continue

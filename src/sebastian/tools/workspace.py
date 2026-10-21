@@ -34,6 +34,23 @@ class Workspace:
             raise WorkspaceError(f"paths inside .git are not allowed: {relative}")
         return resolved
 
+    def resolve_strict(self, relative: str) -> Path:
+        """Like ``resolve``, but no component of the path may be a symlink (P1-09).
+
+        For code that writes or reads back files the agent could have swapped since they were
+        recorded (checkpoint rewind, the critic's diff): a directory replaced by a link must
+        not redirect the write, even to somewhere that is still inside the jail.
+        """
+        if not relative or Path(relative).is_absolute():
+            self.resolve(relative)  # raises: empty or absolute
+        current = self.root
+        for part in Path(relative).parts:  # pathlib already drops "." parts
+            current = current / part
+            if current.is_symlink():
+                raise WorkspaceError(f"symlink in path: {relative}")
+        self.resolve(relative)  # then the usual escape, absolute-path and .git checks
+        return current
+
     def display(self, path: Path) -> str:
         """``path`` relative to the workspace, for messages."""
         rel = path.relative_to(self.root)
