@@ -41,6 +41,7 @@ flowchart TD
 | Eval checker sandbox | `evals/sandbox.py` (P1-18): `run_python_check` runs checker code with an allowlisted env, bubblewrap when usable, process-group kill and bounded output; `checker_sandbox` fails closed for live models |
 | Model leaderboard | `evals/leaderboard.py` (`sebastian models SPEC...`, B39): same suite per model, ranked by score, injection resistance, critic containment, tokens; preflight before any case, crashing models become error rows, rows recorded as each model finishes (P2-12); whole-run ceilings (P2-13); `--repeats`, cost, latency and stop breakdown (P3-12) |
 | Dashboard | `history.py` (score history), `dashboard.py` (`sebastian dashboard`, static HTML) |
+| Trust ladder | `trust.py` (`sebastian trust`): advisory L0..L2 autonomy level from `history.jsonl`; enforcement in `evolve` is B26c |
 | Red team | `evals/redteam.py` (`sebastian redteam`): canary-goal injection attacks, breaches saved as scars; `--target critic` (B35): tampered changes against the Gauntlet reviewer, replayed as `target: critic` scars |
 | Scar tissue | `evals/scar.py`, `evals/scars/*.json`: failed runs as live-only eval cases (`sebastian scar`) |
 | Sessions / resume | `session.py`: per-run saved conversation under `$SEBASTIAN_HOME/sessions/`, `sebastian resume` |
