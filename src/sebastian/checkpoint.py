@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from sebastian.tools.workspace import Workspace
+from sebastian.tools.workspace import Workspace, WorkspaceError
 
 SCHEMA_VERSION = 1
 _RUN_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -113,8 +113,16 @@ class Checkpoints:
         report = UndoReport()
         if self._run is None or self._workspace is None:
             return report
+        # P1-09: check every path before touching any, so a swapped-in symlink means no writes.
+        ws = Workspace(self._workspace)
+        targets: dict[str, Path] = {}
+        for rel in self._entries:
+            try:
+                targets[rel] = ws.resolve_strict(rel)
+            except WorkspaceError as exc:
+                raise CheckpointError(f"refusing to rewind {rel}: {exc}") from exc
         for rel, entry in sorted(self._entries.items()):
-            target = self._workspace / rel
+            target = targets[rel]
             if entry.before is None:
                 target.unlink(missing_ok=True)
                 report.deleted.append(rel)

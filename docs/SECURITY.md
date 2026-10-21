@@ -8,6 +8,7 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 | Threat | Control | Evidence |
 |---|---|---|
 | Path escape (`..`, absolute, symlink) | `Workspace.resolve` resolves symlinks, rejects anything outside root | `tests/test_tools.py::test_workspace_rejects_*` |
+| Writes or reads through a swapped-in symlink (P1-09) | `Checkpoints.rewind` (Gauntlet revert) and `workspace_diff` (the critic's view) go through `Workspace.resolve_strict`, which refuses a symlink anywhere in the path, even one that points back inside the jail. Rewind checks every path before writing any and raises `CheckpointError`; the diff reports such a file as skipped instead of reading it | `tests/test_jail_rewind.py` |
 | Git metadata tampering (P1-05) | `Workspace.resolve` rejects any path with a `.git` component, before or after resolving symlinks, so no file tool reads or writes git config, hooks or the worktree pointer | `test_workspace_rejects_git_paths`, `test_workspace_rejects_symlink_into_git` |
 | Search walking out of the jail | `search_files` never follows directory symlinks and re-resolves every file through `Workspace.resolve`, skipping escapes; skips `.git/`, binary and oversized files; capped at 200 matches | `test_search_stays_in_jail`, `test_search_skips_binary_large_and_git`, `test_search_caps_matches` |
 | Shell injection | No shell; `shlex.split` + exec of allowlisted basename only | `test_command_no_shell_injection`, `test_command_rejections` |
