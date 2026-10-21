@@ -138,7 +138,8 @@ def test_cli_evolve_gauntlet_flags(
         seen.append(model)
         return clients[model]
 
-    code = main(["evolve", "--repo", str(repo), "--no-evals", *flags], llm_factory=factory)
+    unsafe = ["--sandbox", "none", "--unsafe-no-sandbox"]  # no bubblewrap on CI hosts
+    code = main(["evolve", "--repo", str(repo), "--no-evals", *unsafe, *flags], llm_factory=factory)
     assert code == 0, capsys.readouterr().out
     assert seen == models
     [policy] = seen_policy
