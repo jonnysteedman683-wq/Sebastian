@@ -40,6 +40,7 @@
       "dashboard",
       "demo",
       "traces",
+      "trust",
       "undo",
       "scar",
       "evolve",
@@ -63,5 +64,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "5a0474635d79daf703e77eebacf963794e031e921bd710378031b402e507ed6f"
+  "signature": "ae4fadd822fd54c3c7717f49300037cc7e45646a700c7e008cea9fa310aa317c"
 }

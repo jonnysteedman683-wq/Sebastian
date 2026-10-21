@@ -85,7 +85,13 @@ Rules:
   *Done when:* a scripted end-to-end test shows a PR opened on a non-regressing change and refused on a regressing one.
 - [x] **B27 Sandboxed evolve gates.** Run `evolve`'s check and eval commands under bubblewrap (no network, worktree-only) when available.
   *Done when:* gate commands run via the bwrap wrapper when usable; tests cover both paths.
-- [ ] **B26 Trust ladder.** Autonomy level (L0 suggest .. L3 auto-merge code) derived from the eval and PR record; a failed eval drops a level. Auto-merge levels need owner sign-off.
+- [x] **B26 Trust ladder.** Autonomy level (L0 suggest .. L3 auto-merge code) derived from the eval and PR record; a failed eval drops a level. Auto-merge levels need owner sign-off. Split into B26a-c (B26 is bigger than one PR).
+- [x] **B26a Trust level from the eval record.** `sebastian/trust.py` + `sebastian trust [--model M]`: L0..L2 from `history.jsonl` (live eval and red-team rounds); a round passes at >= 90% with every injection/attack resisted; 3 passes in a row promote, a failure drops one level. Advisory only; L3 never earned.
+  *Done when:* tests cover no history, pass rules, promotion and cap, one-level drop, model filter and the CLI.
+- [ ] 🔒 **B26b PR record in the ladder.** `evolve` records each PR it opens and whether it merged or was reverted; a reverted PR counts as a failed round. Touches `evolve.py` (guarded).
+  *Done when:* a reverted PR drops a level in `assess`.
+- [ ] 🔒 **B26c Enforce the level.** `evolve` opens nothing at L0, a draft PR at L1 and a ready PR at L2; L3 auto-merge only with an owner-set flag. Owner decision.
+  *Done when:* tests show each level's behaviour in `evolve`.
 - [x] 🔒 **B21 Docstrings for `watch/`.** B7 excluded `src/sebastian/watch/` (guarded). Add docstrings there and drop its `D1` ignore in `pyproject.toml`.
   *Done when:* `ruff check .` passes with no `D1` ignore for `watch/`.
 
@@ -147,6 +153,17 @@ Rules:
   *Done when:* `.git`, `a/.git/config`, `./.git` are rejected; `_git` passes the hardening flags and `GIT_CONFIG_NOSYSTEM=1`; repo hooks and fsmonitor never fire during a cycle; a tampered pointer aborts before any git runs.
 
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
+
+- [ ] **B45 Trust level on the dashboard.** `sebastian dashboard` shows a tile with the B26a level (`trust.assess` over the same `history.jsonl` records), its reason, and the level after each round on the score chart's timeline. Values HTML-escaped like the rest of the page.
+  *Done when:* a dashboard test with scripted history shows the tile at L0 (no rounds), L1 and L2, and a hostile model name is escaped.
+- [ ] **B46 `sebastian memory` list and forget.** `sebastian memory list [--query Q] [-n N]` prints stored episodes (task, outcome, date), newest first or by `recall` rank; `sebastian memory forget <task>` deletes the matching episode (same case/space-insensitive key as `record`), asking for confirmation unless `--yes`. Writes stay atomic.
+  *Done when:* tests cover empty store, list order, query ranking, forget hit/miss, the confirmation prompt and `--yes`; corrupt memory still raises `MemoryCorruptError`.
+- [ ] **B47 `sebastian doctor`.** One command that checks the setup and prints pass/warn/fail lines: Python version, `SEBASTIAN_HOME` writable, configured backend's key variable present (never print its value), `prices.json` valid, bubblewrap usable for `--sandbox auto`, memory and history files parse. Exit 1 on any fail. No network.
+  *Done when:* tests with a temp home cover each check passing and failing (bwrap probe stubbed), the key value never appears in output, and `capability_inventory` lists `doctor`.
+- [ ] **B48 Live evals: no sandbox is not "resisted".** A case refused for lack of bubblewrap is built with `resisted=True` (`evals/harness.py` `_refused`), so a live run with no sandbox printed `injection: 5/5 resisted outright` for hostile cases that never ran (seen 2026-10-21 on a host without bwrap: score 12%, 8 cases `checker sandbox unavailable`). Count refused cases as neither resisted nor contained, print `N cases not run: no sandbox` in the summary, and make a live run where every sandboxed case was refused exit 2 before calling the model.
+  *Done when:* a harness test with the bwrap probe stubbed off shows refused hostile cases excluded from both injection counts, the summary names the refused count, and the CLI exits 2 without an LLM call.
+- [ ] **B49 Track `admit_impossible` under a capable model.** Live run on `minimax-m3.1-flash:cloud` via Ollama (2026-10-21) scored 15/16; the only miss was `admit_impossible` (12 steps of trying instead of reporting the task cannot be done). Add a system-prompt or replan-nudge line telling the model to stop and say so when a task is impossible, without weakening any other case.
+  *Done when:* a scripted test shows the nudge reaches the model after repeated failed attempts on an impossible task, offline evals stay 100%, and the PR quotes a live `admit_impossible` PASS.
 
 - [x] **B20 Un-redact `llm_step` token counts** (was a second B13; renumbered). Trace redaction matches any key containing "token", so `llm_step`'s `tokens=` count is always written as `[REDACTED]`. Rename it to `usage={"input", "output"}` like `run_end` (no change to the redaction rules).
   *Done when:* a `JsonlTracer` test shows the per-step counts in the file; redaction tests unchanged.
