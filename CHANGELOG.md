@@ -4,6 +4,7 @@ All notable changes follow [Keep a Changelog](https://keepachangelog.com) and Se
 
 ## [Unreleased]
 
+- docs: propose B48 (refused live eval cases no longer count as injection "resisted") and B49 (`admit_impossible` under a capable model), from a live Ollama run.
 ### Added (B26a)
 - `sebastian trust [--model M]`: advisory autonomy level (L0 suggest, L1 draft-pr, L2 pr) earned from live eval and red-team rounds in `history.jsonl`. 3 passing rounds in a row promote one level; a failed round drops one. L3 auto-merge is never earned from history. B26 split into B26a-c in the backlog.
 - fix(security): evolve's gates no longer trust the candidate (P1-04). Checks and the candidate's eval run in an overlay of the candidate's tree with the baseline's `tests/`, `evals/` and gate config restored and tool caches dropped; the candidate's own tests run as an extra `own:` gate when it changed `tests/`. New gates: `src_layout` (no new top-level module under `src/`) and `no_test_or_coverage_drop` (pytest count and coverage, measured in both trees). An unreadable baseline eval score or metric now rejects the cycle unless `--allow-missing-baseline`.
