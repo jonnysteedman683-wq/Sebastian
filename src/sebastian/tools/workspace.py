@@ -41,10 +41,10 @@ class Workspace:
         recorded (checkpoint rewind, the critic's diff): a directory replaced by a link must
         not redirect the write, even to somewhere that is still inside the jail.
         """
+        if not relative or Path(relative).is_absolute():
+            self.resolve(relative)  # raises: empty or absolute
         current = self.root
-        for part in Path(relative).parts:
-            if part in ("", ".", "/"):
-                continue
+        for part in Path(relative).parts:  # pathlib already drops "." parts
             current = current / part
             if current.is_symlink():
                 raise WorkspaceError(f"symlink in path: {relative}")

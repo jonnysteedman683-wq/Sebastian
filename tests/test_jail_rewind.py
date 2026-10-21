@@ -42,7 +42,7 @@ def test_resolve_strict_refuses_symlinks(tmp_path: Path) -> None:
     assert ws.resolve_strict("real/f") == tmp_path / "real" / "f"
     assert ws.resolve_strict("./real/f") == tmp_path / "real" / "f"
     assert ws.resolve_strict("real/missing") == tmp_path / "real" / "missing"
-    for bad in ("link/f", "flink", "../x", "real/../../x"):
+    for bad in ("link/f", "flink", "../x", "real/../../x", "/etc/passwd", ""):
         with pytest.raises(WorkspaceError):
             ws.resolve_strict(bad)
 
