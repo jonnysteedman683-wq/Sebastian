@@ -190,15 +190,16 @@ def render(s: Snapshot) -> str:
             _tile("Spend", f"${sum(r.cost for r in s.runs):,.2f}" if any(r.cost for r in s.runs)
                   else "n/a", "priced runs in the trace" if any(r.cost for r in s.runs)
                   else "add prices.json to track cost"),
-            _tile("Trust level", assessment.level.label, assessment.reason),
+            _tile("Trust level", assessment.level.label, _e(assessment.reason)),
         ]
     )  # fmt: skip
     plain_e, gaunt_e = _latest_model(evals), _latest_model(gauntlets)
     latest = plain_e or gaunt_e
 
     trust_pts = []
-    if latest:
-        for r in latest:
+    all_latest = sorted(plain_e + gaunt_e, key=lambda x: x.t)
+    if all_latest:
+        for r in all_latest:
             past_records = [rec for rec in s.records if rec.t <= r.t]
             level = assess(past_records).level
             trust_pts.append((r.t, level.value / 3.0))

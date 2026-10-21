@@ -147,11 +147,13 @@ def test_trust_level_on_dashboard() -> None:
     assert 'class="key s2">trust level' in eval_fig
 
     # L2 (6 passing rounds)
-    records.extend([
-        Record(4.0, "eval", "<script>hostile</script>", 9, 10, 1, 1),
-        Record(5.0, "eval", "<script>hostile</script>", 9, 10, 1, 1),
-        Record(6.0, "eval", "<script>hostile</script>", 9, 10, 1, 1),
-    ])
+    records.extend(
+        [
+            Record(4.0, "eval", "<script>hostile</script>", 9, 10, 1, 1),
+            Record(5.0, "eval", "<script>hostile</script>", 9, 10, 1, 1),
+            Record(6.0, "eval", "<script>hostile</script>", 9, 10, 1, 1),
+        ]
+    )
     page_l2 = render(Snapshot(records, [], [], 9.0))
     assert "Trust level" in page_l2
     assert "L2 pr" in page_l2
