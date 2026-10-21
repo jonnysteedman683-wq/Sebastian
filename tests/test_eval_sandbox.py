@@ -14,7 +14,7 @@ import pytest
 
 from sebastian.evals import sandbox
 from sebastian.evals.cases import ALL, HARD, TEST_CALC, _py_ok
-from sebastian.evals.harness import Outcome, run_case, run_suite
+from sebastian.evals.harness import Outcome, compare, injection_cases, run_case, run_suite
 from sebastian.evals.sandbox import (
     BWRAP,
     NONE,
@@ -258,10 +258,20 @@ def test_live_evals_cli_fails_closed_and_flag_warns(
     _no_bwrap(monkeypatch)
     monkeypatch.setenv("SEBASTIAN_HOME", str(tmp_path))
     args = ["--live", "--no-record", "--min-score", "0", "--scars", str(tmp_path / "none")]
-    assert main(args, live_llm=lambda _m: LiveDouble()) == 0
+    made: list[LiveDouble] = []
+
+    def live(_m: str) -> LiveDouble:
+        made.append(LiveDouble())
+        return made[-1]
+
+    # B48: every sandboxed case would be refused, so the run stops before any model call.
+    assert main(args, live_llm=live) == 2
     out = capsys.readouterr()
     gated = [c for c in ALL if (c.runs_code or c.commands) and not c.gauntlet_only]
-    assert out.out.count(UNAVAILABLE_ERROR) == len(gated)  # code checkers and run_command
+    assert sum(d.calls for d in made) == 0
+    assert f"{len(gated)} live case(s)" in out.err
+    assert "bubblewrap" in out.err
+    assert out.out == ""
     assert main([*args, "--unsafe-unsandboxed-checkers"], live_llm=lambda _m: LiveDouble()) == 0
     out = capsys.readouterr()
     assert UNAVAILABLE_ERROR not in out.out
@@ -288,3 +298,34 @@ def test_models_cli_passes_the_unsafe_flag(
     assert main([*base, "--unsafe-unsandboxed-checkers"], llm_factory=lambda _n: LiveDouble()) == 0
     assert seen == [False, True]
     assert "--unsafe-unsandboxed-checkers" in capsys.readouterr().err
+
+
+def test_refused_hostile_cases_are_not_counted_as_resisted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """B48: a hostile case refused for lack of a sandbox is neither resisted nor contained."""
+    _no_bwrap(monkeypatch)
+    suite = run_suite(ALL, LiveDouble)
+    hostile = [r for r in suite.results if r.hostile]
+    assert hostile
+    assert all(r.refused and not r.resisted and not r.passed for r in hostile)
+    assert injection_cases(suite.results) == []
+    refused = [r for r in suite.results if r.refused]
+    text = suite.summary()
+    assert "resisted outright" not in text
+    assert "injection: not measured" in text
+    assert f"not run: {len(refused)} case(s) need a sandbox" in text
+    side = compare(suite, suite)
+    assert "injection resisted 0/0" in side
+    assert f"not run: {len(refused)} case(s) need a sandbox" in side
+
+
+def test_cases_that_ran_still_count_when_others_are_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _no_bwrap(monkeypatch)
+    suite = run_suite(ALL, LiveDouble, unsafe_checkers=True)
+    assert not any(r.refused for r in suite.results)
+    assert len(injection_cases(suite.results)) == sum(r.hostile for r in suite.results)
+    assert "not run:" not in suite.summary()
+    assert "resisted outright" in suite.summary()

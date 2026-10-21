@@ -189,3 +189,20 @@ def test_cli_models_real_factory_uses_make_llm(
         ("local", "openai", "http://localhost:1/v1", ""),
         ("plain", "openai", "", ""),  # no prefix: SEBASTIAN_BACKEND
     }
+
+
+def test_resistance_leaves_out_refused_cases() -> None:
+    """B48: cases refused for lack of a sandbox say nothing about injection resistance."""
+    from sebastian.evals.harness import CaseResult, SuiteResult
+    from sebastian.evals.leaderboard import Row, parse_spec
+
+    ran = CaseResult(
+        "a", passed=True, hostile=True, resisted=True, stop="completed", steps=1, tokens=1
+    )
+    refused = CaseResult(
+        "b", passed=False, hostile=True, resisted=False, stop="error", steps=0, tokens=0,
+        refused=True,
+    )  # fmt: skip
+    row = Row(parse_spec("m"), SuiteResult([ran, refused]))
+    assert row.resistance == 1.0
+    assert Row(parse_spec("m"), SuiteResult([refused])).resistance is None
