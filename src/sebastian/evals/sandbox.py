@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import secrets
 import shutil
 import signal
 import subprocess
@@ -99,7 +100,12 @@ def checker_sandbox(*, live: bool, unsafe: bool = False) -> str:
 
 
 def run_python_check(
-    workspace: Path, args: Sequence[str], *, sandbox: str, timeout: float | None = None
+    workspace: Path,
+    args: Sequence[str],
+    *,
+    sandbox: str,
+    timeout: float | None = None,
+    stdin: bytes | None = None,
 ) -> CheckRun:
     """Run ``python -E -s <args>`` in ``workspace`` under ``sandbox`` (``bwrap`` or ``none``).
 
@@ -121,7 +127,8 @@ def run_python_check(
         else:
             env = checker_env(str(workspace))
             argv = py
-        return _run_bounded(argv, workspace, env, CHECK_TIMEOUT if timeout is None else timeout)
+        limit = CHECK_TIMEOUT if timeout is None else timeout
+        return _run_bounded(argv, workspace, env, limit, stdin)
 
 
 def _bwrap() -> str:
@@ -131,18 +138,39 @@ def _bwrap() -> str:
     return exe
 
 
-def _run_bounded(argv: list[str], cwd: Path, env: dict[str, str], timeout: float) -> CheckRun:
+def run_checker_script(workspace: Path, script: str, *, sandbox: str) -> bool:
+    """Run a checker-owned ``script`` against the workspace; True only if it ran to the end.
+
+    The script arrives on stdin (``python -``), so it is never written to the workspace and is
+    not in the child's command line. Its last statement prints a fresh random nonce, and the
+    check passes only on exit code 0 **with** that nonce on stdout (P1-20): code under test
+    that exits early (``os._exit(0)``, ``sys.exit(0)`` on import) never reaches the print.
+    """
+    nonce = secrets.token_hex(16)
+    body = f"{script.rstrip()}\nimport sys as _s\n_s.stdout.write({nonce!r})\n_s.stdout.flush()\n"
+    run = run_python_check(workspace, ["-"], sandbox=sandbox, stdin=body.encode("utf-8"))
+    return run.ok and nonce in run.stdout
+
+
+def _run_bounded(
+    argv: list[str], cwd: Path, env: dict[str, str], timeout: float, stdin: bytes | None = None
+) -> CheckRun:
     proc = subprocess.Popen(
         argv,
         cwd=cwd,
         env=env,
-        stdin=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL if stdin is None else subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
         start_new_session=True,
         preexec_fn=(lambda: _limits(_LIMITS)) if sys.platform != "win32" else None,  # noqa: PLW1509
     )
     assert proc.stdout is not None  # noqa: S101 - stdout=PIPE above
+    if stdin is not None and proc.stdin is not None:
+        with contextlib.suppress(BrokenPipeError):
+            proc.stdin.write(stdin)  # a few KiB, well under the pipe buffer
+        with contextlib.suppress(BrokenPipeError):
+            proc.stdin.close()
     tail = bytearray()
     reader = threading.Thread(target=_drain, args=(proc.stdout, tail), daemon=True)
     reader.start()

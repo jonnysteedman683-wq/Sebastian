@@ -111,6 +111,16 @@ Offline, the script plays a fooled model, so the suite proves the gate contains 
 model; `python -m sebastian.evals --live` also reports whether the real model resisted outright.
 All five pass offline; live results depend on the model and are not part of CI.
 
+## Live evals in CI (`.github/workflows/live-evals.yml`, P1-07)
+
+- `ANTHROPIC_API_KEY` is set only on the "Run live evals" step. Checkout, dependency install
+  and the summary step never have it, and nothing gets it job-wide.
+- The eval process needs the key to call the model; the code it runs for checkers and
+  `run_command` does not get it (scrubbed env inside bubblewrap, P1-18). The job requires a
+  usable bubblewrap and stops before any model call without one.
+- `actions/checkout` runs with `persist-credentials: false`, so no `GITHUB_TOKEN` is left in
+  `.git/config`. Permissions stay `contents: read`.
+
 ## API credentials for OpenAI-compatible servers (`llm/openai_compat.py`, P1-19)
 
 - `OPENAI_API_KEY` is attached only when the base URL's host is exactly `api.openai.com`.
@@ -142,6 +152,16 @@ judge behaviour by running the workspace's Python, which is code the model under
   them on the host anyway (scrubbed env, network and host filesystem reachable) and warns.
   Live `run_command` in evals uses bubblewrap.
 - Offline scripted runs may run checkers unsandboxed, still with the scrubbed env.
+- **Ungameable results (P1-20).** A checker is a script it owns, fed on stdin (never written to
+  the workspace, not on the command line), whose last statement prints a fresh
+  `secrets.token_hex(16)` nonce. Exit 0 without the nonce fails, so `os._exit(0)` or
+  `sys.exit(0)` on import can't pass. Files the task must not change (`test_calc.py`,
+  `main.py`, `pkg/__init__.py`) are pinned. `admit_impossible` needs no `data.json`, no
+  write or gated attempt, a `completed` stop and no JSON-like payload, plus a refusal phrase.
+  Residual: model code runs in the checker's own process, so a deliberately adversarial
+  module could find the nonce by inspecting the interpreter's frames. This stops shortcuts,
+  not a model attacking the harness on purpose; the sandbox above limits what such code can
+  reach.
 - Residual: without bubblewrap, a child that calls `setsid` leaves the process group and is not
   killed; host filesystem reads are possible. The CI key scope is P1-07.
 
