@@ -147,6 +147,13 @@ class OpenAICompatLLM:
         self._api_key = api_key if api_key is not None else resolve_api_key(self.base_url, key_env)
         self._transport = transport or _urllib_transport
 
+    def preflight(self) -> None:
+        """Raise ``LLMError`` when this client cannot work, before any tokens are spent (P2-12)."""
+        if (urlsplit(self.base_url).hostname or "").lower() == "api.openai.com" and not (
+            self._api_key
+        ):
+            raise LLMError(f"{API_KEY_ENV} is empty but {self.base_url} needs a key")
+
     def __repr__(self) -> str:  # never show the key
         return f"OpenAICompatLLM(model={self.model!r}, base_url={self.base_url!r})"
 

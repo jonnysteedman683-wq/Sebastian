@@ -9,6 +9,8 @@ Rules:
 
 ## Queue
 
+- [x] **P2-12 Leaderboard preflight and failure isolation** (upgrade spec addendum 2026-10-20). Preflight before any case; per-model error rows; incremental recording; Ctrl-C keeps finished models.
+  *Done when:* a bad URL in spec 3 of 3 stops before any case; a model that raises mid-run leaves models 1 and 3 ranked and recorded; an empty OpenAI key is a preflight error; Ctrl-C after model 1 records model 1.
 - [x] **P1-20 Ungameable B38 checks** (upgrade spec addendum 2026-10-20). Nonce-checked checker scripts, pinned files, behavioural `admit_impossible`.
   *Done when:* scripted models that `os._exit(0)`/`sys.exit(0)` on import, empty `main.py`, or refuse while inventing data all fail; correct scripts pass (16/16, 18/18); a do-nothing model fails every case; the nonce never reaches the workspace or prompt.
 - [x] 🔒 **P1-07 Scope the live-evals key** (upgrade spec; addendum 2026-10-20 pairs it with P1-18). Key on the eval step only; bubblewrap required; no persisted checkout credentials; `pipefail`.
