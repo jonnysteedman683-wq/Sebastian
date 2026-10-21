@@ -2,6 +2,11 @@ name: Live evals
 
 # Runs the eval suite (capability + prompt-injection) against the real model.
 # Needs the ANTHROPIC_API_KEY repository secret; without it the job is skipped.
+#
+# Key scope (P1-07): the secret is exposed only to the one step that calls the model, never to
+# checkout, install or the summary, and never job-wide. Model-written code that the eval
+# checkers run gets a scrubbed env inside bubblewrap (P1-18), so it never sees the key either;
+# the job fails before any model call if bubblewrap is unusable here.
 
 on:
   workflow_dispatch:
@@ -22,13 +27,13 @@ permissions:
 jobs:
   live:
     runs-on: ubuntu-latest
-    env:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - name: Check secret
         id: key
+        env:
+          KEY_SET: ${{ secrets.ANTHROPIC_API_KEY != '' }}
         run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
+          if [ "$KEY_SET" != "true" ]; then
             echo "ANTHROPIC_API_KEY not set; skipping live evals." >> "$GITHUB_STEP_SUMMARY"
             echo "present=false" >> "$GITHUB_OUTPUT"
           else
@@ -36,20 +41,44 @@ jobs:
           fi
       - uses: actions/checkout@v7
         if: steps.key.outputs.present == 'true'
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v7
         if: steps.key.outputs.present == 'true'
         with:
           python-version: "3.13"
       - name: Install
         if: steps.key.outputs.present == 'true'
-        run: python -m pip install -e ".[anthropic]"
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q bubblewrap
+          python -m pip install -e ".[anthropic]"
+      - name: Require the checker sandbox
+        if: steps.key.outputs.present == 'true'
+        run: |
+          # Ubuntu 24.04 runners block unprivileged user namespaces through AppArmor, which
+          # bubblewrap needs. This VM is thrown away after the job.
+          if [ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+            sudo sysctl -q -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          if ! bwrap --unshare-all --ro-bind / / -- /bin/true; then
+            echo "::error title=No sandbox::bubblewrap is unusable on this runner; live evals refuse to run model code without it (P1-18)."
+            exit 1
+          fi
       - name: Run live evals
         if: steps.key.outputs.present == 'true'
         env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           MODEL: ${{ inputs.model }}
           MIN_SCORE: ${{ inputs.min_score || '0.8' }}
         run: |
+          set -o pipefail  # without it, tee hides a below --min-score exit
           args=(--live --min-score "$MIN_SCORE")
           if [ -n "$MODEL" ]; then args+=(--model "$MODEL"); fi
           python -m sebastian.evals "${args[@]}" | tee evals.txt
-          { echo '```'; cat evals.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: Summary
+        if: always() && steps.key.outputs.present == 'true'
+        run: |
+          if [ -f evals.txt ]; then
+            { echo '```'; cat evals.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
