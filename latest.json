@@ -1,5 +1,5 @@
 {
-  "summary": "7 commit(s): fix(models): P2-14 leaderboard history, dashboard and identity hygiene; Merge branch 'claude/p2-15-missing-usage' into claude/p2-14-leaderboard-history; Merge claude/p2-15-missing-usage into claude/p2-14-leaderboard-history; Merge claude/p2-15-missing-usage into claude/p2-14-leaderboard-history; Merge claude/p2-15-missing-usage into claude/p2-14-leaderboard-history; Merge branch 'main' into claude/p2-14-leaderboard-history; Merge pull request #53 from jonnysteedman683-wq/claude/p2-14-leaderboard-history",
+  "summary": "7 commit(s): feat(models): P3-12 leaderboard repeats, spread, latency, cost and stops; Merge branch 'claude/p2-14-leaderboard-history' into claude/p3-12-leaderboard-metrics; Merge claude/p2-14-leaderboard-history into claude/p3-12-leaderboard-metrics; Merge claude/p2-14-leaderboard-history into claude/p3-12-leaderboard-metrics; Merge claude/p2-14-leaderboard-history into claude/p3-12-leaderboard-metrics; Merge branch 'main' into claude/p3-12-leaderboard-metrics; Merge pull request #54 from jonnysteedman683-wq/claude/p3-12-leaderboard-metrics",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
@@ -8,7 +8,7 @@
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "cd5d0a16df20ad381c2a03144c4595472527cf36",
+          "sha": "54700d02163d87871eb8a5b76b66d3f4c9ad787a",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 53,
+  "seq": 54,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "fb1751c795dc87b934f54c24499db286e4cea24b",
-    "to_sha": "cd5d0a16df20ad381c2a03144c4595472527cf36"
+    "from_sha": "cd5d0a16df20ad381c2a03144c4595472527cf36",
+    "to_sha": "54700d02163d87871eb8a5b76b66d3f4c9ad787a"
   },
-  "generated_at": "2026-10-21T00:51:35Z",
+  "generated_at": "2026-10-21T00:52:29Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -78,5 +78,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "57451ff415e9f8759b01f015af20502d2100955c77e37e1b7b3a5484a5d96816"
+  "signature": "ccff470e67fde7122d6a1251f966b058b96c32a6108f9ae812e2f9581e72f46c"
 }

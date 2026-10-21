@@ -1,0 +1,82 @@
+{
+  "summary": "7 commit(s): feat(models): P3-12 leaderboard repeats, spread, latency, cost and stops; Merge branch 'claude/p2-14-leaderboard-history' into claude/p3-12-leaderboard-metrics; Merge claude/p2-14-leaderboard-history into claude/p3-12-leaderboard-metrics; Merge claude/p2-14-leaderboard-history into claude/p3-12-leaderboard-metrics; Merge claude/p2-14-leaderboard-history into claude/p3-12-leaderboard-metrics; Merge branch 'main' into claude/p3-12-leaderboard-metrics; Merge pull request #54 from jonnysteedman683-wq/claude/p3-12-leaderboard-metrics",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "8 file(s) changed",
+      "description": "Detected automatically from code: 8 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "54700d02163d87871eb8a5b76b66d3f4c9ad787a",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 54,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "cd5d0a16df20ad381c2a03144c4595472527cf36",
+    "to_sha": "54700d02163d87871eb8a5b76b66d3f4c9ad787a"
+  },
+  "generated_at": "2026-10-21T00:52:29Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "ccff470e67fde7122d6a1251f966b058b96c32a6108f9ae812e2f9581e72f46c"
+}
