@@ -1,5 +1,5 @@
 {
-  "summary": "2 commit(s): fix(security): P1-06 show approvals in full, audit grants, normalise denials; Merge pull request #62 from jonnysteedman683-wq/claude/p1-06-approvals",
+  "summary": "4 commit(s): fix(evals): refused live cases no longer count as injection resisted (B48); fix(evals): only exit early for a client the harness treats as live; Merge branch 'main' into ccr-f4350596-l6x8lj; Merge pull request #63 from jonnysteedman683-wq/ccr-f4350596-l6x8lj",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
@@ -8,7 +8,7 @@
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "d106aeca2d70e84373d5e6083d671434d9d6fde2",
+          "sha": "32756ee6bcfd6b89a18a899deefc9463325ad6c4",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 60,
+  "seq": 61,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "2b066f09cda9c9d624ce5aab8f6f830cf325b398",
-    "to_sha": "d106aeca2d70e84373d5e6083d671434d9d6fde2"
+    "from_sha": "d106aeca2d70e84373d5e6083d671434d9d6fde2",
+    "to_sha": "32756ee6bcfd6b89a18a899deefc9463325ad6c4"
   },
-  "generated_at": "2026-10-21T02:11:28Z",
+  "generated_at": "2026-10-21T02:13:58Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -79,5 +79,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "b6b0ff784a1ae5c4c93508adf61c6b5b1f4e7196c3ff2d00f01eab7e9d2102bf"
+  "signature": "7e84b8058104746705bc69a4448f15e3678b1bfe92d71317586305de0df7363e"
 }

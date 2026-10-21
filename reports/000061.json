@@ -1,0 +1,83 @@
+{
+  "summary": "4 commit(s): fix(evals): refused live cases no longer count as injection resisted (B48); fix(evals): only exit early for a client the harness treats as live; Merge branch 'main' into ccr-f4350596-l6x8lj; Merge pull request #63 from jonnysteedman683-wq/ccr-f4350596-l6x8lj",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "10 file(s) changed",
+      "description": "Detected automatically from code: 10 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "32756ee6bcfd6b89a18a899deefc9463325ad6c4",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 61,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "d106aeca2d70e84373d5e6083d671434d9d6fde2",
+    "to_sha": "32756ee6bcfd6b89a18a899deefc9463325ad6c4"
+  },
+  "generated_at": "2026-10-21T02:13:58Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "7e84b8058104746705bc69a4448f15e3678b1bfe92d71317586305de0df7363e"
+}
