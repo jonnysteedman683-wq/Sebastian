@@ -9,6 +9,8 @@ Rules:
 
 ## Queue
 
+- [x] **P3-12 Leaderboard metrics** (upgrade spec addendum 2026-10-20). `--repeats N` with mean and range plus overlap ties; cost, median s/case and completed/budget/error columns.
+  *Done when:* a flaky scripted model with `--repeats 3` shows its range and the tie logic works; an error-heavy model shows its error count; rendering stays fixed-width and is tested.
 - [x] **P2-14 Leaderboard history, dashboard and identity hygiene** (upgrade spec addendum 2026-10-20). Own history kinds + run id; dashboard leaderboard table; host:port in labels; duplicate check on (backend, model, base_url).
   *Done when:* after a 3-model leaderboard the Eval tile still shows the last `evals --live`; two localhost ports rank together with distinct labels; old history loads.
 - [x] **P2-15 Don't let missing usage win the leaderboard** (upgrade spec addendum 2026-10-20). `usage_reported` per case; `?` in the tokens column; ranks last on the token tie-break.

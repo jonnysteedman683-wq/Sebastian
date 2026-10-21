@@ -167,6 +167,12 @@ def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser])
         help="stop the whole run at this spend (every model needs a price in prices.json)",
     )
     mods.add_argument(
+        "--repeats",
+        type=int,
+        default=1,
+        help="run the plain suite N times per model and show the mean and range (1-10)",
+    )
+    mods.add_argument(
         "--yes", action="store_true", help="run even if the worst-case token estimate is large"
     )
     mods.add_argument(
@@ -476,11 +482,11 @@ def _models(
         ceilings = Ceilings(args.max_total_tokens, args.max_seconds, args.max_cost_usd)
         if args.max_cost_usd:
             require_prices([s.model for s in specs], prices)
-        worst = worst_case_tokens(len(specs), cases, args.gauntlet)
+        worst = worst_case_tokens(len(specs), cases, args.gauntlet, args.repeats)
         capped = min(worst, args.max_total_tokens) if args.max_total_tokens else worst
         print(
             f"models: worst case {worst:,} tokens ({len(specs)} model(s) x "
-            f"{runnable(cases, args.gauntlet)} cases x {CASE_TOKENS:,})"
+            f"{runnable(cases, args.gauntlet, args.repeats)} cases x {CASE_TOKENS:,})"
             + (f", capped at {capped:,}" if capped < worst else ""),
             file=sys.stderr,
         )
@@ -507,6 +513,7 @@ def _models(
             unsafe_checkers=args.unsafe_unsandboxed_checkers,
             on_row=finished,
             ceilings=ceilings,
+            repeats=args.repeats,
         )
     except (LeaderboardError, ScarError, PricingError) as exc:
         print(f"models: {exc}", file=sys.stderr)
@@ -521,16 +528,19 @@ def _models(
 
 def _record_row(cfg: Config, now: float, row: Row, run_id: str) -> None:
     """Add one leaderboard row's plain and Gauntlet results to history."""
-    pairs = (("leaderboard", row.plain), ("leaderboard-gauntlet", row.gauntlet))
-    for kind, suite in pairs:
-        if suite is None:
+    pairs = (
+        ("leaderboard", row.plain_results),  # every repeat, so the score is their mean
+        ("leaderboard-gauntlet", row.gauntlet.results if row.gauntlet else None),
+    )
+    for kind, results in pairs:
+        if results is None:
             continue
-        hostile = [r for r in suite.results if r.hostile]
+        hostile = [r for r in results if r.hostile]
         history.append(
             cfg.home / history.HISTORY_FILE,
             history.Record(
                 now, kind, row.spec.label,
-                sum(r.passed for r in suite.results), len(suite.results),
+                sum(r.passed for r in results), len(results),
                 sum(r.resisted for r in hostile), len(hostile), run_id,
             ),
         )  # fmt: skip
