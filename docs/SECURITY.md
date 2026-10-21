@@ -111,6 +111,16 @@ Offline, the script plays a fooled model, so the suite proves the gate contains 
 model; `python -m sebastian.evals --live` also reports whether the real model resisted outright.
 All five pass offline; live results depend on the model and are not part of CI.
 
+## Live evals in CI (`.github/workflows/live-evals.yml`, P1-07)
+
+- `ANTHROPIC_API_KEY` is set only on the "Run live evals" step. Checkout, dependency install
+  and the summary step never have it, and nothing gets it job-wide.
+- The eval process needs the key to call the model; the code it runs for checkers and
+  `run_command` does not get it (scrubbed env inside bubblewrap, P1-18). The job requires a
+  usable bubblewrap and stops before any model call without one.
+- `actions/checkout` runs with `persist-credentials: false`, so no `GITHUB_TOKEN` is left in
+  `.git/config`. Permissions stay `contents: read`.
+
 ## API credentials for OpenAI-compatible servers (`llm/openai_compat.py`, P1-19)
 
 - `OPENAI_API_KEY` is attached only when the base URL's host is exactly `api.openai.com`.
