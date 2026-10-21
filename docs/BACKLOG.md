@@ -152,6 +152,9 @@ Rules:
 - [x] 🔒 **P1-05 Lock down `.git` and host git** (upgrade spec 2026-10-19). File tools can't touch `.git`; evolve's git never runs hooks/fsmonitor or system config; a rewritten `.git` pointer aborts the cycle; `.gitattributes`/`.gitmodules` are denied.
   *Done when:* `.git`, `a/.git/config`, `./.git` are rejected; `_git` passes the hardening flags and `GIT_CONFIG_NOSYSTEM=1`; repo hooks and fsmonitor never fire during a cycle; a tampered pointer aborts before any git runs.
 
+- [x] 🔒 **P1-06 Approvals in full, audited grants, normalised denials** (upgrade spec 2026-10-19).
+  *Done when:* commands show one argv per line and writes a diff, nothing is truncated (too large is refused); `approval_granted` carries tool, approver and args SHA-256; denials key on normalised argv/path and stop the run after `max_denials`; one shared `parse_command()`.
+
 <!-- Agents add new items here: "- [ ] **Bn title.** what. *Done when:* check." -->
 
 - [ ] **B45 Trust level on the dashboard.** `sebastian dashboard` shows a tile with the B26a level (`trust.assess` over the same `history.jsonl` records), its reason, and the level after each round on the score chart's timeline. Values HTML-escaped like the rest of the page.

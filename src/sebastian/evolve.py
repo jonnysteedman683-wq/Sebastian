@@ -45,12 +45,19 @@ from sebastian.tools import (
     CommandPolicy,
     Permission,
     Tool,
+    ToolError,
     ToolRegistry,
     Workspace,
     command_tool,
     file_tools,
 )
-from sebastian.tools.builtin import SANDBOX_WORKDIR, bwrap_argv, bwrap_usable, python_roots
+from sebastian.tools.builtin import (
+    SANDBOX_WORKDIR,
+    bwrap_argv,
+    bwrap_usable,
+    parse_command,
+    python_roots,
+)
 from sebastian.trace import NullTracer, Tracer
 from sebastian.types import StopReason, ToolCall
 
@@ -202,8 +209,10 @@ class ScopedApprover:
                 and Path(rel).name not in GIT_CONFIG_FILES
             )
         elif tool.permission is Permission.EXEC:
-            cmd = call.arguments.get("command")
-            words = cmd.split() if isinstance(cmd, str) else []
+            try:  # P1-06: the same parser run_command uses, so approval matches execution
+                words = parse_command(call.arguments.get("command"))
+            except ToolError:
+                words = []
             ok = bool(words) and words[0] in self.commands
         if not ok:
             self.denied.append(f"{tool.name} {call.arguments}"[:200])
