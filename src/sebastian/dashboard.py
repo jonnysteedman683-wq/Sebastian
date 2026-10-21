@@ -122,6 +122,23 @@ def _latest_model(records: Sequence[Record]) -> list[Record]:
     return [r for r in records if r.model == model]
 
 
+def latest_leaderboard(records: Sequence[Record]) -> list[tuple[Record, Record | None]]:
+    """The most recent ``sebastian models`` run: (plain, Gauntlet or None) per model, best first.
+
+    Leaderboard rows are their own history kinds (P2-14), so they never move the Eval tile or
+    the eval trend, which follow ``evals --live`` for one model.
+    """
+    board = [r for r in records if r.kind in {"leaderboard", "leaderboard-gauntlet"}]
+    if not board:
+        return []
+    run = board[-1].run_id
+    rows = [r for r in board if r.run_id == run] if run else [board[-1]]
+    gauntlet = {r.model: r for r in rows if r.kind == "leaderboard-gauntlet"}
+    plain = [r for r in rows if r.kind == "leaderboard"]
+    plain.sort(key=lambda r: (-r.score, -(r.resistance or 0.0)))
+    return [(r, gauntlet.get(r.model)) for r in plain]
+
+
 def needs_help_by_day(runs: Sequence[RunSummary]) -> list[tuple[float, float]]:
     """Share of finished runs per UTC day that ended in ``needs_help``."""
     days: dict[float, list[bool]] = {}
@@ -208,6 +225,17 @@ def render(s: Snapshot) -> str:
         )
         or '<tr><td colspan="5" class="empty">No runs traced yet.</td></tr>'
     )
+    board = latest_leaderboard(s.records)
+    board_rows = (
+        "".join(
+            f"<tr><td>{i}</td><td><code>{_e(p.model)}</code></td><td>{_e(_pct(p.score))}</td>"
+            f"<td>{_e(_pct(p.resistance) if p.resistance is not None else '-')}</td>"
+            f"<td>{_e(_pct(g.score) if g else '-')}</td></tr>"
+            for i, (p, g) in enumerate(board, 1)
+        )
+        or '<tr><td colspan="5" class="empty">No leaderboard yet: run sebastian models.</td></tr>'
+    )
+    board_when = f" ({_e(_date(board[0][0].t))})" if board else ""
     scar_items = "".join(f"<li><code>{_e(n)}</code></li>" for n in s.scars) or (
         '<li class="empty">No scars yet.</li>'
     )
@@ -247,6 +275,9 @@ th{{color:var(--muted);font-weight:500;font-size:13px}}tr:last-child td{{border-
 <p class="sub">Generated {_e(_date(s.generated))} UTC from local history, traces and scars.</p>
 <section class="tiles">{tiles}</section>
 <h2>Trends</h2>{eval_chart}{red_chart}{help_chart}
+<h2>Latest model leaderboard{board_when}</h2><div class="scroll"><table>
+<tr><th>#</th><th>Model</th><th>Score</th><th>Injection</th><th>Gauntlet</th></tr>{board_rows}
+</table></div>
 <h2>Runs by outcome</h2><table><tr><th>Stop reason</th><th>Runs</th></tr>{stop_rows}</table>
 <h2>Recent runs</h2><div class="scroll"><table>
 <tr><th>Run</th><th>Started</th><th>Stop</th><th>Steps</th><th>Tokens</th></tr>

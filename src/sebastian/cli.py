@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import secrets
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from sebastian import __version__, history
 from sebastian.agent import Sebastian
@@ -34,6 +36,9 @@ from sebastian.tools import (
 from sebastian.tools.builtin import python_roots, resolve_command_sandbox
 from sebastian.trace import JsonlTracer, summarize_runs
 from sebastian.types import LLMResponse, RunResult, StopReason, ToolCall
+
+if TYPE_CHECKING:
+    from sebastian.evals.leaderboard import Row
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -150,6 +155,32 @@ def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser])
     mods.add_argument("--gauntlet", action="store_true", help="also run under the Gauntlet")
     mods.add_argument("--scars", type=Path, default=Path("evals/scars"), help="scar directory")
     mods.add_argument("--no-record", action="store_true", help="don't add results to history")
+    mods.add_argument(
+        "--preflight-ping",
+        action="store_true",
+        help="before running, send each model one tiny request (costs a few tokens)",
+    )
+    mods.add_argument(
+        "--max-total-tokens", type=int, default=0, help="stop the whole run at this many tokens"
+    )
+    mods.add_argument(
+        "--max-seconds", type=float, default=0.0, help="stop the whole run after this long"
+    )
+    mods.add_argument(
+        "--max-cost-usd",
+        type=float,
+        default=0.0,
+        help="stop the whole run at this spend (every model needs a price in prices.json)",
+    )
+    mods.add_argument(
+        "--repeats",
+        type=int,
+        default=1,
+        help="run the plain suite N times per model and show the mean and range (1-10)",
+    )
+    mods.add_argument(
+        "--yes", action="store_true", help="run even if the worst-case token estimate is large"
+    )
     mods.add_argument(
         "--unsafe-unsandboxed-checkers",
         action="store_true",
@@ -410,12 +441,19 @@ def _models(
     prices: Mapping[str, Price],
 ) -> int:
     from sebastian.evals.cases import ALL  # noqa: PLC0415
+    from sebastian.evals.harness import CASE_TOKENS  # noqa: PLC0415
     from sebastian.evals.leaderboard import (  # noqa: PLC0415
+        CONFIRM_TOKENS,
+        Ceilings,
         LeaderboardError,
         ModelSpec,
         parse_spec,
+        preflight,
+        rank,
         render,
         run_leaderboard,
+        runnable,
+        worst_case_tokens,
     )
     from sebastian.evals.sandbox import UNSAFE_WARNING  # noqa: PLC0415
     from sebastian.evals.scar import ScarError, load_scars  # noqa: PLC0415
@@ -432,9 +470,46 @@ def _models(
             )
         return priced(llm, spec.model, prices)
 
+    done: list[Row] = []
+    now = time.time()
+    run_id = f"lb-{int(now)}-{secrets.token_hex(3)}"
+
+    def finished(row: Row) -> None:  # print and record each model as soon as it is done
+        done.append(row)
+        status = f"error: {row.error}" if row.error else f"score {row.score:.0%}"
+        if row.partial:
+            status += f" (partial: {row.stopped}; not recorded)"
+        print(f"models: [{len(done)}/{len(specs)}] {row.spec.label}: {status}", file=sys.stderr)
+        if not args.no_record and not row.error and not row.partial:
+            _record_row(cfg, now, row, run_id)
+
     try:
         specs = [parse_spec(s) for s in args.specs]
         cases = [*ALL, *load_scars(args.scars)]
+        ceilings = Ceilings(args.max_total_tokens, args.max_seconds, args.max_cost_usd)
+        if args.max_cost_usd:
+            require_prices([s.model for s in specs], prices)
+        worst = worst_case_tokens(len(specs), cases, args.gauntlet, args.repeats)
+        capped = min(worst, args.max_total_tokens) if args.max_total_tokens else worst
+        print(
+            f"models: worst case {worst:,} tokens ({len(specs)} model(s) x "
+            f"{runnable(cases, args.gauntlet, args.repeats)} cases x {CASE_TOKENS:,})"
+            + (f", capped at {capped:,}" if capped < worst else ""),
+            file=sys.stderr,
+        )
+        if capped > CONFIRM_TOKENS and not args.yes:
+            print(
+                f"models: that is over {CONFIRM_TOKENS:,} tokens; pass --yes to run it, "
+                "or cap it with --max-total-tokens",
+                file=sys.stderr,
+            )
+            return 2
+        problems = preflight(specs, factory, ping=args.preflight_ping)
+        if problems:
+            print("models: preflight failed; nothing was run:", file=sys.stderr)
+            for line in problems:
+                print(f"  {line}", file=sys.stderr)
+            return 2
         if args.unsafe_unsandboxed_checkers:
             print(UNSAFE_WARNING, file=sys.stderr)
         rows = run_leaderboard(
@@ -443,27 +518,39 @@ def _models(
             cases,
             gauntlet=args.gauntlet,
             unsafe_checkers=args.unsafe_unsandboxed_checkers,
+            on_row=finished,
+            ceilings=ceilings,
+            repeats=args.repeats,
         )
-    except (LeaderboardError, ScarError) as exc:
+    except (LeaderboardError, ScarError, PricingError) as exc:
         print(f"models: {exc}", file=sys.stderr)
         return 2
+    except KeyboardInterrupt:
+        print(render(rank(done)))
+        print(f"models: interrupted after {len(done)}/{len(specs)} model(s)", file=sys.stderr)
+        return 130
     print(render(rows))
-    if not args.no_record:
-        now = time.time()
-        for row in rows:
-            for kind, suite in (("eval", row.plain), ("gauntlet", row.gauntlet)):
-                if suite is None:
-                    continue
-                hostile = [r for r in suite.results if r.hostile]
-                history.append(
-                    cfg.home / history.HISTORY_FILE,
-                    history.Record(
-                        now, kind, row.spec.label,
-                        sum(r.passed for r in suite.results), len(suite.results),
-                        sum(r.resisted for r in hostile), len(hostile),
-                    ),
-                )  # fmt: skip
     return 0
+
+
+def _record_row(cfg: Config, now: float, row: Row, run_id: str) -> None:
+    """Add one leaderboard row's plain and Gauntlet results to history."""
+    pairs = (
+        ("leaderboard", row.plain_results),  # every repeat, so the score is their mean
+        ("leaderboard-gauntlet", row.gauntlet.results if row.gauntlet else None),
+    )
+    for kind, results in pairs:
+        if results is None:
+            continue
+        hostile = [r for r in results if r.hostile]
+        history.append(
+            cfg.home / history.HISTORY_FILE,
+            history.Record(
+                now, kind, row.spec.label,
+                sum(r.passed for r in results), len(results),
+                sum(r.resisted for r in hostile), len(hostile), run_id,
+            ),
+        )  # fmt: skip
 
 
 def _start(agent: Sebastian, args: argparse.Namespace) -> int:

@@ -39,7 +39,7 @@ flowchart TD
 | Run timeline | `timeline.py` (`sebastian show <run_id>`, B42): one run's trace as escaped HTML or text |
 | Cost (B40) | `pricing.py` (user `prices.json`, `PricedLLM` fills `Usage.cost`), `Budget.max_cost` / `--max-cost` |
 | Eval checker sandbox | `evals/sandbox.py` (P1-18): `run_python_check` runs checker code with an allowlisted env, bubblewrap when usable, process-group kill and bounded output; `checker_sandbox` fails closed for live models |
-| Model leaderboard | `evals/leaderboard.py` (`sebastian models SPEC...`, B39): same suite per model, ranked by score, injection resistance, critic containment, tokens |
+| Model leaderboard | `evals/leaderboard.py` (`sebastian models SPEC...`, B39): same suite per model, ranked by score, injection resistance, critic containment, tokens; preflight before any case, crashing models become error rows, rows recorded as each model finishes (P2-12); whole-run ceilings (P2-13); `--repeats`, cost, latency and stop breakdown (P3-12) |
 | Dashboard | `history.py` (score history), `dashboard.py` (`sebastian dashboard`, static HTML) |
 | Red team | `evals/redteam.py` (`sebastian redteam`): canary-goal injection attacks, breaches saved as scars; `--target critic` (B35): tampered changes against the Gauntlet reviewer, replayed as `target: critic` scars |
 | Scar tissue | `evals/scar.py`, `evals/scars/*.json`: failed runs as live-only eval cases (`sebastian scar`) |

@@ -141,7 +141,7 @@ def test_cli_models(
 ) -> None:
     monkeypatch.setenv("SEBASTIAN_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(sys, "stdin", io.StringIO(""))
-    good = solver(PLAIN)
+    good = solver([PLAIN[0], *PLAIN])  # the first client is the preflight check's (P2-12)
     makers = {"good-model": good, "bad-model": failing}
     args = ["models", "bad-model", "good-model", "--scars", str(tmp_path / "none")]
     assert main(args, llm_factory=lambda name: makers[name]()) == 0
@@ -150,7 +150,8 @@ def test_cli_models(
     assert out[3].split()[:2] == ["2", "bad-model"]
     records = history.load(tmp_path / "home" / history.HISTORY_FILE)
     assert sorted(r.model for r in records) == ["bad-model", "good-model"]
-    assert {r.kind for r in records} == {"eval"}
+    assert {r.kind for r in records} == {"leaderboard"}  # P2-14: never "eval"
+    assert len({r.run_id for r in records}) == 1
 
 
 def test_cli_models_errors(
@@ -180,7 +181,7 @@ def test_cli_models_real_factory_uses_make_llm(
 
     monkeypatch.setattr(cli, "make_llm", fake)
     args = ["models", "anthropic:claude-x", "openai:local@http://localhost:1/v1", "plain",
-            "--no-record", "--scars", str(tmp_path / "none")]  # fmt: skip
+            "--no-record", "--yes", "--scars", str(tmp_path / "none")]  # fmt: skip
     assert cli.main(args) == 0
     capsys.readouterr()
     assert set(seen) == {

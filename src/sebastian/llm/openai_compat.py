@@ -147,6 +147,13 @@ class OpenAICompatLLM:
         self._api_key = api_key if api_key is not None else resolve_api_key(self.base_url, key_env)
         self._transport = transport or _urllib_transport
 
+    def preflight(self) -> None:
+        """Raise ``LLMError`` when this client cannot work, before any tokens are spent (P2-12)."""
+        if (urlsplit(self.base_url).hostname or "").lower() == "api.openai.com" and not (
+            self._api_key
+        ):
+            raise LLMError(f"{API_KEY_ENV} is empty but {self.base_url} needs a key")
+
     def __repr__(self) -> str:  # never show the key
         return f"OpenAICompatLLM(model={self.model!r}, base_url={self.base_url!r})"
 
@@ -253,7 +260,20 @@ def parse_response(body: bytes) -> LLMResponse:
     return LLMResponse(
         text=text if isinstance(text, str) else "",
         tool_calls=tuple(calls),
-        usage=Usage(_count(usage, "prompt_tokens"), _count(usage, "completion_tokens")),
+        usage=Usage(
+            _count(usage, "prompt_tokens"),
+            _count(usage, "completion_tokens"),
+            unreported=0 if _reported(usage) else 1,
+        ),
+    )
+
+
+def _reported(usage: Any) -> bool:
+    """True when the server gave valid prompt and completion token counts (P2-15)."""
+    if not isinstance(usage, dict):
+        return False
+    return all(
+        type(usage.get(k)) is int and usage[k] >= 0 for k in ("prompt_tokens", "completion_tokens")
     )
 
 

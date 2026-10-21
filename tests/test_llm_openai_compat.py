@@ -135,7 +135,7 @@ def test_tool_calls_are_parsed() -> None:
         ToolCall("a", "read_file", {"path": "x"}),
         ToolCall("call_1", "list_dir", {"path": "."}),  # missing id, dict arguments
     )
-    assert resp.usage == Usage(0, 0)  # server reported no usage
+    assert resp.usage == Usage(0, 0, unreported=1)  # server reported no usage (P2-15)
 
 
 @pytest.mark.parametrize(
@@ -195,7 +195,7 @@ def test_odd_usage_and_content_types_are_tolerated() -> None:
             }
         ).encode()
     )
-    assert (resp.text, resp.usage) == ("", Usage(0, 0))
+    assert (resp.text, resp.usage) == ("", Usage(0, 0, unreported=1))
     assert parse_response(json.dumps({"choices": [{"message": {}}], "usage": []}).encode()).usage
 
 

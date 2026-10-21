@@ -9,6 +9,20 @@ Rules:
 
 ## Queue
 
+- [x] **P3-12 Leaderboard metrics** (upgrade spec addendum 2026-10-20). `--repeats N` with mean and range plus overlap ties; cost, median s/case and completed/budget/error columns.
+  *Done when:* a flaky scripted model with `--repeats 3` shows its range and the tie logic works; an error-heavy model shows its error count; rendering stays fixed-width and is tested.
+- [x] **P2-14 Leaderboard history, dashboard and identity hygiene** (upgrade spec addendum 2026-10-20). Own history kinds + run id; dashboard leaderboard table; host:port in labels; duplicate check on (backend, model, base_url).
+  *Done when:* after a 3-model leaderboard the Eval tile still shows the last `evals --live`; two localhost ports rank together with distinct labels; old history loads.
+- [x] **P2-15 Don't let missing usage win the leaderboard** (upgrade spec addendum 2026-10-20). `usage_reported` per case; `?` in the tokens column; ranks last on the token tie-break.
+  *Done when:* two equal-score scripted models, one reporting usage and one not: the honest one ranks first and the other shows `?`.
+- [x] **P2-13 Real clock and whole-run ceilings for live evals and the leaderboard** (upgrade spec addendum 2026-10-20). SystemClock for live cases plus a per-case time limit; worst-case estimate with `--yes` over 5M tokens; `--max-total-tokens`, `--max-seconds`, `--max-cost-usd`.
+  *Done when:* a fake slow live model ends as `budget` (time); scripted runs unchanged; `--max-total-tokens 1000` stops after the crossing model with a `partial` row; an over-threshold estimate without `--yes` exits 2 before any call.
+- [x] **P2-12 Leaderboard preflight and failure isolation** (upgrade spec addendum 2026-10-20). Preflight before any case; per-model error rows; incremental recording; Ctrl-C keeps finished models.
+  *Done when:* a bad URL in spec 3 of 3 stops before any case; a model that raises mid-run leaves models 1 and 3 ranked and recorded; an empty OpenAI key is a preflight error; Ctrl-C after model 1 records model 1.
+- [x] **P1-20 Ungameable B38 checks** (upgrade spec addendum 2026-10-20). Nonce-checked checker scripts, pinned files, behavioural `admit_impossible`.
+  *Done when:* scripted models that `os._exit(0)`/`sys.exit(0)` on import, empty `main.py`, or refuse while inventing data all fail; correct scripts pass (16/16, 18/18); a do-nothing model fails every case; the nonce never reaches the workspace or prompt.
+- [x] 🔒 **P1-07 Scope the live-evals key** (upgrade spec; addendum 2026-10-20 pairs it with P1-18). Key on the eval step only; bubblewrap required; no persisted checkout credentials; `pipefail`.
+  *Done when:* `live-evals.yml` has no job-level `env`, the key appears only in the eval step, and the job fails before any model call without a usable bubblewrap.
 - [x] **P1-19 Per-endpoint API credentials** (upgrade spec addendum 2026-10-20; with P1-17's no-redirect bullet). `OPENAI_API_KEY` only to `api.openai.com`; other hosts need `#ENV_NAME` / `SEBASTIAN_API_KEY_ENV`; credential variables refused; redirects refused.
   *Done when:* a recording transport shows the OpenAI key only on `api.openai.com`, none on a third-party or localhost host unless named, and `#ANTHROPIC_API_KEY` is a `LeaderboardError`.
 - [x] **P1-18 Sandbox and scrub the eval checkers** (upgrade spec addendum 2026-10-20). Checkers that run model-written code use an allowlisted env, bubblewrap when usable, process-group kill and bounded output; live runs refuse them without bubblewrap unless `--unsafe-unsandboxed-checkers`.

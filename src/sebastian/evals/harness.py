@@ -23,7 +23,7 @@ from sebastian.agent import Sebastian
 from sebastian.approval import AllowApprover, ApprovalGate, DenyApprover
 from sebastian.budget import Budget
 from sebastian.checkpoint import Checkpoints
-from sebastian.clock import FakeClock, SeededIdSource
+from sebastian.clock import Clock, FakeClock, SeededIdSource, SystemClock
 from sebastian.evals.sandbox import (
     BWRAP,
     UNAVAILABLE,
@@ -48,6 +48,8 @@ from sebastian.types import LLMResponse, RunResult
 
 PLAIN, GAUNTLET = "plain", "gauntlet"
 GAUNTLET_EXTRA_STEPS = 10  # plan, predict, critic and loops need room; same for every case
+CASE_TOKENS = 150_000  # per-case token cap, the same for every model
+CASE_SECONDS = 300.0  # per-case wall-clock cap; only a live run's real clock ever reaches it
 DEFAULT_PLANNER: tuple[Step, ...] = (
     LLMResponse("1. Do the task.\n2. Check the result."),
     LLMResponse("<checks>\nfile: result.txt\n</checks>"),
@@ -132,6 +134,9 @@ class CaseResult:
     targets_critic: bool = False
     critic_calls: int = 0
     critic_passes: int = 0  # critic verdicts of PASS; for critic attacks every PASS is a breach
+    cost: float = 0.0  # USD, when the model is priced (B40)
+    usage_reported: bool = True  # False if any model call came back without token counts (P2-15)
+    seconds: float = 0.0  # wall time of the run by the case's clock (0 for scripted runs)
 
 
 @dataclass(slots=True)
@@ -140,6 +145,7 @@ class SuiteResult:
 
     results: list[CaseResult] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)  # live-only cases in an offline run
+    partial: bool = False  # stopped early by a whole-run limit (P2-13)
 
     @property
     def score(self) -> float:
@@ -196,6 +202,7 @@ def run_case(
     budget: Budget | None = None,
     gauntlet: GauntletPolicy | None = None,
     unsafe_checkers: bool = False,
+    clock: Clock | None = None,
 ) -> CaseResult:
     """Run one case. ``llm=None`` replays the case's offline script.
 
@@ -205,8 +212,12 @@ def run_case(
     A live model (anything but ``ScriptedLLM``) gets ``run_command`` and code-running checkers
     only inside bubblewrap. Without it those cases fail closed with ``UNAVAILABLE_ERROR``,
     before any model call, unless ``unsafe_checkers`` accepts unsandboxed host processes.
+
+    Live runs use the real clock, so ``CASE_SECONDS`` applies; scripted runs use ``FakeClock``
+    and stay deterministic (P2-13). ``clock`` overrides either.
     """
     live = llm is not None and not isinstance(llm, ScriptedLLM)
+    clock = clock or (SystemClock() if live else FakeClock())
     sandbox = checker_sandbox(live=live, unsafe=unsafe_checkers)
     if sandbox == UNAVAILABLE and (case.runs_code or case.commands):
         return _refused(case, gauntlet)
@@ -239,16 +250,19 @@ def run_case(
             llm=actor or ScriptedLLM(case.script),
             tools=registry,
             gate=ApprovalGate(AllowApprover() if case.allow_gated else DenyApprover()),
-            budget=budget or Budget(max_steps=15 + extra, max_tokens=150_000),
+            budget=budget
+            or Budget(max_steps=15 + extra, max_tokens=CASE_TOKENS, max_seconds=CASE_SECONDS),
             tracer=tracer,
-            clock=FakeClock(),
+            clock=clock,
             ids=SeededIdSource(0),
             checkpoints=checkpoints,
             gauntlet=gauntlet,
             planner_llm=planner,
         )
         before = snapshot(root)
+        started = clock.monotonic()
         result = agent.run(case.task)
+        seconds = clock.monotonic() - started
         outcome = Outcome(root, result, tracer.events, before, gated, sandbox)
         verdicts = [bool(e["passed"]) for e in outcome.events if e["event"] == "gauntlet_critique"]
         try:
@@ -271,6 +285,9 @@ def run_case(
             targets_critic=case.targets_critic,
             critic_calls=len(verdicts),
             critic_passes=sum(verdicts),
+            cost=result.usage.cost,
+            usage_reported=result.usage.unreported == 0,
+            seconds=seconds,
         )
 
 
@@ -302,11 +319,13 @@ def run_suite(
     llm_factory: Callable[[], LLM] | None = None,
     gauntlet: GauntletPolicy | None = None,
     unsafe_checkers: bool = False,
+    stop_when: Callable[[CaseResult], bool] | None = None,
 ) -> SuiteResult:
     """Run every case; ``llm_factory`` gives each live case a fresh model client.
 
     Plain runs leave out ``gauntlet_only`` cases (they have no critic to test).
     ``unsafe_checkers`` lets live cases run model code without bubblewrap (see ``run_case``).
+    ``stop_when`` sees each result; when it returns True the suite stops and is ``partial``.
     """
     suite = SuiteResult()
     for case in cases:
@@ -316,9 +335,11 @@ def run_suite(
             suite.skipped.append(case.name)
             continue
         llm = llm_factory() if llm_factory else None
-        suite.results.append(
-            run_case(case, llm, gauntlet=gauntlet, unsafe_checkers=unsafe_checkers)
-        )
+        result = run_case(case, llm, gauntlet=gauntlet, unsafe_checkers=unsafe_checkers)
+        suite.results.append(result)
+        if stop_when is not None and stop_when(result):
+            suite.partial = True
+            break
     return suite
 
 

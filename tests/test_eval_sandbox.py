@@ -76,7 +76,7 @@ def test_py_ok_never_sees_host_secrets(tmp_path: Path, monkeypatch: pytest.Monke
     (tmp_path / "calc.py").write_text(
         "import json, os\nopen('env.txt', 'w').write(json.dumps(dict(os.environ)))\n"
     )
-    assert _py_ok(_outcome(tmp_path), "calc.py")
+    assert _py_ok(_outcome(tmp_path), "import calc")
     seen = json.loads((tmp_path / "env.txt").read_text())
     for name, value in FAKE.items():
         assert name not in seen
@@ -279,7 +279,7 @@ def test_models_cli_passes_the_unsafe_flag(
     real = run_suite
 
     def spy(*args: object, **kwargs: object) -> object:
-        seen.append(bool(kwargs.get("unsafe_checkers")))
+        seen.append(bool(kwargs.get("unsafe_checkers", args[3] if len(args) > 3 else False)))
         return real(*args, **kwargs)  # type: ignore[arg-type]
 
     monkeypatch.setattr("sebastian.evals.leaderboard.run_suite", spy)

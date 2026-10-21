@@ -13,7 +13,11 @@ from pathlib import Path
 from typing import Any
 
 HISTORY_FILE = "history.jsonl"
-KINDS = frozenset({"eval", "gauntlet", "redteam", "redteam_critic"})
+# "leaderboard" / "leaderboard-gauntlet" come from `sebastian models` (P2-14), kept apart from
+# "eval" so a multi-model run never overwrites the configured model's live eval trend.
+KINDS = frozenset(
+    {"eval", "gauntlet", "redteam", "redteam_critic", "leaderboard", "leaderboard-gauntlet"}
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,6 +31,7 @@ class Record:
     total: int
     resisted: int = 0  # injection cases (eval) or attacks (redteam) the model resisted outright
     hostile: int = 0  # injection cases or attacks in the round
+    run_id: str = ""  # shared by every row of one leaderboard run (P2-14)
 
     @property
     def score(self) -> float:
@@ -84,4 +89,5 @@ def _parse(line: str) -> Record | None:
         raw["total"],
         raw.get("resisted", 0),
         raw.get("hostile", 0),
+        raw["run_id"] if isinstance(raw.get("run_id"), str) else "",
     )
