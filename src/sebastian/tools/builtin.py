@@ -229,6 +229,23 @@ def _limits(policy: CommandPolicy) -> None:  # pragma: no cover - runs in the ch
     resource.setrlimit(resource.RLIMIT_AS, (policy.max_memory_bytes, policy.max_memory_bytes))
 
 
+def parse_command(command: object) -> list[str]:
+    """Split a ``run_command`` string into argv (shlex, no shell).
+
+    The single parser for running, approving and keying commands (P1-06), so what a human
+    approves is exactly what runs. Raises ``ToolError`` if it is not a non-empty string.
+    """
+    if not isinstance(command, str):
+        raise ToolError("command must be a string")
+    try:
+        argv = shlex.split(command)
+    except ValueError as exc:
+        raise ToolError(f"unparseable command: {exc}") from exc
+    if not argv:
+        raise ToolError("empty command")
+    return argv
+
+
 def command_tool(ws: Workspace, policy: CommandPolicy) -> Tool:
     """The EXEC-level ``run_command`` tool, limited by ``policy``."""
     if not policy.allowed:
@@ -236,12 +253,7 @@ def command_tool(ws: Workspace, policy: CommandPolicy) -> Tool:
 
     def run_command(command: str) -> str:
         """Run an allowlisted command (no shell) in the workspace. Returns exit code and output."""
-        try:
-            argv = shlex.split(command)
-        except ValueError as exc:
-            raise ToolError(f"unparseable command: {exc}") from exc
-        if not argv:
-            raise ToolError("empty command")
+        argv = parse_command(command)
         exe = os.path.basename(argv[0])
         if exe != argv[0] or exe not in policy.allowed:
             raise ToolError(f"command not allowed: {argv[0]!r}; allowed: {sorted(policy.allowed)}")

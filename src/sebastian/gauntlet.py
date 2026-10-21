@@ -304,6 +304,8 @@ def verify(
             tr.emit(run_id, "approval_denied", tool=tool.name, args=call.arguments, stage="verify")
             results.append(CheckResult(command, False, "denied by approval gate", denied=True))
             continue
+        if gate.gated(tool):
+            tr.emit(run_id, "approval_granted", stage="verify", **gate.audit(call))
         try:
             out = tool.invoke(call.arguments)
         except ToolError as exc:

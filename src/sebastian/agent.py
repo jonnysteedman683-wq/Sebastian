@@ -9,6 +9,7 @@ ends as ``needs_help``.
 from __future__ import annotations
 
 import json
+import posixpath
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field, replace
 
@@ -36,6 +37,7 @@ from sebastian.memory import Episode, MemoryStore
 from sebastian.prompts import PLAN_INSTRUCTION, REPLAN_NUDGE, SYSTEM_PROMPT, build_system_prompt
 from sebastian.session import Session, SessionError, SessionStore
 from sebastian.tools.base import Permission, Tool, ToolError, ToolRegistry
+from sebastian.tools.builtin import parse_command
 from sebastian.tools.workspace import WorkspaceError
 from sebastian.trace import NullTracer, Tracer
 from sebastian.types import (
@@ -122,6 +124,27 @@ def _call_key(call: ToolCall) -> str:
     return call.name + "\x00" + json.dumps(call.arguments, sort_keys=True, default=str)
 
 
+def _denial_key(call: ToolCall) -> str:
+    """What a denial blocks (P1-06): the tool plus its normalised argv or path, so re-spacing
+    a command or re-spelling a path (``a/../b``, ``./b``) doesn't get a second ask."""
+    args = call.arguments
+    target: object = args
+    if call.name == "run_command":
+        try:
+            target = parse_command(args.get("command"))
+        except ToolError:
+            target = args.get("command")
+    elif isinstance(args.get("path"), str):
+        target = posixpath.normpath(args["path"].replace("\\", "/"))
+    return "deny:" + call.name + "\x00" + json.dumps(target, sort_keys=True, default=str)
+
+
+class _Failures(set[str]):
+    """Keys of calls that failed this run, plus how many calls approval denied."""
+
+    denials: int = 0
+
+
 @dataclass
 class Sebastian:
     """The agent: runs one task to completion inside its budget, approval gate and tools."""
@@ -145,6 +168,7 @@ class Sebastian:
     sessions: SessionStore | None = None  # saves each step's conversation, enables ``resume``
     workspace: str = ""  # recorded in sessions so a resume targets the same directory
     gauntlet: GauntletPolicy | None = None  # B11: prove "done" with checks and a critic
+    max_denials: int = 5  # P1-06: stop the run after this many approval denials; 0 = no limit
     run_info: dict[str, str] = field(default_factory=dict)  # e.g. sandbox; added to run_start
 
     def run(self, task: str) -> RunResult:
@@ -211,7 +235,7 @@ class Sebastian:
     ) -> RunResult:
         """The think -> act -> observe loop shared by ``run`` and ``resume``."""
         run_id, system, messages = session.run_id, session.system, session.messages
-        failed: set[str] = set()
+        failed = _Failures()
         tool_list = list(self.tools)
         error_streak = 0
         escalate = False
@@ -257,13 +281,11 @@ class Sebastian:
                 cap_result(r, self.context.max_result_chars)
                 for r in self._execute_all(run_id, resp.tool_calls, failed)
             )
-            error_streak = error_streak + len(results) if all(r.is_error for r in results) else 0
-            nudge = ""
-            if self.replan_after_errors and error_streak >= self.replan_after_errors:
-                nudge = REPLAN_NUDGE.format(n=error_streak)
-                self.tracer.emit(run_id, "replan_nudge", errors=error_streak)
-                error_streak = 0
-                escalate = True
+            result = self._denial_stop(run_id, failed, governor)
+            if result is not None:
+                messages.append(Message(Role.USER, tool_results=results))
+                break
+            error_streak, nudge, escalate = self._replan_nudge(run_id, error_streak, results)
             messages.append(Message(Role.USER, text=nudge, tool_results=results))
             self._save(session, messages, None)
 
@@ -488,7 +510,7 @@ class Sebastian:
             self.tracer.emit(run_id, "budget_warning", limit=limit, used=used, max=maximum)
 
     def _execute_all(
-        self, run_id: str, calls: tuple[ToolCall, ...], failed: set[str]
+        self, run_id: str, calls: tuple[ToolCall, ...], failed: _Failures
     ) -> tuple[ToolResult, ...]:
         """Run one turn's tool calls; results keep call order.
 
@@ -525,25 +547,51 @@ class Sebastian:
                 results.append(ToolResult(calls[i].id, output))
         return tuple(results)
 
-    def _fail(self, run_id: str, call: ToolCall, failed: set[str], msg: str) -> ToolResult:
+    def _replan_nudge(
+        self, run_id: str, streak: int, results: tuple[ToolResult, ...]
+    ) -> tuple[int, str, bool]:
+        """Update the all-errors streak; past ``replan_after_errors`` nudge and escalate."""
+        streak = streak + len(results) if all(r.is_error for r in results) else 0
+        if self.replan_after_errors and streak >= self.replan_after_errors:
+            self.tracer.emit(run_id, "replan_nudge", errors=streak)
+            return 0, REPLAN_NUDGE.format(n=streak), True
+        return streak, "", False
+
+    def _denial_stop(self, run_id: str, failed: _Failures, governor: Governor) -> RunResult | None:
+        """P1-06: end the run once approval has said no ``max_denials`` times."""
+        if not self.max_denials or failed.denials < self.max_denials:
+            return None
+        detail = f"stopped after {failed.denials} approval denials"
+        return self._finish(run_id, StopReason.ERROR, "", governor, detail)
+
+    def _fail(self, run_id: str, call: ToolCall, failed: _Failures, msg: str) -> ToolResult:
         failed.add(_call_key(call))
         self.tracer.emit(run_id, "tool_error", tool=call.name, error=msg)
         return ToolResult(call.id, f"ERROR: {msg}", is_error=True)
 
-    def _prepare(self, run_id: str, call: ToolCall, failed: set[str]) -> Tool | ToolResult:
+    def _prepare(self, run_id: str, call: ToolCall, failed: _Failures) -> Tool | ToolResult:
         """Return the tool to run, or the error result that replaces running it."""
         tool = self.tools.get(call.name)
         if tool is None:
             return self._fail(run_id, call, failed, f"unknown tool {call.name!r}")
+        if _denial_key(call) in failed:
+            failed.denials += 1
+            return self._fail(
+                run_id, call, failed, "this action was already denied; do not retry it"
+            )
         if _call_key(call) in failed:
             return self._fail(
                 run_id, call, failed, "identical call already failed this run; change approach"
             )
         if not self.gate.check(tool, call):
             self.tracer.emit(run_id, "approval_denied", tool=call.name, args=call.arguments)
+            failed.add(_denial_key(call))
+            failed.denials += 1
             return self._fail(
                 run_id, call, failed, "denied by approval gate; do not retry this action"
             )
+        if self.gate.gated(tool):
+            self.tracer.emit(run_id, "approval_granted", **self.gate.audit(call))
         return tool
 
     def _finish(

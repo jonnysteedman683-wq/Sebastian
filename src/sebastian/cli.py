@@ -625,7 +625,7 @@ def _run_agent(
     if args.unattended or not sys.stdin.isatty():
         approver = DenyApprover()
     else:
-        approver = InteractiveApprover()
+        approver = InteractiveApprover(root=ws.root)
 
     model = args.model or cfg.model
     llm = make(model)
