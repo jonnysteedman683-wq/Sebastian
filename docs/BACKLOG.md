@@ -9,6 +9,8 @@ Rules:
 
 ## Queue
 
+- [x] **P2-15 Don't let missing usage win the leaderboard** (upgrade spec addendum 2026-10-20). `usage_reported` per case; `?` in the tokens column; ranks last on the token tie-break.
+  *Done when:* two equal-score scripted models, one reporting usage and one not: the honest one ranks first and the other shows `?`.
 - [x] **P2-13 Real clock and whole-run ceilings for live evals and the leaderboard** (upgrade spec addendum 2026-10-20). SystemClock for live cases plus a per-case time limit; worst-case estimate with `--yes` over 5M tokens; `--max-total-tokens`, `--max-seconds`, `--max-cost-usd`.
   *Done when:* a fake slow live model ends as `budget` (time); scripted runs unchanged; `--max-total-tokens 1000` stops after the crossing model with a `partial` row; an over-threshold estimate without `--yes` exits 2 before any call.
 - [x] **P2-12 Leaderboard preflight and failure isolation** (upgrade spec addendum 2026-10-20). Preflight before any case; per-model error rows; incremental recording; Ctrl-C keeps finished models.

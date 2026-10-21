@@ -260,7 +260,20 @@ def parse_response(body: bytes) -> LLMResponse:
     return LLMResponse(
         text=text if isinstance(text, str) else "",
         tool_calls=tuple(calls),
-        usage=Usage(_count(usage, "prompt_tokens"), _count(usage, "completion_tokens")),
+        usage=Usage(
+            _count(usage, "prompt_tokens"),
+            _count(usage, "completion_tokens"),
+            unreported=0 if _reported(usage) else 1,
+        ),
+    )
+
+
+def _reported(usage: Any) -> bool:
+    """True when the server gave valid prompt and completion token counts (P2-15)."""
+    if not isinstance(usage, dict):
+        return False
+    return all(
+        type(usage.get(k)) is int and usage[k] >= 0 for k in ("prompt_tokens", "completion_tokens")
     )
 
 
