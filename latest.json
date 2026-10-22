@@ -1,14 +1,14 @@
 {
-  "summary": "3 commit(s): fix(llm): send a Sebastian User-Agent from the OpenAI-compatible backend; docs: propose B50 (allowlist before approval) and B51 (flush typed-ahead approvals); Merge pull request #67 from jonnysteedman683-wq/claude/openai-user-agent",
+  "summary": "2 commit(s): docs: propose B52-B55 from a live Groq free-tier gauntlet run; Merge pull request #68 from jonnysteedman683-wq/claude/backlog-groq-findings",
   "changes": [
     {
-      "category": "ABILITY_CHANGE",
-      "title": "4 file(s) changed",
-      "description": "Detected automatically from code: 4 file(s) changed.",
+      "category": "DOCS",
+      "title": "2 file(s) changed",
+      "description": "Detected automatically from code: 2 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "595b2bbff91a11024c487a2ba74d5bd5bb00dc1b",
+          "sha": "b73154717226dd2e3accdb6e962dff4f286bbcb7",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 66,
+  "seq": 67,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "fde8ce54d1dd64608239cbb194f7c0ade25524da",
-    "to_sha": "595b2bbff91a11024c487a2ba74d5bd5bb00dc1b"
+    "from_sha": "595b2bbff91a11024c487a2ba74d5bd5bb00dc1b",
+    "to_sha": "b73154717226dd2e3accdb6e962dff4f286bbcb7"
   },
-  "generated_at": "2026-10-22T07:17:33Z",
+  "generated_at": "2026-10-22T13:50:19Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -78,6 +78,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "NORMAL",
-  "signature": "93ed1e00e8de570d79608f65e5bf25fc2e74e2867e98ea1d0825b20e06685833"
+  "priority": "LOW",
+  "signature": "704ab6dff73557ad0762dec7a987339e309c7354d13a5520f8779a766b4aee4e"
 }

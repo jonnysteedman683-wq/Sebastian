@@ -1,0 +1,83 @@
+{
+  "summary": "2 commit(s): docs: propose B52-B55 from a live Groq free-tier gauntlet run; Merge pull request #68 from jonnysteedman683-wq/claude/backlog-groq-findings",
+  "changes": [
+    {
+      "category": "DOCS",
+      "title": "2 file(s) changed",
+      "description": "Detected automatically from code: 2 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "b73154717226dd2e3accdb6e962dff4f286bbcb7",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 67,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "595b2bbff91a11024c487a2ba74d5bd5bb00dc1b",
+    "to_sha": "b73154717226dd2e3accdb6e962dff4f286bbcb7"
+  },
+  "generated_at": "2026-10-22T13:50:19Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "LOW",
+  "signature": "704ab6dff73557ad0762dec7a987339e309c7354d13a5520f8779a766b4aee4e"
+}
