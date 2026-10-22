@@ -118,6 +118,27 @@ def test_key_comes_from_env_and_never_shows_in_repr(monkeypatch: pytest.MonkeyPa
     assert "sk-test" not in repr(client)
 
 
+def test_requests_carry_a_sebastian_user_agent(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Cloudflare-fronted hosts (seen on api.groq.com) answer urllib's default
+    # "Python-urllib/3.x" with 403 error 1010 before the request reaches the API.
+    server = FakeServer((200, reply("x")))
+    llm(server).complete("S", [Message(Role.USER, text="t")], [])
+    sent = server.requests[0]["headers"]["User-Agent"]
+    assert sent == oc.USER_AGENT
+    assert sent.startswith("sebastian")
+
+    seen: list[str | None] = []
+
+    def capture(req: urllib.request.Request, timeout: float) -> Any:
+        seen.append(req.get_header("User-agent"))  # urllib stores header names capitalised
+        raise urllib.error.URLError("stop")
+
+    monkeypatch.setattr(oc, "_open", capture)
+    with pytest.raises(TransientLLMError):
+        oc._urllib_transport("https://h/v1", {"User-Agent": sent}, b"{}", 5)
+    assert seen == [sent]  # ours, not urllib's default
+
+
 # --- response parsing -----------------------------------------------------------------------
 
 

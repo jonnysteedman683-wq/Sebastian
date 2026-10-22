@@ -3,6 +3,8 @@
 All notable changes follow [Keep a Changelog](https://keepachangelog.com) and SemVer.
 
 ## [Unreleased]
+- fix(llm): the OpenAI-compatible backend sends `User-Agent: sebastian (+repo URL)` instead of urllib's default `Python-urllib/3.x`, which Cloudflare-fronted hosts reject with 403 error 1010 before the API sees the request (seen on api.groq.com, 2026-10-22).
+- docs: propose B50 (check the command allowlist before asking for approval) and B51 (discard typed-ahead input before an approval prompt), from a live Groq gauntlet run.
 - feat(dashboard): Trust level on the dashboard (B45). `sebastian dashboard` now shows a tile with the B26a level (`trust.assess`), its reason, and the level after each round plotted as a third series on the live eval score chart.
 - fix(security): jail checkpoint rewind and the critic diff (P1-09). New `Workspace.resolve_strict` refuses any symlink in a path. `Checkpoints.rewind` validates every path first and raises `CheckpointError` instead of writing or deleting through a directory a command swapped for a link; `workspace_diff` reports such files as skipped instead of reading them into the critic prompt.
 - fix(security): redact secrets in sessions and widen the redactor (P1-08). `trace.redact`/`redact_text` now also catch `sk-ant-`, `gho_`/`ghs_`/`ghu_`/`ghr_`, `github_pat_`, AWS `AKIA`, Slack `xox*-`, JWTs, PEM private keys, `.env`-style `*_KEY=`/`*_TOKEN=` assignments and high-entropy tokens (UUIDs, git SHAs and URL paths are kept). Saved sessions are redacted on save by default and resume still works; `--keep-raw-sessions` opts out. The CLI creates `$SEBASTIAN_HOME` as `0700` (tightening a looser one).
