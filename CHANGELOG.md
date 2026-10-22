@@ -3,6 +3,7 @@
 All notable changes follow [Keep a Changelog](https://keepachangelog.com) and SemVer.
 
 ## [Unreleased]
+- docs: propose B52 (honour the provider's 429 retry delay), B53 (configurable `max_tokens`, fail fast on "request too large"), B54 (survive gpt-oss tool calls on tool-free requests) and B55 (re-ask a malformed critic once), from a live Groq free-tier gauntlet run.
 - fix(llm): the OpenAI-compatible backend sends `User-Agent: sebastian (+repo URL)` instead of urllib's default `Python-urllib/3.x`, which Cloudflare-fronted hosts reject with 403 error 1010 before the API sees the request (seen on api.groq.com, 2026-10-22).
 - docs: propose B50 (check the command allowlist before asking for approval) and B51 (discard typed-ahead input before an approval prompt), from a live Groq gauntlet run.
 - feat(dashboard): Trust level on the dashboard (B45). `sebastian dashboard` now shows a tile with the B26a level (`trust.assess`), its reason, and the level after each round plotted as a third series on the live eval score chart.
