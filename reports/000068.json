@@ -1,0 +1,86 @@
+{
+  "summary": "2 commit(s): feat(memory): sebastian memory list and forget (B46); Merge pull request #69 from jonnysteedman683-wq/ccr-f52e73f0-pdedjx",
+  "changes": [
+    {
+      "category": "NEW_FEATURE",
+      "title": "New CLI command memory",
+      "description": "Detected automatically from code: New CLI command memory.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "2d014a0f2805cee1b8a2dffb97e0f0b5d30c71d1",
+          "path": "src/sebastian/cli.py"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 68,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "b73154717226dd2e3accdb6e962dff4f286bbcb7",
+    "to_sha": "2d014a0f2805cee1b8a2dffb97e0f0b5d30c71d1"
+  },
+  "generated_at": "2026-10-22T15:05:47Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "memory",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [
+      "cli: memory"
+    ],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "b2353ab1d0818d1d138a7fa2ed87d7d8cb30c29f3b0fbd64ddcca95302a16c3c"
+}
