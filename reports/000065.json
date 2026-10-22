@@ -1,0 +1,83 @@
+{
+  "summary": "3 commit(s): feat(dashboard): show trust level tile and timeline (B45); feat(dashboard): show trust level tile and timeline (B45); Merge pull request #66 from jonnysteedman683-wq/sebastian/daily-b45-trust-level-dashboard-15780023124457597379",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "4 file(s) changed",
+      "description": "Detected automatically from code: 4 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "fde8ce54d1dd64608239cbb194f7c0ade25524da",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 65,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "984e55057a97377ed6ca588cfa3075e9c26c50b1",
+    "to_sha": "fde8ce54d1dd64608239cbb194f7c0ade25524da"
+  },
+  "generated_at": "2026-10-22T02:18:41Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "3c8f24aec1a221957569fcc953230e61b38a69e674d32fda7f71559d30d54c64"
+}
