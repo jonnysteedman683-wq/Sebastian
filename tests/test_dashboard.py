@@ -119,6 +119,46 @@ def test_multi_line_chart_draws_each_series_with_a_legend() -> None:
     assert same_time.count('cx="320.0"') == 2  # a single instant is centred
 
 
+def test_trust_level_on_dashboard() -> None:
+    from sebastian.history import Record
+
+    # L0 (no rounds)
+    page_l0 = render(Snapshot([], [], [], 9.0))
+    assert "Trust level" in page_l0
+    assert "L0 suggest" in page_l0
+
+    # L1 (3 passing rounds)
+    records = [
+        Record(1.0, "eval", "<script>hostile</script>", 9, 10, 1, 1),
+        Record(2.0, "eval", "<script>hostile</script>", 9, 10, 1, 1),
+        Record(3.0, "eval", "<script>hostile</script>", 9, 10, 1, 1),
+    ]
+    page_l1 = render(Snapshot(records, [], [], 9.0))
+
+    # Assert the tile is present and hostile model is escaped
+    assert "Trust level" in page_l1
+    assert "L1 draft-pr" in page_l1
+    assert "<script>" not in page_l1
+    assert "&lt;script&gt;" in page_l1
+
+    # Assert trust level series is on the chart
+    title = "Live eval score (&lt;script&gt;hostile&lt;/script&gt;)"
+    eval_fig = page_l1.split(title)[1].split("</figure>")[0]
+    assert 'class="key s2">trust level' in eval_fig
+
+    # L2 (6 passing rounds)
+    records.extend(
+        [
+            Record(4.0, "eval", "<script>hostile</script>", 9, 10, 1, 1),
+            Record(5.0, "eval", "<script>hostile</script>", 9, 10, 1, 1),
+            Record(6.0, "eval", "<script>hostile</script>", 9, 10, 1, 1),
+        ]
+    )
+    page_l2 = render(Snapshot(records, [], [], 9.0))
+    assert "Trust level" in page_l2
+    assert "L2 pr" in page_l2
+
+
 def test_gauntlet_and_critic_tiles_and_charts() -> None:
     records = [
         rec(1.0, "eval", 6, 10),
@@ -144,7 +184,7 @@ def test_trend_lines_follow_the_latest_model_only() -> None:
     page = render(Snapshot(records, [], [], 9.0))
     assert "Live eval score (a)" in page
     eval_fig = page.split("Live eval score (a)")[1].split("</figure>")[0]
-    assert eval_fig.count("<circle") == 2  # model b's point is left out
+    assert eval_fig.count("<circle") == 4  # 2 for eval, 2 for trust level
 
 
 def test_needs_help_by_day() -> None:

@@ -17,6 +17,7 @@ from pathlib import Path
 
 from sebastian.history import Record
 from sebastian.trace import RunSummary
+from sebastian.trust import assess
 
 CHART_W, CHART_H, PAD = 640, 180, 28
 RECENT_RUNS = 15
@@ -167,6 +168,7 @@ def render(s: Snapshot) -> str:
     done = [r for r in s.runs if r.stop != "running"]
     completed = stops.get("completed", 0)
     red_scars = [n for n in s.scars if n.startswith("redteam-")]
+    assessment = assess(s.records)
     tiles = "".join(
         [
             _tile("Eval score", _pct(evals[-1].score) if evals else "n/a",
@@ -188,15 +190,26 @@ def render(s: Snapshot) -> str:
             _tile("Spend", f"${sum(r.cost for r in s.runs):,.2f}" if any(r.cost for r in s.runs)
                   else "n/a", "priced runs in the trace" if any(r.cost for r in s.runs)
                   else "add prices.json to track cost"),
+            _tile("Trust level", assessment.level.label, _e(assessment.reason)),
         ]
     )  # fmt: skip
     plain_e, gaunt_e = _latest_model(evals), _latest_model(gauntlets)
     latest = plain_e or gaunt_e
+
+    trust_pts = []
+    all_latest = sorted(plain_e + gaunt_e, key=lambda x: x.t)
+    if all_latest:
+        for r in all_latest:
+            past_records = [rec for rec in s.records if rec.t <= r.t]
+            level = assess(past_records).level
+            trust_pts.append((r.t, level.value / 3.0))
+
     eval_chart = multi_line_chart(
         "Live eval score" + (f" ({latest[-1].model})" if latest else ""),
         [
             ("plain", [(r.t, r.score) for r in plain_e]),
             ("Gauntlet", [(r.t, r.score) for r in gaunt_e]),
+            ("trust level", trust_pts),
         ],
         "Eval score over time, plain and under the Gauntlet",
     )
