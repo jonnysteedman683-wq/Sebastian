@@ -41,6 +41,7 @@
       "demo",
       "traces",
       "trust",
+      "memory",
       "undo",
       "scar",
       "evolve",
@@ -64,5 +65,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "ae4fadd822fd54c3c7717f49300037cc7e45646a700c7e008cea9fa310aa317c"
+  "signature": "dcfbab98bb34b2a9a72a10fb4a3adc5727deb1115b1c5662093c8c65fd4848d4"
 }
