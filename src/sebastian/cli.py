@@ -23,7 +23,7 @@ from sebastian.gauntlet import GauntletPolicy
 from sebastian.llm import make_llm
 from sebastian.llm.base import LLM
 from sebastian.llm.scripted import ScriptedLLM
-from sebastian.memory import MemoryStore
+from sebastian.memory import MemoryCorruptError, MemoryStore
 from sebastian.pricing import Price, PricingError, load_prices, priced, require_prices
 from sebastian.session import SessionError, SessionStore
 from sebastian.tools import (
@@ -147,6 +147,12 @@ def _add_report_parsers(sub: argparse._SubParsersAction[argparse.ArgumentParser]
     dash.add_argument("--scars", type=Path, default=Path("evals/scars"), help="scar directory")
     trust = sub.add_parser("trust", help="the autonomy level the live eval record has earned")
     trust.add_argument("--model", help="only count rounds for this model")
+    mem = sub.add_parser("memory", help="list or forget remembered episodes")
+    mem.add_argument("action", choices=["list", "forget"])
+    mem.add_argument("task", nargs="?", help="forget: the task to delete")
+    mem.add_argument("-q", "--query", help="list: rank by relevance to this text")
+    mem.add_argument("-n", "--limit", type=_positive_int, default=20, help="list: episodes to show")
+    mem.add_argument("--yes", action="store_true", help="forget: don't ask for confirmation")
 
 
 def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -453,6 +459,38 @@ def _trust(cfg: Config, args: argparse.Namespace) -> int:
     return 0
 
 
+def _memory(cfg: Config, args: argparse.Namespace) -> int:
+    try:
+        store = MemoryStore(cfg.home / "memory.json")
+    except MemoryCorruptError as exc:
+        print(f"sebastian: {exc}", file=sys.stderr)
+        return 2
+    if args.action == "list":
+        eps = store.recall(args.query, args.limit) if args.query else store.episodes()[: args.limit]
+        if not eps:
+            print("(no episodes)")
+        for e in eps:
+            when = datetime.fromtimestamp(e.timestamp, UTC).isoformat(timespec="seconds")
+            print(f"{when}  {e.outcome}  {e.task}")
+        return 0
+    if not args.task:
+        print("sebastian: memory forget needs a task", file=sys.stderr)
+        return 2
+    if not args.yes:
+        try:
+            answer = input(f"forget {args.task!r}? [y/N] ")
+        except EOFError:
+            answer = ""
+        if answer.strip().lower() not in {"y", "yes"}:
+            print("not forgotten", file=sys.stderr)
+            return 1
+    if not store.forget(args.task):
+        print(f"sebastian: no episode for {args.task!r}", file=sys.stderr)
+        return 1
+    print(f"forgot {args.task!r}")
+    return 0
+
+
 def _models(
     cfg: Config,
     args: argparse.Namespace,
@@ -704,6 +742,7 @@ def main(
         "redteam": lambda: _redteam(cfg, args, factory),
         "dashboard": lambda: _dashboard(cfg, args),
         "trust": lambda: _trust(cfg, args),
+        "memory": lambda: _memory(cfg, args),
         "models": lambda: _models(cfg, args, llm_factory, prices),
         "show": lambda: _show(cfg, args),
     }

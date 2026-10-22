@@ -176,5 +176,21 @@ class MemoryStore:
         scored.sort(key=lambda s: (-s[0], -s[1]))
         return [e for _, _, e in scored[:k]]
 
+    def episodes(self) -> list[Episode]:
+        """All stored episodes, newest first (recording a task again makes it the newest)."""
+        return self._episodes[::-1]
+
+    def forget(self, task: str) -> bool:
+        """Delete the episode for ``task`` (same case/space-insensitive key as ``record``).
+
+        Returns whether one was deleted; the file is only rewritten on a hit."""
+        key = _task_key(task)
+        kept = [e for e in self._episodes if _task_key(e.task) != key]
+        if len(kept) == len(self._episodes):
+            return False
+        self._episodes = kept
+        self._save()
+        return True
+
     def __len__(self) -> int:
         return len(self._episodes)
