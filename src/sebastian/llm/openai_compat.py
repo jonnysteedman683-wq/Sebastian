@@ -36,6 +36,7 @@ from sebastian.llm.base import LLMError, TransientLLMError
 from sebastian.tools.base import Tool
 from sebastian.types import LLMResponse, Message, Role, ToolCall, Usage
 
+USER_AGENT = "sebastian (+https://github.com/jonnysteedman683-wq/Sebastian)"
 API_KEY_ENV = "OPENAI_API_KEY"
 OPENAI_HOST = "api.openai.com"
 KEY_ENV_SETTING = "SEBASTIAN_API_KEY_ENV"
@@ -206,7 +207,13 @@ class OpenAICompatLLM:
         }
         if tools:  # tool-free calls (plan, predict, critic) omit the field entirely
             payload["tools"] = self.tools_to_wire(tools)
-        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        # An explicit User-Agent: Cloudflare-fronted hosts (e.g. Groq) reject urllib's default
+        # "Python-urllib/3.x" with error 1010 before the request reaches the API.
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": USER_AGENT,
+        }
         if self._api_key:
             headers["Authorization"] = f"Bearer {self._api_key}"
         status, body = self._transport(
