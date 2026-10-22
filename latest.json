@@ -1,5 +1,5 @@
 {
-  "summary": "3 commit(s): feat(dashboard): show trust level tile and timeline (B45); feat(dashboard): show trust level tile and timeline (B45); Merge pull request #66 from jonnysteedman683-wq/sebastian/daily-b45-trust-level-dashboard-15780023124457597379",
+  "summary": "3 commit(s): fix(llm): send a Sebastian User-Agent from the OpenAI-compatible backend; docs: propose B50 (allowlist before approval) and B51 (flush typed-ahead approvals); Merge pull request #67 from jonnysteedman683-wq/claude/openai-user-agent",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
@@ -8,7 +8,7 @@
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "fde8ce54d1dd64608239cbb194f7c0ade25524da",
+          "sha": "595b2bbff91a11024c487a2ba74d5bd5bb00dc1b",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 65,
+  "seq": 66,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "984e55057a97377ed6ca588cfa3075e9c26c50b1",
-    "to_sha": "fde8ce54d1dd64608239cbb194f7c0ade25524da"
+    "from_sha": "fde8ce54d1dd64608239cbb194f7c0ade25524da",
+    "to_sha": "595b2bbff91a11024c487a2ba74d5bd5bb00dc1b"
   },
-  "generated_at": "2026-10-22T02:18:41Z",
+  "generated_at": "2026-10-22T07:17:33Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -79,5 +79,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "3c8f24aec1a221957569fcc953230e61b38a69e674d32fda7f71559d30d54c64"
+  "signature": "93ed1e00e8de570d79608f65e5bf25fc2e74e2867e98ea1d0825b20e06685833"
 }

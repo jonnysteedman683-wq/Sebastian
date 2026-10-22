@@ -1,7 +1,7 @@
 {
-  "last_reported_sha": "fde8ce54d1dd64608239cbb194f7c0ade25524da",
-  "seq": 65,
-  "last_run_at": "2026-10-22T02:18:41Z",
+  "last_reported_sha": "595b2bbff91a11024c487a2ba74d5bd5bb00dc1b",
+  "seq": 66,
+  "last_run_at": "2026-10-22T07:17:33Z",
   "delivery_failures": 0,
   "grok_failures": 0,
   "coordinator_down_since": null
