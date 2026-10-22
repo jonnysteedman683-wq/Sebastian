@@ -1,0 +1,66 @@
+{
+  "summary": "No changes in last 24h; head = 984e550",
+  "changes": [],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 64,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "984e55057a97377ed6ca588cfa3075e9c26c50b1",
+    "to_sha": "984e55057a97377ed6ca588cfa3075e9c26c50b1"
+  },
+  "generated_at": "2026-10-22T00:20:27Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "dashboard",
+      "demo",
+      "evolve",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "LOW",
+  "signature": "3b44bbe914b65cd309729cf484bdbd6ba624e9691167d44613e62eaf7f2bcb11"
+}
