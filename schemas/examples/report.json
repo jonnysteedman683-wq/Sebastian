@@ -93,6 +93,7 @@
       "resume",
       "dashboard",
       "demo",
+      "doctor",
       "traces",
       "trust",
       "memory",
@@ -127,5 +128,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "639f21211ffea588be8370ea2a56a9343ffa85ab158000ea2439dfee29a9bc8a"
+  "signature": "ab3beffabbe2972c24c129bae302162be472a64a3f28e158dfd68efc89f0d3d9"
 }
