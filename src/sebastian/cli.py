@@ -138,6 +138,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_show_parser(sub)
 
     sub.add_parser("version")
+    sub.add_parser("doctor", help="check the setup (python, home, key, sandbox, state files)")
     return p
 
 
@@ -712,15 +713,27 @@ def _run_agent(
     return _start(agent, args)
 
 
+def _version() -> int:
+    print(__version__)
+    return 0
+
+
+def _doctor() -> int:
+    from sebastian.doctor import main as doctor  # noqa: PLC0415
+
+    return doctor()
+
+
 def main(
     argv: Sequence[str] | None = None,
     llm_factory: Callable[[str], LLM] | None = None,
 ) -> int:
     """Parse ``argv`` and run a CLI command. Returns the process exit code."""
     args = _build_parser().parse_args(argv)
-    if args.cmd == "version":
-        print(__version__)
-        return 0
+    # before Config/home/prices: doctor must be able to report a broken setup
+    early: dict[str, Callable[[], int]] = {"version": _version, "doctor": _doctor}
+    if args.cmd in early:
+        return early[args.cmd]()
 
     cfg = Config.from_env()
     ensure_home(cfg.home)  # P1-08: sessions, traces and memory live here; keep it private
