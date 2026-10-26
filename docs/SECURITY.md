@@ -265,6 +265,7 @@ Residual: `--push-main` bypasses human review by design. Branch protection on th
 - The manifest is owner config: its argv commands run as written, with no shell, cwd set to a fresh temp workspace, stdin closed, a per-case timeout, a process-group kill and the last 4 KB of output kept. Each target agent's own approval gate and sandbox apply inside its run; crosstest adds none and removes none.
 - **Suites are instructions.** A suite's task text becomes the target agent's task, so list only suites you trust as you would your own typed tasks. Seed and expectation paths are workspace-relative (no absolute paths, no `..`), and checks don't follow symlinks.
 - Read-only towards repos: suites are only read, temp workspaces are deleted, and nothing is proposed, committed, pushed or merged. `--json` results omit agent output.
+- Fix requests (`--request`, B74) only append one item to a backlog file the owner names. The quoted task is flattened (no backticks, `*` or 🔒, so it can't add bold ids, break the item or lock/unlock it) and capped, and it is labelled a spec, not instructions about the target repo. Committing it and running `evolve` stay manual, and `evolve`'s gates and the human merge are unchanged.
 
 ## Residual risks (escalated, not fixed)
 

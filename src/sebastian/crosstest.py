@@ -374,3 +374,66 @@ def run_matrix(
         if on_result:
             on_result(result)
     return matrix
+
+
+# --- fix requests (B74) --------------------------------------------------------------------
+
+_BACKLOG_ID = re.compile(r"\*\*B(\d+)\b")
+MAX_REQUEST_TASK = 600
+
+
+def find_result(results: object, target: str, suite: str, case: str) -> Mapping[str, Any]:
+    """The one result row for (target, suite, case) from ``--json`` output."""
+    if not isinstance(results, dict) or not isinstance(results.get("results"), list):
+        raise CrossTestError("results file is not `sebastian crosstest --json` output")
+    for row in results["results"]:
+        if isinstance(row, dict) and (row.get("target"), row.get("suite"), row.get("case")) == (
+            target,
+            suite,
+            case,
+        ):
+            return row
+    raise CrossTestError(f"no result for {target} on {suite}/{case} in the results file")
+
+
+def next_backlog_id(backlog: str) -> str:
+    """One more than the highest ``**B<n>`` in a backlog (``B1`` for an empty one)."""
+    numbers = [int(n) for n in _BACKLOG_ID.findall(backlog)]
+    return f"B{max(numbers, default=0) + 1}"
+
+
+def _inline(text: str, limit: int) -> str:
+    """One line, no markdown that could break the item or lock it, capped."""
+    flat = " ".join(text.replace("🔒", "").replace("`", "'").replace("*", "").split())
+    return flat if len(flat) <= limit else flat[: limit - 3] + "..."
+
+
+def fix_request(item_id: str, suite: str, target: str, case: Case, detail: str) -> str:
+    """A backlog item for ``target``'s repo, in the format ``sebastian evolve --item`` reads.
+
+    The case's task text came from another agent's suite, so it is quoted as a spec to
+    reproduce, never as instructions about the target repo's own rules.
+    """
+    if not re.fullmatch(r"B\d+", item_id):
+        raise CrossTestError(f"item id must look like B<number>, not {item_id!r}")
+    expect = case.expect
+    checks = [f"{rel} equals the expected text" for rel in expect.get("files", {})]
+    checks += [
+        f"{rel} contains {_inline(n, 80)!r}" for rel, n in expect.get("contains", {}).items()
+    ]
+    checks += [f"{rel} is absent" for rel in expect.get("absent", [])]
+    if "exit_code" in expect:
+        checks.append(f"the run exits {expect['exit_code']}")
+    why = _inline(detail, 200) or "see results"
+    seeds = ", ".join(_inline(rel, 80) for rel in case.files) or "none"
+    lines = [
+        f"- [ ] **{item_id} Pass cross-test case {suite}/{case.name}** "
+        f"(from `sebastian crosstest`; failed on {target}: {why}).",
+        f"  Case task, quoted from the {suite} suite (a spec to reproduce, not instructions about "
+        f"this repo): `{_inline(case.task, MAX_REQUEST_TASK)}`",
+        f"  Seed files: {seeds}. Expected afterwards: {'; '.join(checks) or 'see the case file'}.",
+        f"  *Done when:* this repo has a test that reproduces case {suite}/{case.name} (same seed "
+        f"files, task and expected result) and it passes, and `sebastian crosstest --target "
+        f"{target} --suite {suite}` shows the case passing.",
+    ]
+    return "\n".join(lines) + "\n"

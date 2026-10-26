@@ -73,10 +73,32 @@ Output is a target × suite matrix of `passed/checked`, followed by every failur
 is 0 when every checked case passed, 1 when any failed, errored or timed out, and 2 for a bad
 manifest.
 
+## 4. Turn a failure into a fix request
+
+```bash
+sebastian crosstest --manifest agents.json --json results.json
+sebastian crosstest --manifest agents.json --results results.json \
+  --request sebastian/add-greeting --for samanthar --backlog ../Samanthar/docs/BACKLOG.md
+```
+
+This appends one backlog item to the failing agent's `BACKLOG.md`. The item has the next free
+`B<n>` id (or the one you pass with `--id`); without `--backlog` it is only printed. It quotes the
+case as a spec to reproduce, and its *Done when* asks for a test in that repo plus a passing
+cross-test. Nothing is committed or run. The command prints the two steps that are yours:
+
+```bash
+git add docs/BACKLOG.md && git commit -m "docs: crosstest fix request B42"
+sebastian evolve --item B42 --pr     # sandboxed, gated; you review and merge the PR
+```
+
+`evolve` reads the item from the committed backlog, so these steps also suit any agent that
+works from a backlog (Jules, or Claude given the item text).
+
 ## Trust model
 
 - The manifest is your config, so its commands run as written. Don't run someone else's
   manifest.
 - A suite's task text becomes the target agent's task. Only list suites you'd be happy to
   type into that agent yourself.
-- Cross-testing never proposes, commits, pushes or merges. Agents don't change each other here.
+- Cross-testing never commits, pushes or merges. `--request` only appends to a backlog file you
+  name. Every code change still goes through `evolve`'s gates and your merge.
