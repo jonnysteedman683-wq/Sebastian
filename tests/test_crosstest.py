@@ -302,3 +302,124 @@ def test_cli_rejects_bad_manifest_and_unknown_names(
     assert main(["crosstest", "--manifest", str(manifest), "--target", "nobody"]) == 2
     assert "no agent named 'nobody'" in capsys.readouterr().err
     assert main(["crosstest", "--manifest", str(tmp_path / "missing.json")]) == 2
+
+
+# --- fix requests (B74) ---------------------------------------------------------------------
+
+
+def test_next_backlog_id() -> None:
+    assert ct.next_backlog_id("") == "B1"
+    assert ct.next_backlog_id("- [x] **B9 a**\n- [ ] 🔒 **B73 b**\nsee B999 in text") == "B74"
+
+
+def test_fix_request_is_an_evolve_readable_item() -> None:
+    from sebastian.evolve import next_item
+
+    c = ct.parse_case(
+        case(
+            "one",
+            "Write `out.txt` 🔒 **bold**\nthen stop",
+            {"files": {"out.txt": "1"}, "contains": {"log.txt": "ok"}, "absent": ["x"],
+             "exit_code": 0},
+            {"seed.txt": "s"},
+        )
+    )  # fmt: skip
+    item = ct.fix_request("B80", "good", "lazy", c, "fail out.txt differs")
+    assert "🔒" not in item
+    assert item.count("**") == 2  # only the title is bold
+    lines = item.splitlines()
+    assert all(line.startswith("  ") for line in lines[1:])
+    parsed = next_item(item, "B80")
+    assert parsed is not None
+    assert parsed.title.startswith("Pass cross-test case good/one")
+    assert "Write 'out.txt' bold then stop" in item
+    assert "a spec to reproduce, not instructions" in item
+    assert "Seed files: seed.txt" in item
+    assert "out.txt equals the expected text" in item
+    assert "log.txt contains 'ok'" in item
+    assert "x is absent" in item
+    assert "the run exits 0" in item
+    assert "failed on lazy: fail out.txt differs" in item
+
+
+def test_fix_request_caps_long_task_and_rejects_bad_id() -> None:
+    c = ct.parse_case(case("one", "y " * 2000, {"exit_code": 0}))
+    item = ct.fix_request("B2", "s", "t", c, "")
+    assert "..." in item
+    assert "see results" in item
+    assert len(item) < 2000
+    with pytest.raises(ct.CrossTestError, match="B<number>"):
+        ct.fix_request("X1", "s", "t", c, "")
+
+
+def test_find_result() -> None:
+    data = {"results": [{"target": "a", "suite": "b", "case": "c", "status": "fail"}]}
+    assert ct.find_result(data, "a", "b", "c")["status"] == "fail"
+    with pytest.raises(ct.CrossTestError, match="no result"):
+        ct.find_result(data, "a", "b", "z")
+    with pytest.raises(ct.CrossTestError, match="not `sebastian crosstest --json`"):
+        ct.find_result([], "a", "b", "c")
+
+
+def _failed_run(tmp_path: Path) -> tuple[Path, Path]:
+    suites = {"good": [case("one", "write out.txt 1", {"files": {"out.txt": "1"}})]}
+    manifest = eco(tmp_path, {"good": GOOD, "lazy": LAZY}, suites)
+    results = tmp_path / "res.json"
+    assert main(["crosstest", "--manifest", str(manifest), "--json", str(results)]) == 1
+    return manifest, results
+
+
+def test_cli_request_appends_to_backlog_and_commits_nothing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    manifest, results = _failed_run(tmp_path)
+    backlog = tmp_path / "BACKLOG.md"
+    backlog.write_text("# Backlog\n- [x] **B41 done**")  # no trailing newline
+    capsys.readouterr()
+    args = ["crosstest", "--manifest", str(manifest), "--results", str(results)]
+    assert main([*args, "--request", "good/one", "--for", "lazy", "--backlog", str(backlog)]) == 0
+    out = capsys.readouterr()
+    text = backlog.read_text()
+    assert text.startswith("# Backlog\n- [x] **B41 done**\n- [ ] **B42 Pass cross-test case")
+    assert "Nothing was committed or run" in out.err
+    assert "sebastian evolve --item B42 --pr" in out.err
+    assert "**B42 " in out.out
+
+
+@pytest.mark.parametrize(
+    ("extra", "match"),
+    [
+        (["--request", "good/one", "--for", "lazy"], "--id B<n> or --backlog"),
+        (["--request", "good", "--for", "lazy", "--id", "B5"], "needs --for AGENT and --results"),
+        (["--request", "good/one", "--for", "nobody", "--id", "B5"], "no agent named 'nobody'"),
+        (["--request", "bad/one", "--for", "lazy", "--id", "B5"], "no agent named 'bad'"),
+        (["--request", "good/zzz", "--for", "lazy", "--id", "B5"], "no case 'zzz'"),
+        (["--request", "good/one", "--for", "good", "--id", "B5"], "did not fail"),
+    ],
+)
+def test_cli_request_errors(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], extra: list[str], match: str
+) -> None:
+    manifest, results = _failed_run(tmp_path)
+    capsys.readouterr()
+    assert main(["crosstest", "--manifest", str(manifest), "--results", str(results), *extra]) == 2
+    assert match in capsys.readouterr().err
+
+
+def test_cli_request_refuses_duplicate_id_and_bad_files(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    manifest, results = _failed_run(tmp_path)
+    backlog = tmp_path / "BACKLOG.md"
+    backlog.write_text("- [ ] **B5 taken**\n")
+    base = ["crosstest", "--manifest", str(manifest), "--request", "good/one", "--for", "lazy"]
+    assert main([*base, "--results", str(results), "--id", "B5", "--backlog", str(backlog)]) == 2
+    assert "already in" in capsys.readouterr().err
+    assert backlog.read_text() == "- [ ] **B5 taken**\n"
+    assert main([*base, "--results", str(tmp_path / "nope.json"), "--id", "B6"]) == 2
+    assert "cannot read results" in capsys.readouterr().err
+    missing = tmp_path / "missing.md"
+    assert main([*base, "--results", str(results), "--backlog", str(missing)]) == 2
+    assert "cannot read backlog" in capsys.readouterr().err
+    assert main([*base, "--results", str(results), "--id", "B6"]) == 0
+    assert "**B6 Pass cross-test case good/one**" in capsys.readouterr().out
