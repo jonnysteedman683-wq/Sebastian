@@ -112,9 +112,11 @@ Report contract: [`schemas/`](schemas/). Automated by `.github/workflows/watch.y
 ## Development
 
 ```bash
-pip install -e ".[dev,anthropic,watch]"
-ruff check . && ruff format --check . && mypy && pytest --cov
+python -m pip install -e ".[dev,anthropic,watch]"
+python -m ruff check . && python -m ruff format --check . && python -m mypy && python -m pytest --cov
 ```
+
+Use `python -m` so the tools run in the interpreter where `sebastian` is installed; a standalone `pytest`/`mypy` on PATH may not see it.
 
 Maintenance and upgrades follow [`docs/WORK_ORDER.md`](docs/WORK_ORDER.md).
 
