@@ -40,6 +40,7 @@ from sebastian.trace import JsonlTracer, summarize_runs
 from sebastian.types import LLMResponse, RunResult, StopReason, ToolCall
 
 if TYPE_CHECKING:
+    from sebastian.crosstest import Agent
     from sebastian.evals.leaderboard import Row
 
 
@@ -155,6 +156,13 @@ def _add_report_parsers(sub: argparse._SubParsersAction[argparse.ArgumentParser]
     cross.add_argument("--suite", action="append", default=[], help="only these suites")
     cross.add_argument("--json", type=Path, help="also write results as JSON here")
     cross.add_argument("--dry-run", action="store_true", help="list what would run; run nothing")
+    cross.add_argument(
+        "--request", metavar="SUITE/CASE", help="write a fix request for one failed case instead"
+    )
+    cross.add_argument("--for", dest="for_target", metavar="AGENT", help="agent that failed it")
+    cross.add_argument("--results", type=Path, help="a --json file from an earlier run")
+    cross.add_argument("--backlog", type=Path, help="append the request to this BACKLOG.md")
+    cross.add_argument("--id", dest="item_id", help="backlog id to use (default: next free B<n>)")
     trust = sub.add_parser("trust", help="the autonomy level the live eval record has earned")
     trust.add_argument("--model", help="only count rounds for this model")
     mem = sub.add_parser("memory", help="list or forget remembered episodes")
@@ -470,6 +478,8 @@ def _crosstest(args: argparse.Namespace) -> int:
         for name in [*args.target, *args.suite]:
             if name not in known:
                 raise ct.CrossTestError(f"no agent named {name!r} in the manifest")
+        if args.request:
+            return _crosstest_request(agents, args)
         targets, suites = set(args.target) or None, set(args.suite) or None
         todo = ct.plan(agents, targets, suites)
     except ct.CrossTestError as exc:
@@ -491,6 +501,56 @@ def _crosstest(args: argparse.Namespace) -> int:
     if args.json:
         args.json.write_text(json.dumps(matrix.to_json(), indent=2) + "\n", encoding="utf-8")
     return 0 if all(r.status in {"pass", "unchecked"} for r in matrix.results) else 1
+
+
+def _crosstest_request(agents: list[Agent], args: argparse.Namespace) -> int:
+    """Turn one failed cross-test case into a backlog item for the agent that failed it."""
+    from sebastian import crosstest as ct  # noqa: PLC0415
+
+    suite_name, _, case_name = args.request.partition("/")
+    if not case_name or not args.for_target or not args.results:
+        raise ct.CrossTestError("--request SUITE/CASE needs --for AGENT and --results FILE")
+    if args.for_target not in {a.name for a in agents}:
+        raise ct.CrossTestError(f"no agent named {args.for_target!r} in the manifest")
+    owner = next((a for a in agents if a.name == suite_name), None)
+    if owner is None:
+        raise ct.CrossTestError(f"no agent named {suite_name!r} in the manifest")
+    case = next((c for c in ct.load_suite(owner.suite) if c.name == case_name), None)
+    if case is None:
+        raise ct.CrossTestError(f"no case {case_name!r} in the {suite_name} suite")
+    try:
+        results = json.loads(args.results.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ct.CrossTestError(f"cannot read results {args.results}: {exc}") from exc
+    row = ct.find_result(results, args.for_target, suite_name, case_name)
+    if row.get("status") in {"pass", "unchecked"}:
+        raise ct.CrossTestError(f"{args.for_target} did not fail {args.request}: {row['status']}")
+    backlog = ""
+    if args.backlog:
+        try:
+            backlog = args.backlog.read_text(encoding="utf-8")
+        except OSError as exc:
+            raise ct.CrossTestError(f"cannot read backlog {args.backlog}: {exc}") from exc
+    if not args.item_id and not args.backlog:
+        raise ct.CrossTestError("give --id B<n> or --backlog FILE to pick the next free id")
+    item_id = args.item_id or ct.next_backlog_id(backlog)
+    if args.item_id and args.backlog and f"**{item_id} " in backlog:
+        raise ct.CrossTestError(f"{item_id} is already in {args.backlog}")
+    item = ct.fix_request(
+        item_id, suite_name, args.for_target, case, f"{row.get('status')} {row.get('detail', '')}"
+    )
+    print(item, end="")
+    if args.backlog:
+        sep = "" if not backlog or backlog.endswith("\n") else "\n"
+        with args.backlog.open("a", encoding="utf-8") as fh:
+            fh.write(sep + item)
+        print(
+            f"\nAppended {item_id} to {args.backlog}. Nothing was committed or run. Next, in "
+            f"that repo:\n  git add {args.backlog} && git commit -m 'docs: crosstest fix request "
+            f"{item_id}'\n  sebastian evolve --item {item_id} --pr   # gated; you merge the PR",
+            file=sys.stderr,
+        )
+    return 0
 
 
 def _trust(cfg: Config, args: argparse.Namespace) -> int:
