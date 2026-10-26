@@ -49,7 +49,8 @@
       "redteam",
       "version",
       "models",
-      "show"
+      "show",
+      "crosstest"
     ],
     "llm_backends": [
       "anthropic",
@@ -66,5 +67,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "d023a8db8a9064ff64149f8164ad38767b9b58d6274fedc706f995dcbadfd253"
+  "signature": "41d5eced3a4cdf3dc9bfc5cc9d155470ca6f6c5f05388c2684438d2b3af7aecb"
 }

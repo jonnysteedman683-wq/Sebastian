@@ -4,6 +4,7 @@ version."""
 from __future__ import annotations
 
 import argparse
+import json
 import secrets
 import sys
 import time
@@ -146,6 +147,14 @@ def _add_report_parsers(sub: argparse._SubParsersAction[argparse.ArgumentParser]
     dash = sub.add_parser("dashboard", help="write an HTML page of scores, scars and runs")
     dash.add_argument("-o", "--out", type=Path, default=Path("sebastian-dashboard.html"))
     dash.add_argument("--scars", type=Path, default=Path("evals/scars"), help="scar directory")
+    cross = sub.add_parser(
+        "crosstest", help="run each agent's test suite against every agent in a manifest"
+    )
+    cross.add_argument("--manifest", type=Path, required=True, help="agents JSON (see docs)")
+    cross.add_argument("--target", action="append", default=[], help="only these agents")
+    cross.add_argument("--suite", action="append", default=[], help="only these suites")
+    cross.add_argument("--json", type=Path, help="also write results as JSON here")
+    cross.add_argument("--dry-run", action="store_true", help="list what would run; run nothing")
     trust = sub.add_parser("trust", help="the autonomy level the live eval record has earned")
     trust.add_argument("--model", help="only count rounds for this model")
     mem = sub.add_parser("memory", help="list or forget remembered episodes")
@@ -452,6 +461,38 @@ def _dashboard(cfg: Config, args: argparse.Namespace) -> int:
     return 0
 
 
+def _crosstest(args: argparse.Namespace) -> int:
+    from sebastian import crosstest as ct  # noqa: PLC0415
+
+    try:
+        agents = ct.load_manifest(args.manifest)
+        known = {a.name for a in agents}
+        for name in [*args.target, *args.suite]:
+            if name not in known:
+                raise ct.CrossTestError(f"no agent named {name!r} in the manifest")
+        targets, suites = set(args.target) or None, set(args.suite) or None
+        todo = ct.plan(agents, targets, suites)
+    except ct.CrossTestError as exc:
+        print(f"sebastian: {exc}", file=sys.stderr)
+        return 2
+    print(f"{len(todo)} case run(s) across {len(agents)} agent(s)", file=sys.stderr)
+    if args.dry_run:
+        for suite, target, case in todo:
+            print(f"{target.name} <- {suite.name}/{case.name}")
+        return 0
+
+    def progress(r: ct.CaseResult) -> None:
+        print(
+            f"  {r.status:9} {r.target} <- {r.suite}/{r.case} ({r.seconds:.0f}s)", file=sys.stderr
+        )
+
+    matrix = ct.run_matrix(agents, targets, suites, on_result=progress)
+    print(matrix.render())
+    if args.json:
+        args.json.write_text(json.dumps(matrix.to_json(), indent=2) + "\n", encoding="utf-8")
+    return 0 if all(r.status in {"pass", "unchecked"} for r in matrix.results) else 1
+
+
 def _trust(cfg: Config, args: argparse.Namespace) -> int:
     from sebastian.trust import assess  # noqa: PLC0415
 
@@ -754,6 +795,7 @@ def main(
         "evolve": lambda: _evolve(cfg, args, factory),
         "redteam": lambda: _redteam(cfg, args, factory),
         "dashboard": lambda: _dashboard(cfg, args),
+        "crosstest": lambda: _crosstest(args),
         "trust": lambda: _trust(cfg, args),
         "memory": lambda: _memory(cfg, args),
         "models": lambda: _models(cfg, args, llm_factory, prices),
