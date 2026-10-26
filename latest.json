@@ -1,15 +1,15 @@
 {
-  "summary": "3 commit(s): docs: run checks via python -m in CLAUDE.md; docs: run checks via python -m in AGENTS.md and README; Merge pull request #73 from jonnysteedman683-wq/ccr-855631e1-6onsr0",
+  "summary": "6 commit(s): docs: add security analysis of the safety TCB (2026-10-26); docs: propose B67/B68 from the 2026-10-26 security analysis; docs: propose B69 (live red-team runbook + recorded baseline); docs: propose B70 (apply_patch tool) and B71 (fetch_url retrieval); docs: keep security analysis report out of the repo; Merge pull request #74 from jonnysteedman683-wq/ccr-855631e1-6onsr0",
   "changes": [
     {
       "category": "DOCS",
-      "title": "3 file(s) changed",
-      "description": "Detected automatically from code: 3 file(s) changed.",
+      "title": "1 file(s) changed",
+      "description": "Detected automatically from code: 1 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "354681cc286762d7db3f9c5d84392d436dc23d6a",
-          "path": "AGENTS.md"
+          "sha": "5484a4441cf9a82b7a9a68de4dcd109d265210bf",
+          "path": "docs/BACKLOG.md"
         }
       ],
       "permission": "n/a",
@@ -23,20 +23,18 @@
     "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
   ],
   "pr_previews": [],
-  "escalation_reasons": [
-    "watch tooling or report contract changed: AGENTS.md, CLAUDE.md"
-  ],
+  "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 77,
+  "seq": 78,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "13944401e53f8d739df5927647b896a07d2a444d",
-    "to_sha": "354681cc286762d7db3f9c5d84392d436dc23d6a"
+    "from_sha": "354681cc286762d7db3f9c5d84392d436dc23d6a",
+    "to_sha": "5484a4441cf9a82b7a9a68de4dcd109d265210bf"
   },
-  "generated_at": "2026-10-26T10:19:26Z",
+  "generated_at": "2026-10-26T11:20:37Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -80,8 +78,8 @@
     "removed": [],
     "changed": []
   },
-  "risk_score": 3,
-  "escalate": true,
-  "priority": "HIGH",
-  "signature": "9e5e57150878eaa8949a7a3732a97f7ef42d40c3d7f7ed704f8e961568ab8b4a"
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "LOW",
+  "signature": "636472eb29b00ef9dbcdc2b84669416968f13b9558fb861a4e0b75f79419712d"
 }
