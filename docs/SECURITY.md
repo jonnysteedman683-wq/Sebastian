@@ -245,6 +245,21 @@ judge behaviour by running the workspace's Python, which is code the model under
 - Cost is checked between model calls, like every other limit, so a run can overshoot by at most
   one call.
 
+## Publishing (`publish.py`, B72; opt-in with `--pr` / `--push-main`)
+
+Owner decision (2026-10-26): a run may push its own changes, including straight to `main`.
+
+| Threat | Control |
+|---|---|
+| Prompt injection makes the agent push or merge | The agent has no git tool and no credentials. Publishing runs in the harness after the run returns, on fixed arguments. |
+| Unproven change lands on `main` | Only `completed` runs publish; `--push-main` implies `--gauntlet`, so completed means the predicted checks and the critic passed. Every write was still approved during the run. |
+| Unrelated local changes get published | The workspace must be the repo top level with a clean tree before the run starts. |
+| A write plants CI, git filters or submodules (code runs with secrets or on the next checkout) | Any change to `.github/`, `.gitattributes` or `.gitmodules` refuses the whole publish; commit those by hand. The jail already blocks `.git/`. |
+| History rewrite or lost remote commits | Fast-forward only: no `--force`, no rebase. If the remote moved, nothing is committed. Branch names are validated (no refspecs or options). |
+| Hostile repo config runs code during commit/push | Host git uses evolve's hardening: no hooks, no fsmonitor, no system config, `file://` only for the owner's own remote. |
+
+Residual: `--push-main` bypasses human review by design. Branch protection on the remote still applies and rejects the push if required checks or reviews are set.
+
 ## Residual risks (escalated, not fixed)
 
 1. **`run_command` arguments are not jailed without a sandbox.** Without one, an allowlisted `cat /etc/passwd` reads outside the workspace, and allowlisting an interpreter (`python`) is equivalent to arbitrary code. Mitigation: approval gate (EXEC needs a yes), the allowlist, and **the bubblewrap sandbox, required by default (`--sandbox auto`)**: bubblewrap with every namespace unshared, only the workspace mounted read-write at `/workspace`, system paths read-only, private `/tmp`, cleared env, and executables restricted to system paths. With bwrap, home directories, `/root` and the rest of `/etc` are not visible. **`auto` fails closed (P1-01):** with no usable bubblewrap the CLI exits with code 2 and `run_command` is never registered. Commands run on the host only when the user passes `--sandbox none`, which prints a warning on every run and is recorded in the `run_start` trace (`sandbox="none"`).

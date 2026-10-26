@@ -1,4 +1,5 @@
-"""CLI: run, resume, demo, traces, show, undo, scar, evolve, redteam, models, dashboard, trust,
+"""CLI: run (optionally --pr / --push-main), resume, demo,
+ traces, show, undo, scar, evolve, redteam, models, dashboard, trust,
 version."""
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ from sebastian.llm.base import LLM
 from sebastian.llm.scripted import ScriptedLLM
 from sebastian.memory import MemoryCorruptError, MemoryStore
 from sebastian.pricing import Price, PricingError, load_prices, priced, require_prices
+from sebastian.publish import PublishError, check_ready, open_pr, publish, valid_branch
 from sebastian.session import SessionError, SessionStore
 from sebastian.tools import (
     CommandPolicy,
@@ -49,6 +51,7 @@ def _build_parser() -> argparse.ArgumentParser:
     run = sub.add_parser("run", help="run a task with a real model")
     run.add_argument("task")
     _add_run_options(run)
+    _add_publish_options(run)
 
     resume = sub.add_parser("resume", help="continue a run that stopped early")
     resume.add_argument("run_id")
@@ -268,6 +271,25 @@ def _add_run_options(run: argparse.ArgumentParser) -> None:
         "--critic-model", help="model for the Gauntlet critic (implies --gauntlet; default: "
         "the planning model)",
     )  # fmt: skip
+
+
+def _add_publish_options(run: argparse.ArgumentParser) -> None:
+    pub = run.add_mutually_exclusive_group()
+    pub.add_argument(
+        "--pr",
+        action="store_true",
+        help="after a completed run, commit its changes to a new branch, push it and open a "
+        "PR with gh (workspace: clean git repo top level)",
+    )
+    pub.add_argument(
+        "--push-main",
+        nargs="?",
+        const="main",
+        metavar="BRANCH",
+        type=valid_branch,
+        help="after a completed run, commit and push straight to BRANCH (default main), "
+        "fast-forward only; implies --gauntlet",
+    )
 
 
 def _non_negative_float(value: str) -> float:
@@ -613,9 +635,14 @@ def _record_row(cfg: Config, now: float, row: Row, run_id: str) -> None:
         )  # fmt: skip
 
 
-def _start(agent: Sebastian, args: argparse.Namespace) -> int:
+def _start(agent: Sebastian, args: argparse.Namespace, ws: Workspace) -> int:
     if args.cmd != "resume":
-        return _print_result(agent.run(args.task))
+        result = agent.run(args.task)
+        code = _print_result(result)
+        mode = _publish_mode(args)
+        if mode is None:
+            return code
+        return _publish(ws, result, args, mode) if code == 0 else code
     try:
         return _print_result(agent.resume(args.run_id))
     except SessionError as exc:
@@ -634,6 +661,39 @@ def _demo_llm() -> ScriptedLLM:
             LLMResponse("Done: hello.txt contains 'hello'."),
         ]
     )
+
+
+def _publish_mode(args: argparse.Namespace) -> str | None:
+    if getattr(args, "push_main", None):
+        return "main"
+    return "pr" if getattr(args, "pr", False) else None
+
+
+def _publish_ready(ws: Workspace, args: argparse.Namespace) -> bool:
+    """With --pr / --push-main, refuse to start unless the workspace can be published."""
+    mode = _publish_mode(args)
+    if mode is None:
+        return True
+    try:
+        check_ready(ws.root, mode, args.push_main or "main")
+    except PublishError as exc:
+        print(f"sebastian: {exc}", file=sys.stderr)
+        return False
+    return True
+
+
+def _publish(ws: Workspace, result: RunResult, args: argparse.Namespace, mode: str) -> int:
+    """Commit and push a completed run's changes (B72). Exit 1 if nothing was published."""
+    try:
+        report = publish(
+            ws.root, result, args.task, mode=mode, branch=args.push_main or "main",
+            opener=open_pr if mode == "pr" else None,
+        )  # fmt: skip
+    except PublishError as exc:
+        print(f"publish: {exc}", file=sys.stderr)
+        return 1
+    print(f"publish: {report.reason}", file=sys.stderr)
+    return 0 if report.published else 1
 
 
 def _print_result(result: RunResult) -> int:
@@ -666,6 +726,8 @@ def _run_agent(
     run_info: Mapping[str, str] | None = None,
 ) -> int:
     """Build the agent for ``run`` / ``resume`` and start it."""
+    if not _publish_ready(ws, args):
+        return 2
     clock = SystemClock()
     approver: Approver
     if args.unattended or not sys.stdin.isatty():
@@ -679,7 +741,7 @@ def _run_agent(
     escalation_model = args.escalation_model or cfg.escalation_model
     critic_model = args.critic_model or cfg.critic_model
     gauntlet = None
-    if args.gauntlet or args.critic_model or args.gauntlet_revert:
+    if args.gauntlet or args.critic_model or args.gauntlet_revert or _publish_mode(args) == "main":
         critic = make(critic_model) if critic_model and critic_model != model else None
         gauntlet = GauntletPolicy(critic_llm=critic, revert_on_loop=args.gauntlet_revert)
     max_cost = cfg.max_cost if args.max_cost is None else args.max_cost
@@ -710,7 +772,7 @@ def _run_agent(
         gauntlet=gauntlet,
         run_info=dict(run_info or {}),
     )
-    return _start(agent, args)
+    return _start(agent, args, ws)
 
 
 def _version() -> int:
