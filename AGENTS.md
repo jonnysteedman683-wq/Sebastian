@@ -9,7 +9,7 @@ One run = one backlog item = one PR.
 1. Read `docs/BACKLOG.md`. Take the **first unchecked item not marked 🔒**. If none is left, add up to 3 well-scoped items under **Proposed** (from `docs/PROPOSALS.md`, the debt register in `docs/SEBASTIAN_MAP.md`, or real gaps you find) and stop.
 2. Create branch `sebastian/daily-<item id>-<short-desc>` from the latest `main`.
 3. Implement only that item. Write the test first; meet the item's *Done when* exactly.
-4. Run `pip install -e ".[dev,anthropic,watch]"` then `ruff check . && ruff format --check . && mypy && pytest --cov`. All must pass. Never skip, xfail or delete a test to get green.
+4. Run `python -m pip install -e ".[dev,anthropic,watch]"` then `python -m ruff check . && python -m ruff format --check . && python -m mypy && python -m pytest --cov`. All must pass. Always use `python -m`: a bare `pytest`/`mypy` on PATH can be a standalone tool with its own interpreter that can't import `sebastian` (pytest fails with `ModuleNotFoundError`, mypy reports false errors). Never skip, xfail or delete a test to get green.
 5. If you changed tools, CLI commands, LLM backends or `DEFAULT_MODEL`: update `capability_inventory` in `schemas/examples/report.json` and `canary.json`, then run `python scripts/resign_examples.py`.
 6. Tick the item in `docs/BACKLOG.md` and add a line under `## [Unreleased]` in `CHANGELOG.md`.
 7. Open a PR titled with a Conventional Commit (`feat:`, `fix:`, `test:`, `docs:`, `refactor:`). In the body: the item id, what changed, and the exact check output (test count, coverage).
