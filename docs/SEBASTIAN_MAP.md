@@ -11,6 +11,7 @@ Sebastian is an autonomous, tool-using AI agent framework designed with a "safet
 **Memory/state:** `memory.py` provides atomic episodic memory storage using BM25 for recall. `checkpoint.py` manages file snapshots to support undo operations. `session.py` serialises the active conversation.
 **LLM backend(s):** `llm/` provides a provider-agnostic interface with `anthropic.py` and `openai_compat.py` (which covers OpenAI, Ollama, OpenRouter, etc.).
 **Publishing:** `publish.py` commits a completed run's changes after the run and opens a PR or pushes fast-forward to a branch (`run --pr` / `--push-main`, B72). Harness-side only; the agent has no git tool.
+**Cross-testing:** `crosstest.py` (`sebastian crosstest`) runs each agent's suite from an owner manifest against every listed agent in throw-away workspaces and prints a pass matrix. It is read-only towards every repo; see `docs/CROSSTEST.md`.
 **Schedulers:** Driven by external CI workflows (e.g. `watch.yml` for watchkit, or `live-evals.yml`).
 **Servers/APIs:** None directly exposed by Sebastian; it acts purely as a client to LLM APIs.
 

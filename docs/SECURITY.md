@@ -260,6 +260,12 @@ Owner decision (2026-10-26): a run may push its own changes, including straight 
 
 Residual: `--push-main` bypasses human review by design. Branch protection on the remote still applies and rejects the push if required checks or reviews are set.
 
+## Cross-testing (`crosstest.py`, B73)
+
+- The manifest is owner config: its argv commands run as written, with no shell, cwd set to a fresh temp workspace, stdin closed, a per-case timeout, a process-group kill and the last 4 KB of output kept. Each target agent's own approval gate and sandbox apply inside its run; crosstest adds none and removes none.
+- **Suites are instructions.** A suite's task text becomes the target agent's task, so list only suites you trust as you would your own typed tasks. Seed and expectation paths are workspace-relative (no absolute paths, no `..`), and checks don't follow symlinks.
+- Read-only towards repos: suites are only read, temp workspaces are deleted, and nothing is proposed, committed, pushed or merged. `--json` results omit agent output.
+
 ## Residual risks (escalated, not fixed)
 
 1. **`run_command` arguments are not jailed without a sandbox.** Without one, an allowlisted `cat /etc/passwd` reads outside the workspace, and allowlisting an interpreter (`python`) is equivalent to arbitrary code. Mitigation: approval gate (EXEC needs a yes), the allowlist, and **the bubblewrap sandbox, required by default (`--sandbox auto`)**: bubblewrap with every namespace unshared, only the workspace mounted read-write at `/workspace`, system paths read-only, private `/tmp`, cleared env, and executables restricted to system paths. With bwrap, home directories, `/root` and the rest of `/etc` are not visible. **`auto` fails closed (P1-01):** with no usable bubblewrap the CLI exits with code 2 and `run_command` is never registered. Commands run on the host only when the user passes `--sandbox none`, which prints a warning on every run and is recorded in the `run_start` trace (`sandbox="none"`).
