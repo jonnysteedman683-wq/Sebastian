@@ -32,6 +32,10 @@ sebastian run "Fix the failing parser test" -w ./project --allow-cmd pytest --ga
 #   --gauntlet: plan, predict the checks, act, run the checks, then a critic review;
 #   failures loop back (max 3), then the run stops as needs_help with a report;
 #   --gauntlet-revert undoes a failed attempt's file changes before each retry
+sebastian run "Fix the flaky test" -w ./repo --allow-cmd pytest --pr         # completed run -> branch + PR
+sebastian run "Bump the version" -w ./repo --allow-cmd pytest --push-main  # Gauntlet-proven -> push to main
+#   publishing is done by the harness after the run, never the agent; clean repo required,
+#   fast-forward only, .github/ and git config files are never published
 sebastian resume <run_id> -w ./project # continue a run that hit its budget or an API error
 sebastian show <run_id>              # one run as an HTML timeline (--text for the terminal)
 sebastian undo <run_id> -w ./project # roll back a run's file changes (run_id from `sebastian traces`)
