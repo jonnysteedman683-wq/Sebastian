@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): docs: Add SEBASTIAN_MAP and phase 1 report; Merge pull request #72 from jonnysteedman683-wq/sebastian/phase1-discovery-10865200555414971161",
+  "summary": "3 commit(s): docs: run checks via python -m in CLAUDE.md; docs: run checks via python -m in AGENTS.md and README; Merge pull request #73 from jonnysteedman683-wq/ccr-855631e1-6onsr0",
   "changes": [
     {
       "category": "DOCS",
-      "title": "2 file(s) changed",
-      "description": "Detected automatically from code: 2 file(s) changed.",
+      "title": "3 file(s) changed",
+      "description": "Detected automatically from code: 3 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "13944401e53f8d739df5927647b896a07d2a444d",
-          "path": "docs/SEBASTIAN_MAP.md"
+          "sha": "354681cc286762d7db3f9c5d84392d436dc23d6a",
+          "path": "AGENTS.md"
         }
       ],
       "permission": "n/a",
@@ -23,18 +23,20 @@
     "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
   ],
   "pr_previews": [],
-  "escalation_reasons": [],
+  "escalation_reasons": [
+    "watch tooling or report contract changed: AGENTS.md, CLAUDE.md"
+  ],
   "report_type": "repo_change_report",
-  "seq": 76,
+  "seq": 77,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "adfa0e9a60b369715accc8ecf1dfecd292871e41",
-    "to_sha": "13944401e53f8d739df5927647b896a07d2a444d"
+    "from_sha": "13944401e53f8d739df5927647b896a07d2a444d",
+    "to_sha": "354681cc286762d7db3f9c5d84392d436dc23d6a"
   },
-  "generated_at": "2026-10-26T09:41:30Z",
+  "generated_at": "2026-10-26T10:19:26Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -78,8 +80,8 @@
     "removed": [],
     "changed": []
   },
-  "risk_score": 0,
-  "escalate": false,
-  "priority": "LOW",
-  "signature": "50658bd1f11f30c6b846428c9091dc80bbe17f1eec8e9b4ca17e9b9728eafccc"
+  "risk_score": 3,
+  "escalate": true,
+  "priority": "HIGH",
+  "signature": "9e5e57150878eaa8949a7a3732a97f7ef42d40c3d7f7ed704f8e961568ab8b4a"
 }
