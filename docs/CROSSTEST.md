@@ -100,4 +100,5 @@ works from a backlog (Jules, or Claude given the item text).
   manifest.
 - A suite's task text becomes the target agent's task. Only list suites you'd be happy to
   type into that agent yourself.
-- Cross-testing never proposes, commits, pushes or merges. Agents don't change each other here.
+- Cross-testing never commits, pushes or merges. `--request` only appends to a backlog file you
+  name. Every code change still goes through `evolve`'s gates and your merge.
