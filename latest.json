@@ -1,15 +1,15 @@
 {
-  "summary": "4 commit(s): feat: sebastian crosstest - run each agent's suite against every agent (B73); docs: map entry for crosstest (B73); Merge remote-tracking branch 'origin/main' into claude/b73-crosstest; Merge pull request #76 from jonnysteedman683-wq/claude/b73-crosstest",
+  "summary": "5 commit(s): wip: crosstest fix requests (B74); Merge branch 'claude/b73-crosstest' into claude/b74-crosstest-request; feat: cross-test fix requests for evolve (B74); docs: crosstest trust model covers --request (B74); Merge pull request #77 from jonnysteedman683-wq/claude/b74-crosstest-request",
   "changes": [
     {
-      "category": "NEW_FEATURE",
-      "title": "New CLI command crosstest",
-      "description": "Detected automatically from code: New CLI command crosstest.",
+      "category": "ABILITY_CHANGE",
+      "title": "7 file(s) changed",
+      "description": "Detected automatically from code: 7 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "8331ea92b64b70c4b7318425b446ea2b0c9be2f9",
-          "path": "src/sebastian/cli.py"
+          "sha": "fcb36ed4e7c0910f541c5378418a41298b1a5a9f",
+          "path": "CHANGELOG.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 80,
+  "seq": 81,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "6b760aa272237d85e62804385d06dcd4814daa42",
-    "to_sha": "8331ea92b64b70c4b7318425b446ea2b0c9be2f9"
+    "from_sha": "8331ea92b64b70c4b7318425b446ea2b0c9be2f9",
+    "to_sha": "fcb36ed4e7c0910f541c5378418a41298b1a5a9f"
   },
-  "generated_at": "2026-10-26T13:48:46Z",
+  "generated_at": "2026-10-26T13:49:23Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -75,14 +75,12 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [
-      "cli: crosstest"
-    ],
+    "added": [],
     "removed": [],
     "changed": []
   },
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "dc0590096b8f1cf54a9f9fd5ac6bbce870f8b4cd87549611caf868c7e73fec1f"
+  "signature": "eca3cf136dd9cf08e6594f0bc00d45694b7a4c5fb9835163c4355545386ffaf3"
 }
