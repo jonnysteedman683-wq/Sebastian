@@ -52,10 +52,12 @@ class Episode:
             raise MemoryCorruptError(f"episode missing field {exc}") from exc
         if not all(type(v) is str for v in (task, outcome, summary)):
             raise MemoryCorruptError("episode text fields must be strings")
-        if type(ts) not in (int, float):
+        if type(ts) not in _NUMBER_TYPES:
             raise MemoryCorruptError("episode timestamp must be a number")
         return cls(task, outcome, summary, float(ts))
 
+
+_NUMBER_TYPES = frozenset({int, float})
 
 _STOP = frozenset(
     {

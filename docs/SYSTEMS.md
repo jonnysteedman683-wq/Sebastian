@@ -18,15 +18,17 @@ any conflict**, and nothing here can let an agent skip a check, touch a guarded 
 
 ## Repos
 
-| | Sebastian | Lestinxor |
-|---|---|---|
-| Repo | [jonnysteedman683-wq/Sebastian](https://github.com/jonnysteedman683-wq/Sebastian) | [jonnysteedman683-wq/LESTINXOR-AGENT](https://github.com/jonnysteedman683-wq/LESTINXOR-AGENT) |
-| What | Sandboxed, self-improving coding agent | Orchestrator: an outer evolutionary thought search over inner Gauntlet runs |
-| Rules | `AGENTS.md` = `CLAUDE.md`, `docs/WORK_ORDER.md`, `docs/BACKLOG.md` | `AGENTS.md`, `docs/BACKLOG.md` |
-| Item ids / branch | `B<n>` / `sebastian/daily-<id>-<desc>` | `L<n>` / `agent/<id>-<desc>` |
-| Memory | `docs/JULES_MEMORY.md`: read it first; add one Run log line per PR | none yet |
-| Off limits | the guarded paths in `AGENTS.md` "Never" (they fail the Guard check without `owner-approved`, so treat them as 🔒) | `.github/`, `AGENTS.md`, `sandbox.py`, `governor.py`, `tools.py` |
-| Repo-specific | the CLI capability inventory must be re-signed when commands change | an 85% coverage gate, and determinism (same seed + same replies = same digests) |
+| | Sebastian | Lestinxor | HORIZONTAL |
+|---|---|---|---|
+| Repo | [jonnysteedman683-wq/Sebastian](https://github.com/jonnysteedman683-wq/Sebastian) | [jonnysteedman683-wq/LESTINXOR-AGENT](https://github.com/jonnysteedman683-wq/LESTINXOR-AGENT) | [jonnysteedman683-wq/HORIZONTAL](https://github.com/jonnysteedman683-wq/HORIZONTAL) (private; its vault content lives in HORIZONTAL-VAULT) |
+| What | Sandboxed, self-improving coding agent | Orchestrator: an outer evolutionary thought search over inner Gauntlet runs | Standard-library evolution engine and multi-agent foundry |
+| Rules | `AGENTS.md` = `CLAUDE.md`, `docs/WORK_ORDER.md`, `docs/BACKLOG.md` | `AGENTS.md`, `docs/BACKLOG.md` | `AGENTS.md`, `.agents/rules/diamond-vault-invariants.md`, `docs/BACKLOG.md` |
+| Item ids / branch | `B<n>` / `sebastian/daily-<id>-<desc>` | `L<n>` / `agent/<id>-<desc>` | `H<n>` / `agent/<id>-<desc>` |
+| Checks | `python -m ruff`, `mypy`, `pytest --cov` | `python -m ruff`, `mypy`, `pytest --cov=lestinxor` (85% gate) | `python -m compileall -q .` then `python _Meta/Scripts/run_tests_isolated.py`. **Never run tests in place**, because that rewrites the vault |
+| CI | runs on every PR | runs on every PR | **blocked** (private repo, no paid Actions), so the PR body must carry the exact test output |
+| Memory | `docs/JULES_MEMORY.md`: read it first; add one Run log line per PR | none yet | `docs/JULES_MEMORY.md`: read it first; add one Run log line per PR |
+| Off limits | the guarded paths in `AGENTS.md` "Never" (they fail the Guard check without `owner-approved`, so treat them as 🔒) | `.github/`, `AGENTS.md`, `sandbox.py`, `governor.py`, `tools.py` | `.github/`, `AGENTS.md`, `.agents/`, `sovereign/`, `pqc*.py`, generated vault folders (`00_`-`04_`, `_Meta/Assets/`, `.obsidian/`), and never `09_Blackbox/` |
+| Repo-specific | the CLI capability inventory must be re-signed when commands change | determinism (same seed + same replies = same digests) | keep CRLF line endings; import `VAULT_ROOT`/`ENGINE_ROOT` from `horizontal.core` |
 
 ## Processes that connect them
 
