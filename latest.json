@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): docs: SYSTEMS.md - how Jonny's agent systems link; Merge pull request #81 from jonnysteedman683-wq/claude/systems-doc",
+  "summary": "2 commit(s): docs: add HORIZONTAL to SYSTEMS.md; Merge pull request #96 from jonnysteedman683-wq/claude/systems-horizontal",
   "changes": [
     {
       "category": "DOCS",
-      "title": "3 file(s) changed",
-      "description": "Detected automatically from code: 3 file(s) changed.",
+      "title": "1 file(s) changed",
+      "description": "Detected automatically from code: 1 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "490e59e6314f1c0d7da4890ad73665d92e0bc2c8",
-          "path": "CHANGELOG.md"
+          "sha": "f96af7e9b460f142ef6b9bffc0eb22824e413910",
+          "path": "docs/SYSTEMS.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 89,
+  "seq": 90,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "5a9db361a294d8ca951f2a304e503d598d4f0cc2",
-    "to_sha": "490e59e6314f1c0d7da4890ad73665d92e0bc2c8"
+    "from_sha": "490e59e6314f1c0d7da4890ad73665d92e0bc2c8",
+    "to_sha": "f96af7e9b460f142ef6b9bffc0eb22824e413910"
   },
-  "generated_at": "2026-10-30T10:56:54Z",
+  "generated_at": "2026-10-30T11:33:05Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -82,5 +82,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "LOW",
-  "signature": "e8ee24446a0650dbd810856f69eb4f84ff449bfc10d1803a67782f01d05f9a35"
+  "signature": "51668a6c01ac320c073bc8d3dc2d8a7121cc4ae54b4e5621eb45aa1ccf7a179f"
 }
