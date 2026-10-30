@@ -1,0 +1,86 @@
+{
+  "summary": "2 commit(s): refactor: group _run_agent parameters into AgentContext; Merge pull request #82 from jonnysteedman683-wq/sebastian/refactor-run-agent-ctx-16011484168331548214",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "1 file(s) changed",
+      "description": "Detected automatically from code: 1 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "7b457be7ec401c063e61f9c13e5485ff33a3c534",
+          "path": "src/sebastian/cli.py"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 95,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "c6ed78486e9bd014286c5bcacc2023021ca9afbb",
+    "to_sha": "7b457be7ec401c063e61f9c13e5485ff33a3c534"
+  },
+  "generated_at": "2026-10-30T12:57:44Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "crosstest",
+      "dashboard",
+      "demo",
+      "doctor",
+      "evolve",
+      "memory",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "f144f2bbbc46bf781969862f2398de2e47b7c23d9e3b8ec2b3a5beeca064776e"
+}
