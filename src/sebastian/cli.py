@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from sebastian import __version__, history
+from sebastian import __version__, history, unisync
 from sebastian.agent import Sebastian
 from sebastian.approval import ApprovalGate, Approver, DenyApprover, InteractiveApprover
 from sebastian.budget import Budget
@@ -142,9 +142,7 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_report_parsers(sub)
     _add_models_parser(sub)
     _add_show_parser(sub)
-
-    sub.add_parser("version")
-    sub.add_parser("doctor", help="check the setup (python, home, key, sandbox, state files)")
+    _add_setup_parsers(sub)
     return p
 
 
@@ -310,6 +308,18 @@ def _add_publish_options(run: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_setup_parsers(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    sub.add_parser("version")
+    sub.add_parser("doctor", help="check the setup (python, home, key, sandbox, state files)")
+    sync = sub.add_parser("unisync", help="post to the shared UniSync ledger (UNISYNC_SUPABASE_*)")
+    sync.add_argument(
+        "action",
+        choices=("ping", "escalate"),
+        help="ping: post a heartbeat; escalate: raise REASON",
+    )
+    sync.add_argument("reason", nargs="?", help="what to escalate (required for escalate)")
+
+
 def _non_negative_float(value: str) -> float:
     try:
         n = float(value)
@@ -422,6 +432,16 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
         print(f"evolve: {exc}", file=sys.stderr)
         return 2
     print(report.summary())
+    unisync.report(
+        unisync.run_summary(
+            "evolve",
+            "accepted" if report.accepted else "rejected",
+            item=report.item.id if report.item else "",
+            branch=report.branch,
+            reason=report.reason[:300],
+        ),
+        warn=_warn,
+    )
     return 0 if report.accepted else 1
 
 
@@ -742,14 +762,57 @@ def _start(agent: Sebastian, args: argparse.Namespace, ws: Workspace) -> int:
         result = agent.run(args.task)
         code = _print_result(result)
         mode = _publish_mode(args)
-        if mode is None:
-            return code
-        return _publish(ws, result, args, mode) if code == 0 else code
+        if mode is not None and code == 0:
+            code = _publish(ws, result, args, mode)
+        _report_run(args.cmd, result, code)
+        return code
     try:
-        return _print_result(agent.resume(args.run_id))
+        result = agent.resume(args.run_id)
     except SessionError as exc:
         print(f"resume: {exc}", file=sys.stderr)
         return 1
+    code = _print_result(result)
+    _report_run(args.cmd, result, code)
+    return code
+
+
+def _warn(msg: str) -> None:
+    print(msg, file=sys.stderr)
+
+
+def _report_run(command: str, result: RunResult, code: int) -> None:
+    """Best-effort UniSync report of a finished run: metadata only, never changes the exit code."""
+    unisync.report(
+        unisync.run_summary(
+            command,
+            "ok" if code == 0 else "failed",
+            run_id=result.run_id,
+            stop=result.stop_reason.value,
+            steps=result.steps,
+            tokens=result.usage.total,
+        ),
+        warn=_warn,
+    )
+
+
+def _unisync(args: argparse.Namespace) -> int:
+    reporter = unisync.Reporter.from_env()
+    if reporter is None:
+        print("unisync: set UNISYNC_SUPABASE_URL and UNISYNC_SUPABASE_KEY", file=sys.stderr)
+        return 2
+    if args.action == "escalate" and not args.reason:
+        print("unisync: escalate needs a REASON", file=sys.stderr)
+        return 2
+    try:
+        if args.action == "ping":
+            posted = reporter.post("heartbeat")
+        else:
+            posted = reporter.post("escalate", reason=args.reason)
+    except (unisync.UnisyncError, OSError, ValueError) as exc:
+        print(f"unisync: {exc}", file=sys.stderr)
+        return 1
+    print(f"unisync: {posted.kind} written at seq {posted.seq} ({posted.digest[:12]})")
+    return 0
 
 
 def _demo_llm() -> ScriptedLLM:
@@ -936,6 +999,7 @@ def main(
         "memory": lambda: _memory(cfg, args),
         "models": lambda: _models(cfg, args, llm_factory, prices),
         "show": lambda: _show(cfg, args),
+        "unisync": lambda: _unisync(args),
     }
     if args.cmd in tools_only:
         return tools_only[args.cmd]()

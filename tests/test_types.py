@@ -2,13 +2,15 @@
 
 from sebastian.types import Usage
 
-def test_usage_total():
+
+def test_usage_total() -> None:
     assert Usage(input_tokens=10, output_tokens=20).total == 30
     assert Usage(input_tokens=0, output_tokens=0).total == 0
     assert Usage(input_tokens=5, output_tokens=0).total == 5
     assert Usage(input_tokens=0, output_tokens=8).total == 8
 
-def test_usage_add():
+
+def test_usage_add() -> None:
     u1 = Usage(input_tokens=10, output_tokens=20, cost=0.05, unreported=1)
     u2 = Usage(input_tokens=5, output_tokens=15, cost=0.02, unreported=0)
 
@@ -19,7 +21,8 @@ def test_usage_add():
     assert result.cost == 0.07
     assert result.unreported == 1
 
-def test_usage_add_zeros():
+
+def test_usage_add_zeros() -> None:
     u1 = Usage()
     u2 = Usage(input_tokens=5, output_tokens=15, cost=0.02, unreported=0)
 
@@ -30,7 +33,8 @@ def test_usage_add_zeros():
     assert result.cost == 0.02
     assert result.unreported == 0
 
-def test_usage_multiple_add():
+
+def test_usage_multiple_add() -> None:
     u1 = Usage(input_tokens=10, output_tokens=20)
     u2 = Usage(input_tokens=5, output_tokens=15)
     u3 = Usage(input_tokens=2, output_tokens=3)
