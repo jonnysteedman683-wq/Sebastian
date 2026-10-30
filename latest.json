@@ -1,5 +1,5 @@
 {
-  "summary": "2 commit(s): fix(tests): remove unused noqa S310 flagged by RUF100; Merge pull request #104 from jonnysteedman683-wq/fix/ruff-unused-noqa",
+  "summary": "3 commit(s): fix(guard): restore exit 1 so Guard fails unapproved guarded-path PRs (reverts guard.yml part of #91); Merge remote-tracking branch 'origin/main' into fix/guard-exit-1; Merge pull request #103 from jonnysteedman683-wq/fix/guard-exit-1",
   "changes": [
     {
       "category": "QUALITY",
@@ -8,8 +8,8 @@
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "b08fb5714ded824c017f8f555b93823a1aabf0b4",
-          "path": "tests/test_api_key_scope.py"
+          "sha": "a5b0d07ffcc3f880c4d42d2f4ad538bb739ce56b",
+          "path": ".github/workflows/guard.yml"
         }
       ],
       "permission": "n/a",
@@ -23,18 +23,20 @@
     "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
   ],
   "pr_previews": [],
-  "escalation_reasons": [],
+  "escalation_reasons": [
+    "watch tooling or report contract changed: .github/workflows/guard.yml"
+  ],
   "report_type": "repo_change_report",
-  "seq": 97,
+  "seq": 98,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "fddc8ad97c56905aaae58f91e8d10aaec9f541c3",
-    "to_sha": "b08fb5714ded824c017f8f555b93823a1aabf0b4"
+    "from_sha": "b08fb5714ded824c017f8f555b93823a1aabf0b4",
+    "to_sha": "a5b0d07ffcc3f880c4d42d2f4ad538bb739ce56b"
   },
-  "generated_at": "2026-10-30T14:17:20Z",
+  "generated_at": "2026-10-30T14:18:47Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -79,8 +81,8 @@
     "removed": [],
     "changed": []
   },
-  "risk_score": 0,
-  "escalate": false,
-  "priority": "LOW",
-  "signature": "d4837ff4bf4b912811ddce31d5902370386630ff3c1e71e474e40a13bb2dd4b4"
+  "risk_score": 3,
+  "escalate": true,
+  "priority": "HIGH",
+  "signature": "365215cdb1bb64ff0b0c70f350ca026b7be1d27fdfd47a908060e066cbf31dd3"
 }
