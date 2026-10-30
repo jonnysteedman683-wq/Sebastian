@@ -29,6 +29,7 @@ import os
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -126,27 +127,36 @@ def _is_loopback(host: str) -> bool:
         return False
 
 
+@dataclass
+class OpenAICompatConfig:
+    """Configuration for an OpenAI-compatible LLM."""
+    base_url: str = "https://api.openai.com/v1"
+    api_key: str | None = None
+    key_env: str = ""
+    max_tokens: int = 4096
+    timeout: float = 300.0
+    transport: Transport | None = None
+
+
 class OpenAICompatLLM:
     """Any OpenAI-compatible chat endpoint, with tool calling."""
 
     def __init__(
         self,
         model: str,
-        base_url: str = "https://api.openai.com/v1",
-        api_key: str | None = None,
-        key_env: str = "",
-        max_tokens: int = 4096,
-        timeout: float = 300.0,
-        transport: Transport | None = None,
+        config: OpenAICompatConfig | None = None,
     ) -> None:
         if not model.strip():
             raise LLMError("model name must not be empty")
         self.model = model
-        self.base_url = check_base_url(base_url)
-        self.max_tokens = max_tokens
-        self.timeout = timeout
-        self._api_key = api_key if api_key is not None else resolve_api_key(self.base_url, key_env)
-        self._transport = transport or _urllib_transport
+        cfg = config or OpenAICompatConfig()
+        self.base_url = check_base_url(cfg.base_url)
+        self.max_tokens = cfg.max_tokens
+        self.timeout = cfg.timeout
+        self._api_key = cfg.api_key if cfg.api_key is not None else resolve_api_key(
+            self.base_url, cfg.key_env
+        )
+        self._transport = cfg.transport or _urllib_transport
 
     def preflight(self) -> None:
         """Raise ``LLMError`` when this client cannot work, before any tokens are spent (P2-12)."""

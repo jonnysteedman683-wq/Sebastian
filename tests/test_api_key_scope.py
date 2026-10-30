@@ -15,7 +15,12 @@ from sebastian.evals.leaderboard import LeaderboardError, ModelSpec, parse_spec
 from sebastian.llm import RetryingLLM, make_llm
 from sebastian.llm import openai_compat as oc
 from sebastian.llm.base import LLMError
-from sebastian.llm.openai_compat import OpenAICompatLLM, check_key_env, resolve_api_key
+from sebastian.llm.openai_compat import (
+    OpenAICompatConfig,
+    OpenAICompatLLM,
+    check_key_env,
+    resolve_api_key,
+)
 from sebastian.types import Message, Role
 
 OPENAI = "https://api.openai.com/v1"
@@ -48,7 +53,8 @@ def _fake_keys(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def _auth(base_url: str, key_env: str = "") -> str | None:
     rec = Recorder()
-    OpenAICompatLLM("m", base_url, key_env=key_env, transport=rec).complete(
+    cfg = OpenAICompatConfig(base_url=base_url, key_env=key_env, transport=rec)
+    OpenAICompatLLM("m", cfg).complete(
         "S", [Message(Role.USER, text="t")], []
     )
     return rec.headers[0].get("Authorization")
@@ -80,7 +86,7 @@ def test_forbidden_key_envs(name: str) -> None:
     with pytest.raises(LLMError, match="refusing"):
         check_key_env(name)
     with pytest.raises(LLMError, match="refusing"):
-        OpenAICompatLLM("m", THIRD, key_env=name, transport=Recorder())
+        OpenAICompatLLM("m", OpenAICompatConfig(base_url=THIRD, key_env=name, transport=Recorder()))
 
 
 @pytest.mark.parametrize("name", ["", "1KEY", "MY-KEY", "A B", "KEÿ"])
@@ -141,7 +147,8 @@ def test_leaderboard_sends_each_key_only_to_its_host(
     built: dict[str, str] = {}
 
     def fake(model: str, backend: str, base_url: str, key_env: str) -> Any:
-        client = OpenAICompatLLM(model, base_url or OPENAI, key_env=key_env, transport=Recorder())
+        cfg = OpenAICompatConfig(base_url=base_url or OPENAI, key_env=key_env, transport=Recorder())
+        client = OpenAICompatLLM(model, cfg)
         built[model] = client._api_key
         return client
 
@@ -158,7 +165,7 @@ def test_leaderboard_sends_each_key_only_to_its_host(
 
 
 def test_redirects_are_refused() -> None:
-    req = urllib.request.Request(OPENAI, headers={"Authorization": "x"})
+    req = urllib.request.Request(OPENAI, headers={"Authorization": "x"})  # noqa: S310
     with pytest.raises(LLMError, match="redirect"):
         oc._NoRedirect().redirect_request(
             req, io.BytesIO(), 302, "Found", HTTPHeaders(), "https://evil.example/steal"
@@ -170,11 +177,12 @@ def test_unauthorised_without_key_explains_why() -> None:
         return 401, b"missing key"
 
     with pytest.raises(LLMError, match=r"no API key was sent to other-host\.example"):
-        OpenAICompatLLM("m", THIRD, transport=deny).complete(
+        OpenAICompatLLM("m", OpenAICompatConfig(base_url=THIRD, transport=deny)).complete(
             "S", [Message(Role.USER, text="t")], []
         )
+    cfg = OpenAICompatConfig(base_url=THIRD, key_env="MY_KEY", transport=deny)
     with pytest.raises(LLMError) as exc:
-        OpenAICompatLLM("m", THIRD, key_env="MY_KEY", transport=deny).complete(
+        OpenAICompatLLM("m", cfg).complete(
             "S", [Message(Role.USER, text="t")], []
         )
     assert "no API key" not in str(exc.value)

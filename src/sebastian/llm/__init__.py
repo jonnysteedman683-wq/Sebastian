@@ -17,11 +17,13 @@ def make_llm(model: str, backend: str = "anthropic", base_url: str = "", key_env
 
         return RetryingLLM(AnthropicLLM(model))
     if backend == "openai":
-        from sebastian.llm.openai_compat import OpenAICompatLLM  # noqa: PLC0415
+        from sebastian.llm.openai_compat import OpenAICompatConfig, OpenAICompatLLM  # noqa: PLC0415
 
         if base_url:
-            return RetryingLLM(OpenAICompatLLM(model, base_url, key_env=key_env))
-        return RetryingLLM(OpenAICompatLLM(model, key_env=key_env))
+            config = OpenAICompatConfig(base_url=base_url, key_env=key_env)
+        else:
+            config = OpenAICompatConfig(key_env=key_env)
+        return RetryingLLM(OpenAICompatLLM(model, config=config))
     raise LLMError(f"unknown backend {backend!r}; use one of {', '.join(BACKENDS)}")
 
 
