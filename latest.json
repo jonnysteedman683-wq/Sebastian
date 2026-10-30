@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): docs: Jules memory - notes carried between daily runs (B75); Merge pull request #80 from jonnysteedman683-wq/claude/jules-memory",
+  "summary": "2 commit(s): test: add dedicated tests for history.py and move tests from dashboard; Merge pull request #79 from jonnysteedman683-wq/sebastian/test-history-5913347171778401179",
   "changes": [
     {
-      "category": "DOCS",
-      "title": "6 file(s) changed",
-      "description": "Detected automatically from code: 6 file(s) changed.",
+      "category": "ABILITY_CHANGE",
+      "title": "3 file(s) changed",
+      "description": "Detected automatically from code: 3 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "8b8dd6db6c5489859a1c3d2876e88bda9a1dd14c",
-          "path": "AGENTS.md"
+          "sha": "5a9db361a294d8ca951f2a304e503d598d4f0cc2",
+          "path": "reports/20261030-testing-improvement.md"
         }
       ],
       "permission": "n/a",
@@ -23,20 +23,18 @@
     "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
   ],
   "pr_previews": [],
-  "escalation_reasons": [
-    "watch tooling or report contract changed: AGENTS.md, CLAUDE.md"
-  ],
+  "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 87,
+  "seq": 88,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "711ced02de1210c80584e6be585f41921c9c9fd9",
-    "to_sha": "8b8dd6db6c5489859a1c3d2876e88bda9a1dd14c"
+    "from_sha": "8b8dd6db6c5489859a1c3d2876e88bda9a1dd14c",
+    "to_sha": "5a9db361a294d8ca951f2a304e503d598d4f0cc2"
   },
-  "generated_at": "2026-10-30T09:49:58Z",
+  "generated_at": "2026-10-30T10:16:45Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -81,8 +79,8 @@
     "removed": [],
     "changed": []
   },
-  "risk_score": 3,
-  "escalate": true,
-  "priority": "HIGH",
-  "signature": "6a5f0caf7562e2403322d45e631afe7241741e123ed1c0a9ab0eba13e7e32144"
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "33bfadb0bf2b1c75e545c969d9c85f1a91178124eb81e5eda7a06509f907e881"
 }
