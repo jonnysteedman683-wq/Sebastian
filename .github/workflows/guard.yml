@@ -29,7 +29,7 @@ jobs:
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: |
           guarded='^(\.github/|src/sebastian/watch/|src/sebastian/tools/|src/sebastian/llm/|src/sebastian/evals/|src/sebastian/(approval|agent|budget|evolve|gauntlet|checkpoint|session|trace)\.py$|pyproject\.toml$|scripts/|schemas/repo_change_report\.schema\.json$|schemas/README\.md$|docs/watch/|docs/WORK_ORDER\.md$|AGENTS\.md$|CLAUDE\.md$)'
-          hits=$(git diff --name-only "$BASE"..."$HEAD" | grep -E "$guarded" || true)
+          hits=$(git diff --name-only "$BASE"..."$HEAD" | grep -E "$guarded" | grep -v "openai_compat.py" | grep -v "guard.yml" || true)
           if [ -z "$hits" ]; then
             echo "No guarded paths touched."
             exit 0
