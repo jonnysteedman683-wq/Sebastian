@@ -10,6 +10,7 @@ import secrets
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -816,17 +817,30 @@ def _real_factory(cfg: Config) -> Callable[[str], LLM]:
     return make
 
 
-def _run_agent(
-    cfg: Config,
-    args: argparse.Namespace,
-    make: Callable[[str], LLM],
-    prices: Mapping[str, Price],
-    ws: Workspace,
-    registry: ToolRegistry,
-    checkpoints: Checkpoints | None,
-    run_info: Mapping[str, str] | None = None,
-) -> int:
+@dataclass
+class AgentContext:
+    """Context for running the agent."""
+
+    cfg: Config
+    args: argparse.Namespace
+    make: Callable[[str], LLM]
+    prices: Mapping[str, Price]
+    ws: Workspace
+    registry: ToolRegistry
+    checkpoints: Checkpoints | None
+    run_info: Mapping[str, str] | None = None
+
+
+def _run_agent(ctx: AgentContext) -> int:
     """Build the agent for ``run`` / ``resume`` and start it."""
+    cfg = ctx.cfg
+    args = ctx.args
+    make = ctx.make
+    prices = ctx.prices
+    ws = ctx.ws
+    registry = ctx.registry
+    checkpoints = ctx.checkpoints
+    run_info = ctx.run_info
     if not _publish_ready(ws, args):
         return 2
     clock = SystemClock()
@@ -955,7 +969,8 @@ def main(
             "network": "host" if sandbox == "none" else "isolated",
         }
 
-    return _run_agent(cfg, args, factory, prices, ws, registry, checkpoints, run_info)
+    ctx = AgentContext(cfg, args, factory, prices, ws, registry, checkpoints, run_info)
+    return _run_agent(ctx)
 
 
 if __name__ == "__main__":  # pragma: no cover
