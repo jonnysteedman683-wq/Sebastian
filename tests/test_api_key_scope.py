@@ -158,7 +158,7 @@ def test_leaderboard_sends_each_key_only_to_its_host(
 
 
 def test_redirects_are_refused() -> None:
-    req = urllib.request.Request(OPENAI, headers={"Authorization": "x"})  # noqa: S310
+    req = urllib.request.Request(OPENAI, headers={"Authorization": "x"})
     with pytest.raises(LLMError, match="redirect"):
         oc._NoRedirect().redirect_request(
             req, io.BytesIO(), 302, "Found", HTTPHeaders(), "https://evil.example/steal"
