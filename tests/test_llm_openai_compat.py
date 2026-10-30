@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
+import http.client
 import json
-import urllib.error
-import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -130,13 +129,15 @@ def test_requests_carry_a_sebastian_user_agent(monkeypatch: pytest.MonkeyPatch) 
 
     seen: list[str | None] = []
 
-    def capture(req: urllib.request.Request, timeout: float) -> Any:
-        seen.append(req.get_header("User-agent"))  # urllib stores header names capitalised
-        raise urllib.error.URLError("stop")
+    def capture(
+        self: Any, method: str, url: str, body: Any = None, headers: dict[str, str] | None = None
+    ) -> None:
+        seen.append(headers.get("User-Agent") if headers else None)
+        raise http.client.HTTPException("stop")
 
-    monkeypatch.setattr(oc, "_open", capture)
+    monkeypatch.setattr(http.client.HTTPSConnection, "request", capture)
     with pytest.raises(TransientLLMError):
-        oc._urllib_transport("https://h/v1", {"User-Agent": sent}, b"{}", 5)
+        oc._http_transport("https://h/v1", {"User-Agent": sent}, b"{}", 5)
     assert seen == [sent]  # ours, not urllib's default
 
 
@@ -240,45 +241,58 @@ def test_client_errors_do_not_retry(status: int) -> None:
     assert not isinstance(info.value, TransientLLMError)
 
 
-def test_urllib_transport_maps_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_http_transport_maps_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     class Resp:
         status = 200
-
-        def __enter__(self) -> Resp:
-            return self
-
-        def __exit__(self, *a: object) -> None:
-            return None
 
         def read(self) -> bytes:
             return b"{}"
 
     calls: list[Any] = []
 
-    def ok(req: Any, timeout: float) -> Resp:
-        calls.append((req.full_url, req.get_header("Content-type"), timeout))
+    def ok_request(
+        self: Any, method: str, url: str, body: Any = None, headers: dict[str, str] | None = None
+    ) -> None:
+        calls.append(
+            (self.host, url, headers.get("Content-Type") if headers else None, self.timeout)
+        )
+
+    def ok_getresponse(self: Any) -> Resp:
         return Resp()
 
-    monkeypatch.setattr(oc, "_open", ok)
-    assert oc._urllib_transport("https://h/v1", {"Content-Type": "x"}, b"{}", 5) == (200, b"{}")
-    assert calls == [("https://h/v1", "x", 5)]
+    monkeypatch.setattr(http.client.HTTPSConnection, "request", ok_request)
+    monkeypatch.setattr(http.client.HTTPSConnection, "getresponse", ok_getresponse)
+    assert oc._http_transport("https://h/v1", {"Content-Type": "x"}, b"{}", 5) == (200, b"{}")
+    assert calls == [("h", "/v1", "x", 5)]
 
-    def down(req: Any, timeout: float) -> Resp:
-        raise urllib.error.URLError("refused")
+    def down(
+        self: Any, method: str, url: str, body: Any = None, headers: dict[str, str] | None = None
+    ) -> None:
+        raise http.client.HTTPException("refused")
 
-    monkeypatch.setattr(oc, "_open", down)
+    monkeypatch.setattr(http.client.HTTPSConnection, "request", down)
     with pytest.raises(TransientLLMError, match="cannot reach h"):
-        oc._urllib_transport("https://h/v1", {}, b"{}", 5)
+        oc._http_transport("https://h/v1", {}, b"{}", 5)
 
 
 def test_http_error_body_is_returned(monkeypatch: pytest.MonkeyPatch) -> None:
-    import io
+    class Resp:
+        status = 429
 
-    def http_error(req: Any, timeout: float) -> Any:
-        raise urllib.error.HTTPError(req.full_url, 429, "slow", {}, io.BytesIO(b"rate"))  # type: ignore[arg-type]
+        def read(self) -> bytes:
+            return b"rate"
 
-    monkeypatch.setattr(oc, "_open", http_error)
-    assert oc._urllib_transport("https://h/v1", {}, b"{}", 5) == (429, b"rate")
+    def noop_request(
+        self: Any, method: str, url: str, body: Any = None, headers: dict[str, str] | None = None
+    ) -> None:
+        pass
+
+    def err_getresponse(self: Any) -> Resp:
+        return Resp()
+
+    monkeypatch.setattr(http.client.HTTPSConnection, "request", noop_request)
+    monkeypatch.setattr(http.client.HTTPSConnection, "getresponse", err_getresponse)
+    assert oc._http_transport("https://h/v1", {}, b"{}", 5) == (429, b"rate")
 
 
 # --- base URL policy ------------------------------------------------------------------------
