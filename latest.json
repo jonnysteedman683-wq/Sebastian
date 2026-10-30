@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): test: add tests for ast parsing error handling in inventory; Merge pull request #88 from jonnysteedman683-wq/sebastian/test-inventory-parse-17477595997245640145",
+  "summary": "2 commit(s): feat: report runs to the shared UniSync ledger; Merge pull request #107 from jonnysteedman683-wq/claude/unisync-reporting",
   "changes": [
     {
-      "category": "QUALITY",
-      "title": "1 file(s) changed",
-      "description": "Detected automatically from code: 1 file(s) changed.",
+      "category": "NEW_FEATURE",
+      "title": "New CLI command unisync",
+      "description": "Detected automatically from code: New CLI command unisync.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "9a7bc71b3d3d606f095624a2b35a1046f2574678",
-          "path": "tests/test_watch.py"
+          "sha": "f257573526041ac399d2187885a954bdba4364f5",
+          "path": "src/sebastian/cli.py"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 105,
+  "seq": 106,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "d7af1c26b5b63e01b98346482ed9849877a669ed",
-    "to_sha": "9a7bc71b3d3d606f095624a2b35a1046f2574678"
+    "from_sha": "9a7bc71b3d3d606f095624a2b35a1046f2574678",
+    "to_sha": "f257573526041ac399d2187885a954bdba4364f5"
   },
-  "generated_at": "2026-10-30T15:19:06Z",
+  "generated_at": "2026-10-30T18:26:45Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -65,6 +65,7 @@
       "traces",
       "trust",
       "undo",
+      "unisync",
       "version"
     ],
     "llm_backends": [
@@ -75,12 +76,14 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [],
+    "added": [
+      "cli: unisync"
+    ],
     "removed": [],
     "changed": []
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "LOW",
-  "signature": "167e5ef3e6626698c2f29ee010fdc39e5fbc7e905f746ff3ca89d1b8f42e1dfe"
+  "priority": "NORMAL",
+  "signature": "ff408ba1670dd7ce98e309f92a9e5d3f09db41ba7e9857649db70012b0b072e7"
 }

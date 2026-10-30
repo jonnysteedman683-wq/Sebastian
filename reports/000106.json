@@ -1,0 +1,89 @@
+{
+  "summary": "2 commit(s): feat: report runs to the shared UniSync ledger; Merge pull request #107 from jonnysteedman683-wq/claude/unisync-reporting",
+  "changes": [
+    {
+      "category": "NEW_FEATURE",
+      "title": "New CLI command unisync",
+      "description": "Detected automatically from code: New CLI command unisync.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "f257573526041ac399d2187885a954bdba4364f5",
+          "path": "src/sebastian/cli.py"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 106,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "9a7bc71b3d3d606f095624a2b35a1046f2574678",
+    "to_sha": "f257573526041ac399d2187885a954bdba4364f5"
+  },
+  "generated_at": "2026-10-30T18:26:45Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "crosstest",
+      "dashboard",
+      "demo",
+      "doctor",
+      "evolve",
+      "memory",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "unisync",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [
+      "cli: unisync"
+    ],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "ff408ba1670dd7ce98e309f92a9e5d3f09db41ba7e9857649db70012b0b072e7"
+}
