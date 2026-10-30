@@ -1,29 +1,15 @@
 {
-  "summary": "2 commit(s): build: cap ruff below 0.18 so new lint rules can't break main unannounced; Merge pull request #106 from jonnysteedman683-wq/fix/pin-ruff-minor",
+  "summary": "4 commit(s): perf: Optimize membership check using set instead of tuple; perf: Optimize membership check using set instead of tuple; perf: Optimize membership check using set instead of tuple; Merge pull request #84 from jonnysteedman683-wq/sebastian/perf-trace-tuple-set-5414792529263592868",
   "changes": [
     {
-      "category": "DEPENDENCY",
-      "title": "Dependency added: [dev] ruff>=0.17,<0.18",
-      "description": "Detected automatically from code: Dependency added: [dev] ruff>=0.17,<0.18.",
+      "category": "ABILITY_CHANGE",
+      "title": "1 file(s) changed",
+      "description": "Detected automatically from code: 1 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "9574ce1f1b674d3014253117ce564de6598e28ef",
-          "path": "pyproject.toml"
-        }
-      ],
-      "permission": "n/a",
-      "flags": []
-    },
-    {
-      "category": "DEPENDENCY",
-      "title": "Dependency removed: [dev] ruff>=0.17",
-      "description": "Detected automatically from code: Dependency removed: [dev] ruff>=0.17.",
-      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
-      "evidence": [
-        {
-          "sha": "9574ce1f1b674d3014253117ce564de6598e28ef",
-          "path": "pyproject.toml"
+          "sha": "20a40da7695802dfef8ce2e5b32a5696f0b7d554",
+          "path": "src/sebastian/trace.py"
         }
       ],
       "permission": "n/a",
@@ -39,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 100,
+  "seq": 101,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "db98cf56c5aa5499610e4c4873d68d48ee4ed491",
-    "to_sha": "9574ce1f1b674d3014253117ce564de6598e28ef"
+    "from_sha": "9574ce1f1b674d3014253117ce564de6598e28ef",
+    "to_sha": "20a40da7695802dfef8ce2e5b32a5696f0b7d554"
   },
-  "generated_at": "2026-10-30T15:13:14Z",
+  "generated_at": "2026-10-30T15:14:54Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -89,16 +75,12 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [
-      "dependency: [dev] ruff>=0.17,<0.18"
-    ],
-    "removed": [
-      "dependency: [dev] ruff>=0.17"
-    ],
+    "added": [],
+    "removed": [],
     "changed": []
   },
-  "risk_score": 1,
+  "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "32687f1f5f28954724d7e3af8a9108340fa8210ba3e915c3222a116650e10772"
+  "signature": "cccbaeece804e72ef8a0108f5db6bdf5984f767907545fe46f6faef6c1ae6de7"
 }
