@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): refactor: optimize membership check in trust.py; Merge pull request #87 from jonnysteedman683-wq/sebastian/perf-trust-4601972703219655208",
+  "summary": "2 commit(s): test: add tests for ast parsing error handling in inventory; Merge pull request #88 from jonnysteedman683-wq/sebastian/test-inventory-parse-17477595997245640145",
   "changes": [
     {
-      "category": "ABILITY_CHANGE",
+      "category": "QUALITY",
       "title": "1 file(s) changed",
       "description": "Detected automatically from code: 1 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "d7af1c26b5b63e01b98346482ed9849877a669ed",
-          "path": "src/sebastian/trust.py"
+          "sha": "9a7bc71b3d3d606f095624a2b35a1046f2574678",
+          "path": "tests/test_watch.py"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 104,
+  "seq": 105,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "9d3c5d6af3f22115fea4474d25ad5ae68874ea94",
-    "to_sha": "d7af1c26b5b63e01b98346482ed9849877a669ed"
+    "from_sha": "d7af1c26b5b63e01b98346482ed9849877a669ed",
+    "to_sha": "9a7bc71b3d3d606f095624a2b35a1046f2574678"
   },
-  "generated_at": "2026-10-30T15:18:33Z",
+  "generated_at": "2026-10-30T15:19:06Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -81,6 +81,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "NORMAL",
-  "signature": "727e549af81c45c3fa08aa8821b526e7b9fadd0a2803863a14bb7bd269b1a9e4"
+  "priority": "LOW",
+  "signature": "167e5ef3e6626698c2f29ee010fdc39e5fbc7e905f746ff3ca89d1b8f42e1dfe"
 }
