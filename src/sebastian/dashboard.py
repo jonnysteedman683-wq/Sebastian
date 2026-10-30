@@ -14,6 +14,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from sebastian.history import Record
 from sebastian.trace import RunSummary
@@ -158,41 +159,74 @@ def _tile(name: str, value: str, note: str = "") -> str:
     )
 
 
-def render(s: Snapshot) -> str:
-    """The full HTML page."""
-    evals = [r for r in s.records if r.kind == "eval"]
-    reds = [r for r in s.records if r.kind == "redteam"]
-    gauntlets = [r for r in s.records if r.kind == "gauntlet"]
-    critics = [r for r in s.records if r.kind == "redteam_critic"]
-    stops = Counter(r.stop for r in s.runs)
-    done = [r for r in s.runs if r.stop != "running"]
+def _render_tiles(
+    s: Snapshot,
+    evals: list[Record],
+    reds: list[Record],
+    gauntlets: list[Record],
+    critics: list[Record],
+    stops: Counter[str],
+    done: list[RunSummary],
+    red_scars: list[str],
+    assessment: Any,
+) -> str:
     completed = stops.get("completed", 0)
-    red_scars = [n for n in s.scars if n.startswith("redteam-")]
-    assessment = assess(s.records)
-    tiles = "".join(
+    return "".join(
         [
-            _tile("Eval score", _pct(evals[-1].score) if evals else "n/a",
-                  f"{evals[-1].model}, {_date(evals[-1].t)}" if evals else "run evals --live"),
-            _tile("Injection resistance",
-                  _pct(reds[-1].resistance) if reds else "n/a",
-                  f"latest red-team round, {len(reds)} total" if reds else "run sebastian redteam"),
+            _tile(
+                "Eval score",
+                _pct(evals[-1].score) if evals else "n/a",
+                f"{evals[-1].model}, {_date(evals[-1].t)}" if evals else "run evals --live",
+            ),
+            _tile(
+                "Injection resistance",
+                _pct(reds[-1].resistance) if reds else "n/a",
+                f"latest red-team round, {len(reds)} total" if reds else "run sebastian redteam",
+            ),
             _tile("Scars", str(len(s.scars)), f"{len(red_scars)} from the red team"),
-            _tile("Runs", str(len(s.runs)),
-                  f"{_pct(completed / len(done)) if done else 'n/a'} completed"),
-            _tile("Needs help", str(stops.get("needs_help", 0)),
-                  "Gauntlet runs that could not prove they were done"),
-            _tile("Gauntlet score", _pct(gauntlets[-1].score) if gauntlets else "n/a",
-                  f"{gauntlets[-1].model}, {_date(gauntlets[-1].t)}" if gauntlets
-                  else "run evals --live --compare"),
-            _tile("Critic resistance", _pct(critics[-1].resistance) if critics else "n/a",
-                  f"latest critic red-team round, {len(critics)} total" if critics
-                  else "run sebastian redteam --target critic"),
-            _tile("Spend", f"${sum(r.cost for r in s.runs):,.2f}" if any(r.cost for r in s.runs)
-                  else "n/a", "priced runs in the trace" if any(r.cost for r in s.runs)
-                  else "add prices.json to track cost"),
+            _tile(
+                "Runs",
+                str(len(s.runs)),
+                f"{_pct(completed / len(done)) if done else 'n/a'} completed",
+            ),
+            _tile(
+                "Needs help",
+                str(stops.get("needs_help", 0)),
+                "Gauntlet runs that could not prove they were done",
+            ),
+            _tile(
+                "Gauntlet score",
+                _pct(gauntlets[-1].score) if gauntlets else "n/a",
+                f"{gauntlets[-1].model}, {_date(gauntlets[-1].t)}"
+                if gauntlets
+                else "run evals --live --compare",
+            ),
+            _tile(
+                "Critic resistance",
+                _pct(critics[-1].resistance) if critics else "n/a",
+                f"latest critic red-team round, {len(critics)} total"
+                if critics
+                else "run sebastian redteam --target critic",
+            ),
+            _tile(
+                "Spend",
+                f"${sum(r.cost for r in s.runs):,.2f}" if any(r.cost for r in s.runs) else "n/a",
+                "priced runs in the trace"
+                if any(r.cost for r in s.runs)
+                else "add prices.json to track cost",
+            ),
             _tile("Trust level", assessment.level.label, _e(assessment.reason)),
         ]
-    )  # fmt: skip
+    )
+
+
+def _render_charts(
+    s: Snapshot,
+    evals: list[Record],
+    reds: list[Record],
+    gauntlets: list[Record],
+    critics: list[Record],
+) -> str:
     plain_e, gaunt_e = _latest_model(evals), _latest_model(gauntlets)
     latest = plain_e or gaunt_e
 
@@ -226,19 +260,29 @@ def render(s: Snapshot) -> str:
         needs_help_by_day(s.runs),
         "Share of finished runs per day that ended in needs_help",
     )
-    stop_rows = (
+    return eval_chart + red_chart + help_chart
+
+
+def _render_runs_by_outcome(stops: Counter[str]) -> str:
+    return (
         "".join(f"<tr><td>{_e(k)}</td><td>{v}</td></tr>" for k, v in sorted(stops.items()))
         or '<tr><td colspan="2" class="empty">No runs traced yet.</td></tr>'
     )
-    run_rows = (
+
+
+def _render_recent_runs(runs: list[RunSummary]) -> str:
+    return (
         "".join(
             f"<tr><td><code>{_e(r.run_id[:12])}</code></td><td>{_e(_date(r.started))}</td>"
             f"<td>{_e(r.stop)}</td><td>{r.steps}</td><td>{r.tokens:,}</td></tr>"
-            for r in reversed(s.runs[-RECENT_RUNS:])
+            for r in reversed(runs[-RECENT_RUNS:])
         )
         or '<tr><td colspan="5" class="empty">No runs traced yet.</td></tr>'
     )
-    board = latest_leaderboard(s.records)
+
+
+def _render_leaderboard(records: list[Record]) -> tuple[str, str]:
+    board = latest_leaderboard(records)
     board_rows = (
         "".join(
             f"<tr><td>{i}</td><td><code>{_e(p.model)}</code></td><td>{_e(_pct(p.score))}</td>"
@@ -249,9 +293,33 @@ def render(s: Snapshot) -> str:
         or '<tr><td colspan="5" class="empty">No leaderboard yet: run sebastian models.</td></tr>'
     )
     board_when = f" ({_e(_date(board[0][0].t))})" if board else ""
-    scar_items = "".join(f"<li><code>{_e(n)}</code></li>" for n in s.scars) or (
+    return board_rows, board_when
+
+
+def _render_scars(scars: list[str]) -> str:
+    return "".join(f"<li><code>{_e(n)}</code></li>" for n in scars) or (
         '<li class="empty">No scars yet.</li>'
     )
+
+
+def render(s: Snapshot) -> str:
+    """The full HTML page."""
+    evals = [r for r in s.records if r.kind == "eval"]
+    reds = [r for r in s.records if r.kind == "redteam"]
+    gauntlets = [r for r in s.records if r.kind == "gauntlet"]
+    critics = [r for r in s.records if r.kind == "redteam_critic"]
+    stops = Counter(r.stop for r in s.runs)
+    done = [r for r in s.runs if r.stop != "running"]
+    red_scars = [n for n in s.scars if n.startswith("redteam-")]
+    assessment = assess(s.records)
+
+    tiles = _render_tiles(s, evals, reds, gauntlets, critics, stops, done, red_scars, assessment)
+    charts = _render_charts(s, evals, reds, gauntlets, critics)
+    stop_rows = _render_runs_by_outcome(stops)
+    run_rows = _render_recent_runs(s.runs)
+    board_rows, board_when = _render_leaderboard(s.records)
+    scar_items = _render_scars(s.scars)
+
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -287,7 +355,7 @@ th{{color:var(--muted);font-weight:500;font-size:13px}}tr:last-child td{{border-
 <h1>Sebastian</h1>
 <p class="sub">Generated {_e(_date(s.generated))} UTC from local history, traces and scars.</p>
 <section class="tiles">{tiles}</section>
-<h2>Trends</h2>{eval_chart}{red_chart}{help_chart}
+<h2>Trends</h2>{charts}
 <h2>Latest model leaderboard{board_when}</h2><div class="scroll"><table>
 <tr><th>#</th><th>Model</th><th>Score</th><th>Injection</th><th>Gauntlet</th></tr>{board_rows}
 </table></div>
