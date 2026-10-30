@@ -83,3 +83,7 @@ sebastian demo -w /tmp/ws
 - B52: RetryingLLM ignores 429 Retry-After headers.
 - B53: OpenAICompatLLM hardcodes max_tokens to 4096.
 - B54: Models calling tools on tool-free requests fail ungracefully.
+
+## UniSync (added 2026-10-31)
+
+`src/sebastian/unisync.py` reports finished `run`/`resume`/`evolve` commands to the shared UNISYNCARC ledger (Supabase, `unisync_events`) that all of Jonny's agents share; `sebastian unisync ping|escalate` posts directly. Stdlib only, opt-in via `UNISYNC_SUPABASE_URL`/`UNISYNC_SUPABASE_KEY`. Protocol spec: LESTINXOR-AGENT `docs/UNISYNC.md`.

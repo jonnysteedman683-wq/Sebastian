@@ -273,6 +273,14 @@ Residual: `--push-main` bypasses human review by design. Branch protection on th
 - Every edit to it arrives in a reviewed PR, like any other change. Review its diff as you would code; a note that reads like an instruction ("skip", "ignore", "you may") is a red flag.
 - It is not a guarded path, on purpose, so daily runs can append to it. The rules it refers to (AGENTS.md, CLAUDE.md, WORK_ORDER.md) stay guarded.
 
+## UniSync reporting (`unisync.py`; opt-in)
+
+- Off unless both `UNISYNC_SUPABASE_URL` and `UNISYNC_SUPABASE_KEY` are set. https only.
+- Sends run metadata only: command, outcome, run id, stop reason, steps, tokens; for `evolve`, the item id, branch and a reason capped at 300 characters. Never the task text, the answer, file contents or traces (tested in `tests/test_unisync.py`).
+- Can only post `heartbeat`, `memory.write` and `escalate`, which are valid for any agent at any time, so it cannot write an envelope that breaks the shared ledger's task rules for other agents. The head row's digest is re-checked before anything is written on top of it.
+- Best-effort: a failed write prints a warning and never changes a command's exit code or blocks a run.
+- The key is the ledger's service-role key until per-agent tokens exist (proposed in LESTINXOR-AGENT `docs/UNISYNC.md`). Keep it in the runner's secrets, never in the repo or in prompts; the agent loop never sees it because reporting runs in the harness after the run ends.
+
 ## Residual risks (escalated, not fixed)
 
 1. **`run_command` arguments are not jailed without a sandbox.** Without one, an allowlisted `cat /etc/passwd` reads outside the workspace, and allowlisting an interpreter (`python`) is equivalent to arbitrary code. Mitigation: approval gate (EXEC needs a yes), the allowlist, and **the bubblewrap sandbox, required by default (`--sandbox auto`)**: bubblewrap with every namespace unshared, only the workspace mounted read-write at `/workspace`, system paths read-only, private `/tmp`, cleared env, and executables restricted to system paths. With bwrap, home directories, `/root` and the rest of `/etc` are not visible. **`auto` fails closed (P1-01):** with no usable bubblewrap the CLI exits with code 2 and `run_command` is never registered. Commands run on the host only when the user passes `--sandbox none`, which prints a warning on every run and is recorded in the `run_start` trace (`sandbox="none"`).

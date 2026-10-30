@@ -104,7 +104,8 @@
       "version",
       "models",
       "show",
-      "crosstest"
+      "crosstest",
+      "unisync"
     ],
     "llm_backends": [
       "anthropic",
@@ -129,5 +130,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "3edd0a753f524bc88eab173ca8f4f5725f0057bf37c0cdd58f8a2c6a06648087"
+  "signature": "b580b1bdfb3856edb730003a73a5ce3a3a65e507bac7426d38cb23834b5dd42f"
 }
