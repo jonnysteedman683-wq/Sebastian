@@ -177,7 +177,7 @@ def summarize_runs(path: str | Path, limit: int) -> list[RunSummary]:
             usage = rec.get("usage")
             if isinstance(usage, dict):
                 run.tokens = sum(
-                    v for k, v in usage.items() if k in ("input", "output") and type(v) is int
+                    v for k, v in usage.items() if k in {"input", "output"} and type(v) is int
                 )
                 cost = usage.get("cost")
                 if isinstance(cost, int | float) and not isinstance(cost, bool) and cost >= 0:
