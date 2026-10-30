@@ -1,0 +1,86 @@
+{
+  "summary": "2 commit(s): docs: lock B49 so the daily Jules run can proceed; Merge pull request #78 from jonnysteedman683-wq/docs/backlog-lock-b49",
+  "changes": [
+    {
+      "category": "DOCS",
+      "title": "1 file(s) changed",
+      "description": "Detected automatically from code: 1 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "711ced02de1210c80584e6be585f41921c9c9fd9",
+          "path": "docs/BACKLOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 86,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "fcb36ed4e7c0910f541c5378418a41298b1a5a9f",
+    "to_sha": "711ced02de1210c80584e6be585f41921c9c9fd9"
+  },
+  "generated_at": "2026-10-30T09:14:58Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "crosstest",
+      "dashboard",
+      "demo",
+      "doctor",
+      "evolve",
+      "memory",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "LOW",
+  "signature": "e487cd4e5f9466fbcc153e3787be68bf28487aec749c43d3d422ad90326da81a"
+}

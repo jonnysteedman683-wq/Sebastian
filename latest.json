@@ -1,23 +1,40 @@
 {
-  "summary": "No changes in last 24h; head = fcb36ed",
-  "changes": [],
+  "summary": "2 commit(s): docs: lock B49 so the daily Jules run can proceed; Merge pull request #78 from jonnysteedman683-wq/docs/backlog-lock-b49",
+  "changes": [
+    {
+      "category": "DOCS",
+      "title": "1 file(s) changed",
+      "description": "Detected automatically from code: 1 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "711ced02de1210c80584e6be585f41921c9c9fd9",
+          "path": "docs/BACKLOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
   "prs": [],
   "security_alerts": [],
   "breaking_changes": [],
-  "open_questions": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 85,
+  "seq": 86,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
     "from_sha": "fcb36ed4e7c0910f541c5378418a41298b1a5a9f",
-    "to_sha": "fcb36ed4e7c0910f541c5378418a41298b1a5a9f"
+    "to_sha": "711ced02de1210c80584e6be585f41921c9c9fd9"
   },
-  "generated_at": "2026-10-30T01:28:58Z",
+  "generated_at": "2026-10-30T09:14:58Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -65,5 +82,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "LOW",
-  "signature": "f95c532b9f5783369907ce05a07242a8bb8a957009c92d78fbea5ac00a70ce0e"
+  "signature": "e487cd4e5f9466fbcc153e3787be68bf28487aec749c43d3d422ad90326da81a"
 }
