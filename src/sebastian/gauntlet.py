@@ -69,6 +69,7 @@ class Stage(StrEnum):
 
 
 TERMINAL = frozenset({Stage.DONE, Stage.HELP})
+_RETRYABLE_STAGES = frozenset({Stage.VERIFY, Stage.CRITIQUE})
 _FORWARD = {
     Stage.PLAN: Stage.PREDICT,
     Stage.PREDICT: Stage.ACT,
@@ -134,7 +135,7 @@ def next_stage(stage: Stage, passed: bool, loops: int, policy: GauntletPolicy) -
         raise GauntletError("loops must be non-negative")
     if passed:
         return Transition(_FORWARD[stage], loops)
-    if stage not in (Stage.VERIFY, Stage.CRITIQUE):
+    if stage not in _RETRYABLE_STAGES:
         return Transition(Stage.HELP, loops, f"{stage} failed")
     loops += 1
     if loops >= policy.max_loops:
