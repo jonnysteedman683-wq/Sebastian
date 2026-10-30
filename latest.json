@@ -1,15 +1,15 @@
 {
-  "summary": "3 commit(s): perf(memory): optimize type check for timestamp membership; Merge branch 'main' into jules-5977072735539981538-6e3a8a9e; Merge pull request #98 from jonnysteedman683-wq/jules-5977072735539981538-6e3a8a9e",
+  "summary": "7 commit(s): refactor: wrap RetryingLLM settings in a dataclass to reduce argument count; test: add tests and coverage for sebastian.trace; test: add tests and coverage for sebastian.trace; Merge branch 'main' into sebastian/code-health-retrying-llm-7661080597892904632; Merge pull request #99 from jonnysteedman683-wq/sebastian/code-health-retrying-llm-7661080597892904632; Merge branch 'main' into sebastian/testing-trace-9864884392291708775; Merge pull request #100 from jonnysteedman683-wq/sebastian/testing-trace-9864884392291708775",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "1 file(s) changed",
-      "description": "Detected automatically from code: 1 file(s) changed.",
+      "title": "6 file(s) changed",
+      "description": "Detected automatically from code: 6 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "179d08e1b4b266ce56bc3dd20483a7fda8da5929",
-          "path": "src/sebastian/memory.py"
+          "sha": "fa5f636e4f2583ad3b3147736fa1ae334b8a612a",
+          "path": "docs/PROPOSALS.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 92,
+  "seq": 93,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "36024f09fe3bff95706d13d5c3a7506a66ba8967",
-    "to_sha": "179d08e1b4b266ce56bc3dd20483a7fda8da5929"
+    "from_sha": "179d08e1b4b266ce56bc3dd20483a7fda8da5929",
+    "to_sha": "fa5f636e4f2583ad3b3147736fa1ae334b8a612a"
   },
-  "generated_at": "2026-10-30T11:34:55Z",
+  "generated_at": "2026-10-30T11:36:06Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -82,5 +82,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "aa905a99484b28b183822e8bbc3f2c55473e847f5f5bddc454a4c61816af0d51"
+  "signature": "fd153b6512d643602529ad80d65f9d3063d3c878025baba9029558dcaeeb0025"
 }
