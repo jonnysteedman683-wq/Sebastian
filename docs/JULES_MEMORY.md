@@ -15,6 +15,8 @@ Rules for editing:
 - Keep the Run log to the newest 30 lines and delete the oldest. Keep the whole file under 150
   lines.
 
+How this repo links to Jonny's other agents and bots (Lestinxor, Grok, Claude, cross-testing): [`docs/SYSTEMS.md`](SYSTEMS.md).
+
 ## Repo facts
 
 - Run every tool through `python -m` (ruff, mypy, pytest). A bare `pytest` on PATH can be another
