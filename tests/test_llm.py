@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 
 from sebastian.llm import LLMError, RetryingLLM, ScriptedLLM, TransientLLMError
+from sebastian.llm.base import RetryConfig
 from sebastian.types import LLMResponse, Message, Role
 
 # --- retry ----------------------------------------------------------------
@@ -26,7 +27,10 @@ class Flaky:
 def test_retry_recovers_with_bounded_backoff() -> None:
     sleeps: list[float] = []
     llm = RetryingLLM(
-        Flaky(2), attempts=4, base_delay=1, max_delay=3, sleep=sleeps.append, rng=random.Random(0)
+        Flaky(2),
+        config=RetryConfig(
+            attempts=4, base_delay=1, max_delay=3, sleep=sleeps.append, rng=random.Random(0)
+        ),
     )
     assert llm.complete("s", [], []).text == "ok"
     assert len(sleeps) == 2
@@ -36,7 +40,7 @@ def test_retry_recovers_with_bounded_backoff() -> None:
 
 def test_retry_gives_up() -> None:
     inner = Flaky(10)
-    llm = RetryingLLM(inner, attempts=3, sleep=lambda _: None)
+    llm = RetryingLLM(inner, config=RetryConfig(attempts=3, sleep=lambda _: None))
     with pytest.raises(TransientLLMError):
         llm.complete("s", [], [])
     assert inner.calls == 3
@@ -51,13 +55,13 @@ def test_retry_does_not_retry_permanent_errors() -> None:
             raise LLMError("auth")
 
     with pytest.raises(LLMError, match="auth"):
-        RetryingLLM(Bad(), sleep=lambda _: None).complete("s", [], [])
+        RetryingLLM(Bad(), config=RetryConfig(sleep=lambda _: None)).complete("s", [], [])
     assert Bad.calls == 1
 
 
 def test_retry_validates_attempts() -> None:
     with pytest.raises(ValueError, match="attempts"):
-        RetryingLLM(Flaky(0), attempts=0)
+        RetryingLLM(Flaky(0), config=RetryConfig(attempts=0))
 
 
 def test_scripted_llm_callable_and_exhaustion() -> None:
