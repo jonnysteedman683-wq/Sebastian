@@ -1,15 +1,15 @@
 {
-  "summary": "5 commit(s): perf(gauntlet): replace inline tuple with pre-allocated frozenset; perf(gauntlet): replace inline tuple with pre-allocated frozenset; perf(gauntlet): replace inline tuple with pre-allocated frozenset; perf(gauntlet): replace inline tuple with pre-allocated frozenset; Merge pull request #94 from jonnysteedman683-wq/jules-4030398936455940651-4e09eae5",
+  "summary": "2 commit(s): refactor: optimize membership check in trust.py; Merge pull request #87 from jonnysteedman683-wq/sebastian/perf-trust-4601972703219655208",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "2 file(s) changed",
-      "description": "Detected automatically from code: 2 file(s) changed.",
+      "title": "1 file(s) changed",
+      "description": "Detected automatically from code: 1 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "9d3c5d6af3f22115fea4474d25ad5ae68874ea94",
-          "path": "reports/2026-10-30-performance-optimization.md"
+          "sha": "d7af1c26b5b63e01b98346482ed9849877a669ed",
+          "path": "src/sebastian/trust.py"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 103,
+  "seq": 104,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "521aed6a651731953360e408a96f6c318ffe2e1c",
-    "to_sha": "9d3c5d6af3f22115fea4474d25ad5ae68874ea94"
+    "from_sha": "9d3c5d6af3f22115fea4474d25ad5ae68874ea94",
+    "to_sha": "d7af1c26b5b63e01b98346482ed9849877a669ed"
   },
-  "generated_at": "2026-10-30T15:17:42Z",
+  "generated_at": "2026-10-30T15:18:33Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -82,5 +82,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "b362ea4caa0c76c7b6b292d247998b32bc27361402e0907ed2d6f7050a45ceab"
+  "signature": "727e549af81c45c3fa08aa8821b526e7b9fadd0a2803863a14bb7bd269b1a9e4"
 }
