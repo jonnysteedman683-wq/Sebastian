@@ -15,7 +15,7 @@ from sebastian.evals.harness import SuiteResult
 from sebastian.evals.leaderboard import ModelSpec, Row, preflight, rank, render, run_leaderboard
 from sebastian.llm import RetryingLLM
 from sebastian.llm.base import LLM, LLMError
-from sebastian.llm.openai_compat import OpenAICompatLLM
+from sebastian.llm.openai_compat import OpenAICompatConfig, OpenAICompatLLM
 from sebastian.llm.scripted import ScriptedLLM
 from sebastian.types import LLMResponse
 
@@ -43,7 +43,8 @@ def test_bad_url_in_third_spec_fails_preflight_before_any_case(
     def factory(name: str) -> LLM:
         calls.append(name)
         if name == "c":
-            return OpenAICompatLLM(name, "http://example.com/v1")  # plain http to remote
+            cfg = OpenAICompatConfig(base_url="http://example.com/v1")
+            return OpenAICompatLLM(name, cfg)  # plain http to remote
         return lazy()
 
     assert main(_models(home, "a", "b", "c"), llm_factory=factory) == 2
@@ -79,7 +80,7 @@ def test_empty_openai_key_is_a_preflight_error(
     monkeypatch.setenv("OPENAI_API_KEY", "")
 
     def factory(name: str) -> LLM:
-        return RetryingLLM(OpenAICompatLLM(name, "https://api.openai.com/v1"))
+        return RetryingLLM(OpenAICompatLLM(name, OpenAICompatConfig(base_url="https://api.openai.com/v1")))
 
     assert main(_models(home, "openai:gpt-x"), llm_factory=factory) == 2
     assert "OPENAI_API_KEY is empty" in capsys.readouterr().err

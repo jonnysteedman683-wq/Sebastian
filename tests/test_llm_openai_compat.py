@@ -16,7 +16,12 @@ from sebastian.clock import FakeClock, SeededIdSource
 from sebastian.config import Config
 from sebastian.llm import BACKENDS, LLMError, RetryingLLM, TransientLLMError, make_llm
 from sebastian.llm import openai_compat as oc
-from sebastian.llm.openai_compat import OpenAICompatLLM, check_base_url, parse_response
+from sebastian.llm.openai_compat import (
+    OpenAICompatConfig,
+    OpenAICompatLLM,
+    check_base_url,
+    parse_response,
+)
 from sebastian.tools import ToolRegistry, Workspace, file_tools
 from sebastian.types import Message, Role, ToolCall, ToolResult, Usage
 
@@ -55,7 +60,8 @@ def call(cid: str, name: str, args: Any) -> dict[str, Any]:
 
 
 def llm(server: FakeServer, **kw: Any) -> OpenAICompatLLM:
-    return OpenAICompatLLM("qwen3", "http://localhost:11434/v1", transport=server, **kw)
+    cfg = OpenAICompatConfig(base_url="http://localhost:11434/v1", transport=server, **kw)
+    return OpenAICompatLLM("qwen3", cfg)
 
 
 # --- request shape --------------------------------------------------------------------------
@@ -112,7 +118,8 @@ def test_tool_free_calls_omit_tools_and_no_key_means_no_auth_header(
 def test_key_comes_from_env_and_never_shows_in_repr(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(oc.API_KEY_ENV, "sk-test-FAKE-env")
     server = FakeServer((200, reply("x")))
-    client = OpenAICompatLLM("gpt-x", "https://api.openai.com/v1", transport=server)
+    cfg = OpenAICompatConfig(base_url="https://api.openai.com/v1", transport=server)
+    client = OpenAICompatLLM("gpt-x", cfg)
     client.complete("S", [Message(Role.USER, text="t")], [])
     assert server.requests[0]["headers"]["Authorization"] == "Bearer sk-test-FAKE-env"
     assert "sk-test" not in repr(client)
@@ -314,7 +321,7 @@ def test_rejected_base_urls(url: str, why: str) -> None:
 
 def test_empty_model_rejected() -> None:
     with pytest.raises(LLMError, match="model name"):
-        OpenAICompatLLM(" ", transport=FakeServer())
+        OpenAICompatLLM(" ", OpenAICompatConfig(transport=FakeServer()))
 
 
 # --- factory and config ---------------------------------------------------------------------
@@ -374,7 +381,7 @@ def test_cli_uses_the_configured_backend(
 
     def fake_make(model: str, backend: str, base_url: str, key_env: str) -> OpenAICompatLLM:
         seen.append((model, backend, base_url, key_env))
-        return OpenAICompatLLM(model, base_url, transport=server)
+        return OpenAICompatLLM(model, OpenAICompatConfig(base_url=base_url, transport=server))
 
     monkeypatch.setattr(cli, "make_llm", fake_make)
     ws = tmp_path / "ws"
