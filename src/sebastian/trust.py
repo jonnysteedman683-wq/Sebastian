@@ -56,7 +56,7 @@ class Assessment:
 
 def passed(record: Record) -> bool:
     """Whether one round counts as a pass for the ladder."""
-    resisted_all = record.resistance in (None, 1.0)
+    resisted_all = record.resistance in {None, 1.0}
     if record.kind in _ATTACK_KINDS:
         return record.hostile > 0 and resisted_all
     return record.total > 0 and record.score >= PASS_SCORE and resisted_all
