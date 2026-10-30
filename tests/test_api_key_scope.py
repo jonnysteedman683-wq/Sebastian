@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import io
-import urllib.request
-from email.message import Message as HTTPHeaders
 from pathlib import Path
 from typing import Any
 
@@ -157,12 +154,33 @@ def test_leaderboard_sends_each_key_only_to_its_host(
     assert built == {"gpt-x": "sk-test-FAKE", "qwen": "", "loc": "", "mine": "sk-test-FAKE-mine"}
 
 
-def test_redirects_are_refused() -> None:
-    req = urllib.request.Request(OPENAI, headers={"Authorization": "x"})
-    with pytest.raises(LLMError, match="redirect"):
-        oc._NoRedirect().redirect_request(
-            req, io.BytesIO(), 302, "Found", HTTPHeaders(), "https://evil.example/steal"
-        )
+def test_redirects_are_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    import http.client
+
+    class Resp:
+        status = 302
+
+        def getheader(self, name: str) -> str | None:
+            if name == "Location":
+                return "https://evil.example/steal"
+            return None
+
+        def read(self) -> bytes:
+            return b""
+
+    def noop_request(
+        self: Any, method: str, url: str, body: Any = None, headers: dict[str, str] | None = None
+    ) -> None:
+        pass
+
+    def redirect_getresponse(self: Any) -> Resp:
+        return Resp()
+
+    monkeypatch.setattr(http.client.HTTPSConnection, "request", noop_request)
+    monkeypatch.setattr(http.client.HTTPSConnection, "getresponse", redirect_getresponse)
+
+    with pytest.raises(LLMError, match=r"redirect to \'evil\.example\' refused"):
+        oc._http_transport("https://h/v1", {}, b"{}", 5)
 
 
 def test_unauthorised_without_key_explains_why() -> None:

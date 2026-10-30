@@ -23,11 +23,11 @@ are never followed, so a key can't be forwarded to a host it wasn't meant for.
 
 from __future__ import annotations
 
+import http.client
 import ipaddress
 import json
 import os
-import urllib.error
-import urllib.request
+import ssl
 from collections.abc import Callable, Sequence
 from typing import Any
 from urllib.parse import urlsplit
@@ -49,35 +49,34 @@ _MAX_ERROR_BODY = 500
 Transport = Callable[[str, dict[str, str], bytes, float], tuple[int, bytes]]
 
 
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    """Refuse every redirect: urllib would forward the ``Authorization`` header to the target."""
-
-    def redirect_request(
-        self, req: Any, fp: Any, code: int, msg: str, headers: Any, newurl: str
-    ) -> None:
-        raise LLMError(
-            f"HTTP {code} redirect to {urlsplit(newurl).netloc or newurl!r} refused; "
-            "set the final URL as the base URL"
-        )
-
-
-_OPENER = urllib.request.build_opener(_NoRedirect)
-
-
-def _open(req: urllib.request.Request, timeout: float) -> Any:
-    return _OPENER.open(req, timeout=timeout)
-
-
-def _urllib_transport(
+def _http_transport(
     url: str, headers: dict[str, str], body: bytes, timeout: float
 ) -> tuple[int, bytes]:
-    req = urllib.request.Request(url, data=body, headers=headers, method="POST")  # noqa: S310
+    parts = urlsplit(url)
     try:
-        with _open(req, timeout) as resp:
-            return int(resp.status), resp.read()
-    except urllib.error.HTTPError as exc:
-        return int(exc.code), exc.read()
-    except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+        if parts.scheme == "https":
+            context = ssl.create_default_context()
+            conn: http.client.HTTPConnection = http.client.HTTPSConnection(parts.netloc, timeout=timeout, context=context)
+        else:
+            conn = http.client.HTTPConnection(parts.netloc, timeout=timeout)
+
+        path = parts.path
+        if parts.query:
+            path += "?" + parts.query
+
+        conn.request("POST", path or "/", body=body, headers=headers)
+        resp = conn.getresponse()
+        status = int(resp.status)
+
+        if status in (301, 302, 303, 307, 308):
+            newurl = resp.getheader("Location") or ""
+            raise LLMError(
+                f"HTTP {status} redirect to {urlsplit(newurl).netloc or newurl!r} refused; "
+                "set the final URL as the base URL"
+            )
+
+        return status, resp.read()
+    except (http.client.HTTPException, TimeoutError, ConnectionError, OSError) as exc:
         raise TransientLLMError(f"cannot reach {urlsplit(url).netloc}: {exc}") from exc
 
 
@@ -146,7 +145,7 @@ class OpenAICompatLLM:
         self.max_tokens = max_tokens
         self.timeout = timeout
         self._api_key = api_key if api_key is not None else resolve_api_key(self.base_url, key_env)
-        self._transport = transport or _urllib_transport
+        self._transport = transport or _http_transport
 
     def preflight(self) -> None:
         """Raise ``LLMError`` when this client cannot work, before any tokens are spent (P2-12)."""
