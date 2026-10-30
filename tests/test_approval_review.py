@@ -274,3 +274,25 @@ def test_unparseable_denied_command_still_keys_its_denial(tmp_path: Path) -> Non
     a, _ = agent(tmp_path, go(bad, ToolCall("2", "run_command", {"command": '"unclosed'})), deny)
     a.run("t")
     assert deny.calls == 1
+
+
+def test_existing_text_oserror(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from sebastian.approval import _existing_text
+
+    (tmp_path / "test.txt").write_text("hello")
+
+    def mock_read_text(*args: object, **kwargs: object) -> str:
+        raise PermissionError("no access")
+
+    monkeypatch.setattr(Path, "read_text", mock_read_text)
+    assert _existing_text("test.txt", tmp_path) is None
+
+
+def test_interactive_approver_eoferror(tmp_path: Path) -> None:
+    def ask(prompt: str) -> str:
+        raise EOFError()
+
+    tool = tools(tmp_path)["write_file"]
+    call = ToolCall("1", "write_file", {"path": "a.txt", "content": "hello"})
+    approver = InteractiveApprover(ask=ask, root=tmp_path)
+    assert not approver.approve(tool, call)
