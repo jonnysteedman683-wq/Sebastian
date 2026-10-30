@@ -267,6 +267,12 @@ Residual: `--push-main` bypasses human review by design. Branch protection on th
 - Read-only towards repos: suites are only read, temp workspaces are deleted, and nothing is proposed, committed, pushed or merged. `--json` results omit agent output.
 - Fix requests (`--request`, B74) only append one item to a backlog file the owner names. The quoted task is flattened (no backticks, `*` or 🔒, so it can't add bold ids, break the item or lock/unlock it) and capped, and it is labelled a spec, not instructions about the target repo. Committing it and running `evolve` stay manual, and `evolve`'s gates and the human merge are unchanged.
 
+## Jules memory (`docs/JULES_MEMORY.md`, B75)
+
+- The file is written by the agent that reads it, so it could carry a planted instruction from one run to the next. AGENTS.md/CLAUDE.md rank it below themselves, `WORK_ORDER.md` and `BACKLOG.md`, and say it can never justify skipping a check, touching a guarded path or reordering the backlog. The file states the same about itself.
+- Every edit to it arrives in a reviewed PR, like any other change. Review its diff as you would code; a note that reads like an instruction ("skip", "ignore", "you may") is a red flag.
+- It is not a guarded path, on purpose, so daily runs can append to it. The rules it refers to (AGENTS.md, CLAUDE.md, WORK_ORDER.md) stay guarded.
+
 ## Residual risks (escalated, not fixed)
 
 1. **`run_command` arguments are not jailed without a sandbox.** Without one, an allowlisted `cat /etc/passwd` reads outside the workspace, and allowlisting an interpreter (`python`) is equivalent to arbitrary code. Mitigation: approval gate (EXEC needs a yes), the allowlist, and **the bubblewrap sandbox, required by default (`--sandbox auto`)**: bubblewrap with every namespace unshared, only the workspace mounted read-write at `/workspace`, system paths read-only, private `/tmp`, cleared env, and executables restricted to system paths. With bwrap, home directories, `/root` and the rest of `/etc` are not visible. **`auto` fails closed (P1-01):** with no usable bubblewrap the CLI exits with code 2 and `run_command` is never registered. Commands run on the host only when the user passes `--sandbox none`, which prints a warning on every run and is recorded in the `run_start` trace (`sandbox="none"`).
