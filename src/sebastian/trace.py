@@ -64,8 +64,12 @@ def _high_entropy(m: re.Match[str]) -> str:
     tok = m.group(0)
     # A token with "/" may be a URL or path: judge each segment on its own, so
     # github.com/owner/Repo stays readable while a long random segment is still caught.
-    parts = tok.split("/") if "/" in tok else [tok]
-    return REDACTED if any(_looks_random(p) for p in parts) else tok
+    if "/" in tok:
+        parts = tok.split("/")
+        if any(_looks_random(p) for p in parts):
+            return "/".join(REDACTED if _looks_random(p) else p for p in parts)
+        return tok
+    return REDACTED if _looks_random(tok) else tok
 
 
 def redact_text(text: str) -> str:
