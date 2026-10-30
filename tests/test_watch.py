@@ -475,3 +475,11 @@ def test_watch_tooling_change_is_flagged_and_escalated(repo: Path) -> None:
     assert r["escalate"] is True
     assert r["risk_score"] >= 3
     assert any(x.startswith("watch tooling") for x in r["escalation_reasons"])
+
+
+def test_inventory_parse_invalid_syntax() -> None:
+    assert inv._parse("def foo(") is None
+
+
+def test_inventory_parse_none() -> None:
+    assert inv._parse(None) is None
