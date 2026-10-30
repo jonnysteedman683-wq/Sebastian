@@ -1,15 +1,15 @@
 {
-  "summary": "4 commit(s): perf: Optimize membership check using set instead of tuple; perf: Optimize membership check using set instead of tuple; perf: Optimize membership check using set instead of tuple; Merge pull request #84 from jonnysteedman683-wq/sebastian/perf-trace-tuple-set-5414792529263592868",
+  "summary": "2 commit(s): test: add tests for Usage type; Merge pull request #83 from jonnysteedman683-wq/jules-3835871699854130540-9a551cd1",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "1 file(s) changed",
-      "description": "Detected automatically from code: 1 file(s) changed.",
+      "title": "2 file(s) changed",
+      "description": "Detected automatically from code: 2 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "20a40da7695802dfef8ce2e5b32a5696f0b7d554",
-          "path": "src/sebastian/trace.py"
+          "sha": "521aed6a651731953360e408a96f6c318ffe2e1c",
+          "path": "pr_description.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 101,
+  "seq": 102,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "9574ce1f1b674d3014253117ce564de6598e28ef",
-    "to_sha": "20a40da7695802dfef8ce2e5b32a5696f0b7d554"
+    "from_sha": "20a40da7695802dfef8ce2e5b32a5696f0b7d554",
+    "to_sha": "521aed6a651731953360e408a96f6c318ffe2e1c"
   },
-  "generated_at": "2026-10-30T15:14:54Z",
+  "generated_at": "2026-10-30T15:15:28Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -82,5 +82,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "cccbaeece804e72ef8a0108f5db6bdf5984f767907545fe46f6faef6c1ae6de7"
+  "signature": "ad1551c4a57f4a895126b708642d6aaa37306bbd412aa13dd2ae95d89bf18935"
 }
