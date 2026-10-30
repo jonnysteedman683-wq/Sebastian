@@ -32,6 +32,7 @@ class LLM(Protocol):
 @dataclass
 class RetryConfig:
     """Configuration for retrying LLM calls."""
+
     attempts: int = 4
     base_delay: float = 1.0
     max_delay: float = 30.0
@@ -41,6 +42,7 @@ class RetryConfig:
     def __post_init__(self) -> None:
         if self.attempts < 1:
             raise ValueError("attempts must be >= 1")
+
 
 class RetryingLLM:
     """Retries transient errors with exponential backoff and full jitter."""
