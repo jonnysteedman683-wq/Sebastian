@@ -121,6 +121,28 @@ def test_git_basics(repo: Path) -> None:
         g.resolve("nope")
 
 
+
+def test_git_diff_text(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    g = Git(repo)
+    head = g.resolve("HEAD")
+
+    # Standard diff
+    diff = g.diff_text(None, head)
+    assert diff is not None
+    assert len(diff) > 0
+    assert "...[diff truncated" not in diff
+
+    # Truncated diff
+    large_diff = "a" * 300_000
+    monkeypatch.setattr(g, "_run", lambda *args: large_diff)
+
+    max_bytes = 200_000
+    truncated = g.diff_text(None, head, max_bytes=max_bytes)
+    assert len(truncated.encode()) > max_bytes
+    assert truncated.endswith(f"\n...[diff truncated at {max_bytes} bytes]\n")
+    assert len(truncated.encode()) < len(large_diff) + 100
+
+
 def test_git_missing_executable(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr("sebastian.watch.gitio.shutil.which", lambda _: None)
     with pytest.raises(GitError, match="not found"):
