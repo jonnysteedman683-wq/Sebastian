@@ -289,7 +289,7 @@ def _arguments(raw: Any) -> dict[str, Any]:
     so the model sees why its call failed instead of the run crashing."""
     if isinstance(raw, dict):
         return raw
-    if raw in (None, ""):
+    if raw in {None, ""}:
         return {}
     try:
         parsed = json.loads(raw)
