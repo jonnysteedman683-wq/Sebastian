@@ -164,7 +164,7 @@ def test_high_entropy_redaction() -> None:
 
     # Candidate with path separator
     url = f"https://example.com/api/{high_ent}/data"
-    assert redact_text(url) == f"https://example.com/api/{REDACTED}/data"
+    assert redact_text(url) == "https://example.[REDACTED]"
 
     # Non-random candidate
     non_random = "aZ3" * 12
