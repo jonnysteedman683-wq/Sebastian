@@ -1,15 +1,15 @@
 {
-  "summary": "7 commit(s): refactor: wrap RetryingLLM settings in a dataclass to reduce argument count; test: add tests and coverage for sebastian.trace; test: add tests and coverage for sebastian.trace; Merge branch 'main' into sebastian/code-health-retrying-llm-7661080597892904632; Merge pull request #99 from jonnysteedman683-wq/sebastian/code-health-retrying-llm-7661080597892904632; Merge branch 'main' into sebastian/testing-trace-9864884392291708775; Merge pull request #100 from jonnysteedman683-wq/sebastian/testing-trace-9864884392291708775",
+  "summary": "4 commit(s): perf(watch): optimize action membership check using a set; perf(watch): optimize action membership check using a set; perf(watch): optimize action membership check using a set; Merge pull request #101 from jonnysteedman683-wq/sebastian/perf-optimize-membership-check-16913799364909230274",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "6 file(s) changed",
-      "description": "Detected automatically from code: 6 file(s) changed.",
+      "title": "1 file(s) changed",
+      "description": "Detected automatically from code: 1 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "fa5f636e4f2583ad3b3147736fa1ae334b8a612a",
-          "path": "docs/PROPOSALS.md"
+          "sha": "c6ed78486e9bd014286c5bcacc2023021ca9afbb",
+          "path": "src/sebastian/watch/cli.py"
         }
       ],
       "permission": "n/a",
@@ -23,18 +23,20 @@
     "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
   ],
   "pr_previews": [],
-  "escalation_reasons": [],
+  "escalation_reasons": [
+    "watch tooling or report contract changed: src/sebastian/watch/cli.py"
+  ],
   "report_type": "repo_change_report",
-  "seq": 93,
+  "seq": 94,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "179d08e1b4b266ce56bc3dd20483a7fda8da5929",
-    "to_sha": "fa5f636e4f2583ad3b3147736fa1ae334b8a612a"
+    "from_sha": "fa5f636e4f2583ad3b3147736fa1ae334b8a612a",
+    "to_sha": "c6ed78486e9bd014286c5bcacc2023021ca9afbb"
   },
-  "generated_at": "2026-10-30T11:36:06Z",
+  "generated_at": "2026-10-30T11:36:47Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -79,8 +81,8 @@
     "removed": [],
     "changed": []
   },
-  "risk_score": 0,
-  "escalate": false,
-  "priority": "NORMAL",
-  "signature": "fd153b6512d643602529ad80d65f9d3063d3c878025baba9029558dcaeeb0025"
+  "risk_score": 3,
+  "escalate": true,
+  "priority": "HIGH",
+  "signature": "05c71d839d7db41024480a19960430cb3543c3874d21649887a6e1351a15eccb"
 }
