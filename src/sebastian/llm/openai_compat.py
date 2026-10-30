@@ -56,7 +56,9 @@ def _http_transport(
     try:
         if parts.scheme == "https":
             context = ssl.create_default_context()
-            conn: http.client.HTTPConnection = http.client.HTTPSConnection(parts.netloc, timeout=timeout, context=context)
+            conn: http.client.HTTPConnection = http.client.HTTPSConnection(
+                parts.netloc, timeout=timeout, context=context
+            )
         else:
             conn = http.client.HTTPConnection(parts.netloc, timeout=timeout)
 
@@ -64,18 +66,21 @@ def _http_transport(
         if parts.query:
             path += "?" + parts.query
 
-        conn.request("POST", path or "/", body=body, headers=headers)
-        resp = conn.getresponse()
-        status = int(resp.status)
+        try:
+            conn.request("POST", path or "/", body=body, headers=headers)
+            resp = conn.getresponse()
+            status = int(resp.status)
 
-        if status in (301, 302, 303, 307, 308):
-            newurl = resp.getheader("Location") or ""
-            raise LLMError(
-                f"HTTP {status} redirect to {urlsplit(newurl).netloc or newurl!r} refused; "
-                "set the final URL as the base URL"
-            )
+            if status in (301, 302, 303, 307, 308):
+                newurl = resp.getheader("Location") or ""
+                raise LLMError(
+                    f"HTTP {status} redirect to {urlsplit(newurl).netloc or newurl!r} refused; "
+                    "set the final URL as the base URL"
+                )
 
-        return status, resp.read()
+            return status, resp.read()
+        finally:
+            conn.close()
     except (http.client.HTTPException, TimeoutError, ConnectionError, OSError) as exc:
         raise TransientLLMError(f"cannot reach {urlsplit(url).netloc}: {exc}") from exc
 
