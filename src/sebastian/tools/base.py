@@ -21,6 +21,7 @@ class Permission(IntEnum):
 
 
 _PY_TO_JSON: dict[type, str] = {str: "string", int: "integer", float: "number", bool: "boolean"}
+_NUMBER_TYPES = frozenset((int, float))
 
 
 class ToolError(Exception):
@@ -60,7 +61,7 @@ def _matches(value: Any, json_type: str) -> bool:
     if json_type == "integer":
         return type(value) is int
     if json_type == "number":
-        return type(value) in (int, float)
+        return type(value) in _NUMBER_TYPES
     return type(value) is str
 
 
