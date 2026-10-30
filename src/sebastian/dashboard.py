@@ -11,10 +11,10 @@ from __future__ import annotations
 import html
 from collections import Counter
 from collections.abc import Sequence
-from typing import Any
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from sebastian.history import Record
 from sebastian.trace import RunSummary
