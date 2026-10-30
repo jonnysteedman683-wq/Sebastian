@@ -16,6 +16,7 @@ from sebastian.clock import FakeClock, SeededIdSource
 from sebastian.config import Config
 from sebastian.llm import BACKENDS, LLMError, RetryingLLM, TransientLLMError, make_llm
 from sebastian.llm import openai_compat as oc
+from sebastian.llm.base import RetryConfig
 from sebastian.llm.openai_compat import OpenAICompatLLM, check_base_url, parse_response
 from sebastian.tools import ToolRegistry, Workspace, file_tools
 from sebastian.types import Message, Role, ToolCall, ToolResult, Usage
@@ -226,7 +227,7 @@ def test_odd_usage_and_content_types_are_tolerated() -> None:
 @pytest.mark.parametrize("status", [429, 500, 503])
 def test_transient_statuses_retry(status: int) -> None:
     server = FakeServer((status, b"busy"), (200, reply("ok")))
-    client = RetryingLLM(llm(server), sleep=lambda _s: None)
+    client = RetryingLLM(llm(server), config=RetryConfig(sleep=lambda _s: None))
     assert client.complete("S", [Message(Role.USER, text="t")], []).text == "ok"
     assert len(server.requests) == 2
 
