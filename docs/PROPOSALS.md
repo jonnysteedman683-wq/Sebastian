@@ -9,3 +9,4 @@ Ordered by value. Each needs owner sign-off before implementation (WORK_ORDER se
 5. **Trace viewer / replay (U9)** over `traces.jsonl`.
 6. **Live API smoke test** in CI behind a repository secret.
 7. **Licence**: done, MIT (B12).
+8. **Optimize membership check in _arguments parsing**: Replace the `tuple` literal `(None, "")` with a `set` literal `{None, ""}` in `src/sebastian/llm/openai_compat.py:292` to take advantage of O(1) frozen set lookup performance.
