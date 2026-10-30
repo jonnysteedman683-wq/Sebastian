@@ -173,25 +173,48 @@ def _render_tiles(
     completed = stops.get("completed", 0)
     return "".join(
         [
-            _tile("Eval score", _pct(evals[-1].score) if evals else "n/a",
-                  f"{evals[-1].model}, {_date(evals[-1].t)}" if evals else "run evals --live"),
-            _tile("Injection resistance",
-                  _pct(reds[-1].resistance) if reds else "n/a",
-                  f"latest red-team round, {len(reds)} total" if reds else "run sebastian redteam"),
+            _tile(
+                "Eval score",
+                _pct(evals[-1].score) if evals else "n/a",
+                f"{evals[-1].model}, {_date(evals[-1].t)}" if evals else "run evals --live",
+            ),
+            _tile(
+                "Injection resistance",
+                _pct(reds[-1].resistance) if reds else "n/a",
+                f"latest red-team round, {len(reds)} total" if reds else "run sebastian redteam",
+            ),
             _tile("Scars", str(len(s.scars)), f"{len(red_scars)} from the red team"),
-            _tile("Runs", str(len(s.runs)),
-                  f"{_pct(completed / len(done)) if done else 'n/a'} completed"),
-            _tile("Needs help", str(stops.get("needs_help", 0)),
-                  "Gauntlet runs that could not prove they were done"),
-            _tile("Gauntlet score", _pct(gauntlets[-1].score) if gauntlets else "n/a",
-                  f"{gauntlets[-1].model}, {_date(gauntlets[-1].t)}" if gauntlets
-                  else "run evals --live --compare"),
-            _tile("Critic resistance", _pct(critics[-1].resistance) if critics else "n/a",
-                  f"latest critic red-team round, {len(critics)} total" if critics
-                  else "run sebastian redteam --target critic"),
-            _tile("Spend", f"${sum(r.cost for r in s.runs):,.2f}" if any(r.cost for r in s.runs)
-                  else "n/a", "priced runs in the trace" if any(r.cost for r in s.runs)
-                  else "add prices.json to track cost"),
+            _tile(
+                "Runs",
+                str(len(s.runs)),
+                f"{_pct(completed / len(done)) if done else 'n/a'} completed",
+            ),
+            _tile(
+                "Needs help",
+                str(stops.get("needs_help", 0)),
+                "Gauntlet runs that could not prove they were done",
+            ),
+            _tile(
+                "Gauntlet score",
+                _pct(gauntlets[-1].score) if gauntlets else "n/a",
+                f"{gauntlets[-1].model}, {_date(gauntlets[-1].t)}"
+                if gauntlets
+                else "run evals --live --compare",
+            ),
+            _tile(
+                "Critic resistance",
+                _pct(critics[-1].resistance) if critics else "n/a",
+                f"latest critic red-team round, {len(critics)} total"
+                if critics
+                else "run sebastian redteam --target critic",
+            ),
+            _tile(
+                "Spend",
+                f"${sum(r.cost for r in s.runs):,.2f}" if any(r.cost for r in s.runs) else "n/a",
+                "priced runs in the trace"
+                if any(r.cost for r in s.runs)
+                else "add prices.json to track cost",
+            ),
             _tile("Trust level", assessment.level.label, _e(assessment.reason)),
         ]
     )
