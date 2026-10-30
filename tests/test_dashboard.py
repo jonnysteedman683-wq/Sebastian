@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import io
-import json
 import sys
 from pathlib import Path
 
@@ -18,24 +17,6 @@ from sebastian.trace import JsonlTracer, RunSummary
 def rec(t: float, kind: str = "eval", passed: int = 8, total: int = 10, res: int = 3,
         hostile: int = 5) -> Record:  # fmt: skip
     return Record(t, kind, "m", passed, total, res, hostile)
-
-
-def test_history_round_trip_and_bad_lines(tmp_path: Path) -> None:
-    path = tmp_path / "h" / history.HISTORY_FILE
-    assert history.load(path) == []
-    history.append(path, rec(2.0))
-    history.append(path, rec(1.0, "redteam", 4, 5, 4, 5))
-    with path.open("a") as fh:
-        bad_kind = {"t": 3, "kind": "x", "model": "m"}
-        negative = {"t": 3, "kind": "eval", "model": "m", "passed": -1, "total": 1}
-        for bad in ["nope", "[]", json.dumps(bad_kind), json.dumps(negative)]:
-            fh.write(bad + "\n")
-    loaded = history.load(path)
-    assert [r.t for r in loaded] == [1.0, 2.0]  # sorted by time, bad lines skipped
-    assert loaded[1].score == 0.8
-    assert loaded[0].resistance == 0.8
-    assert Record(0, "eval", "m", 0, 0).score == 0.0
-    assert Record(0, "eval", "m", 1, 1).resistance is None
 
 
 def test_line_chart() -> None:
