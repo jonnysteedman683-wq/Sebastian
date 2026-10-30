@@ -31,7 +31,7 @@ from sebastian.types import RunResult, StopReason
 AUTHOR = ("-c", "user.name=Sebastian", "-c", "user.email=sebastian@users.noreply.github.com")
 # The remote is the owner's own config (the agent cannot write .git), so a local-path remote
 # is allowed for this one user-initiated fetch/push, as in evolve.
-REMOTE_OK = ("-c", "protocol.file.allow=user")
+REMOTE_OK = ("-c", "protocol.file.allow=always")
 BLOCKED_PREFIXES = (".github/",)
 MAX_BODY = 4000
 
