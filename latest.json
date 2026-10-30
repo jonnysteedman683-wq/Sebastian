@@ -1,15 +1,15 @@
 {
-  "summary": "3 commit(s): fix(guard): restore exit 1 so Guard fails unapproved guarded-path PRs (reverts guard.yml part of #91); Merge remote-tracking branch 'origin/main' into fix/guard-exit-1; Merge pull request #103 from jonnysteedman683-wq/fix/guard-exit-1",
+  "summary": "2 commit(s): style(llm): apply ruff format to llm/base.py (blank lines only); Merge pull request #105 from jonnysteedman683-wq/fix/ruff-format-llm-base",
   "changes": [
     {
-      "category": "QUALITY",
+      "category": "ABILITY_CHANGE",
       "title": "1 file(s) changed",
       "description": "Detected automatically from code: 1 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "a5b0d07ffcc3f880c4d42d2f4ad538bb739ce56b",
-          "path": ".github/workflows/guard.yml"
+          "sha": "db98cf56c5aa5499610e4c4873d68d48ee4ed491",
+          "path": "src/sebastian/llm/base.py"
         }
       ],
       "permission": "n/a",
@@ -23,20 +23,18 @@
     "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
   ],
   "pr_previews": [],
-  "escalation_reasons": [
-    "watch tooling or report contract changed: .github/workflows/guard.yml"
-  ],
+  "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 98,
+  "seq": 99,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "b08fb5714ded824c017f8f555b93823a1aabf0b4",
-    "to_sha": "a5b0d07ffcc3f880c4d42d2f4ad538bb739ce56b"
+    "from_sha": "a5b0d07ffcc3f880c4d42d2f4ad538bb739ce56b",
+    "to_sha": "db98cf56c5aa5499610e4c4873d68d48ee4ed491"
   },
-  "generated_at": "2026-10-30T14:18:47Z",
+  "generated_at": "2026-10-30T14:59:27Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -81,8 +79,8 @@
     "removed": [],
     "changed": []
   },
-  "risk_score": 3,
-  "escalate": true,
-  "priority": "HIGH",
-  "signature": "365215cdb1bb64ff0b0c70f350ca026b7be1d27fdfd47a908060e066cbf31dd3"
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "1ff06173ed36df4857265be8b060083f823a1d6cfa70284fe26615406cc5a2d5"
 }
