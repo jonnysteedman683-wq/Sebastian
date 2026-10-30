@@ -42,6 +42,7 @@ def remote(tmp_path: Path) -> Path:
     r = tmp_path / "remote.git"
     subprocess.run([GIT, "init", "-q", "--bare", "-b", "main", str(r)], check=True)
     subprocess.run([GIT, "-C", str(r), "config", "core.hooksPath", "hooks"], check=True)
+    subprocess.run([GIT, "-C", str(r), "config", "receive.denyCurrentBranch", "updateInstead"], check=True)
     return r
 
 
