@@ -1,15 +1,29 @@
 {
-  "summary": "2 commit(s): style(llm): apply ruff format to llm/base.py (blank lines only); Merge pull request #105 from jonnysteedman683-wq/fix/ruff-format-llm-base",
+  "summary": "2 commit(s): build: cap ruff below 0.18 so new lint rules can't break main unannounced; Merge pull request #106 from jonnysteedman683-wq/fix/pin-ruff-minor",
   "changes": [
     {
-      "category": "ABILITY_CHANGE",
-      "title": "1 file(s) changed",
-      "description": "Detected automatically from code: 1 file(s) changed.",
+      "category": "DEPENDENCY",
+      "title": "Dependency added: [dev] ruff>=0.17,<0.18",
+      "description": "Detected automatically from code: Dependency added: [dev] ruff>=0.17,<0.18.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "db98cf56c5aa5499610e4c4873d68d48ee4ed491",
-          "path": "src/sebastian/llm/base.py"
+          "sha": "9574ce1f1b674d3014253117ce564de6598e28ef",
+          "path": "pyproject.toml"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    },
+    {
+      "category": "DEPENDENCY",
+      "title": "Dependency removed: [dev] ruff>=0.17",
+      "description": "Detected automatically from code: Dependency removed: [dev] ruff>=0.17.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "9574ce1f1b674d3014253117ce564de6598e28ef",
+          "path": "pyproject.toml"
         }
       ],
       "permission": "n/a",
@@ -25,16 +39,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 99,
+  "seq": 100,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "a5b0d07ffcc3f880c4d42d2f4ad538bb739ce56b",
-    "to_sha": "db98cf56c5aa5499610e4c4873d68d48ee4ed491"
+    "from_sha": "db98cf56c5aa5499610e4c4873d68d48ee4ed491",
+    "to_sha": "9574ce1f1b674d3014253117ce564de6598e28ef"
   },
-  "generated_at": "2026-10-30T14:59:27Z",
+  "generated_at": "2026-10-30T15:13:14Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -75,12 +89,16 @@
     "default_model": "claude-sonnet-5-5"
   },
   "capability_diff": {
-    "added": [],
-    "removed": [],
+    "added": [
+      "dependency: [dev] ruff>=0.17,<0.18"
+    ],
+    "removed": [
+      "dependency: [dev] ruff>=0.17"
+    ],
     "changed": []
   },
-  "risk_score": 0,
+  "risk_score": 1,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "1ff06173ed36df4857265be8b060083f823a1d6cfa70284fe26615406cc5a2d5"
+  "signature": "32687f1f5f28954724d7e3af8a9108340fa8210ba3e915c3222a116650e10772"
 }

@@ -1,0 +1,104 @@
+{
+  "summary": "2 commit(s): build: cap ruff below 0.18 so new lint rules can't break main unannounced; Merge pull request #106 from jonnysteedman683-wq/fix/pin-ruff-minor",
+  "changes": [
+    {
+      "category": "DEPENDENCY",
+      "title": "Dependency added: [dev] ruff>=0.17,<0.18",
+      "description": "Detected automatically from code: Dependency added: [dev] ruff>=0.17,<0.18.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "9574ce1f1b674d3014253117ce564de6598e28ef",
+          "path": "pyproject.toml"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    },
+    {
+      "category": "DEPENDENCY",
+      "title": "Dependency removed: [dev] ruff>=0.17",
+      "description": "Detected automatically from code: Dependency removed: [dev] ruff>=0.17.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "9574ce1f1b674d3014253117ce564de6598e28ef",
+          "path": "pyproject.toml"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 100,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "db98cf56c5aa5499610e4c4873d68d48ee4ed491",
+    "to_sha": "9574ce1f1b674d3014253117ce564de6598e28ef"
+  },
+  "generated_at": "2026-10-30T15:13:14Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "crosstest",
+      "dashboard",
+      "demo",
+      "doctor",
+      "evolve",
+      "memory",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [
+      "dependency: [dev] ruff>=0.17,<0.18"
+    ],
+    "removed": [
+      "dependency: [dev] ruff>=0.17"
+    ],
+    "changed": []
+  },
+  "risk_score": 1,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "32687f1f5f28954724d7e3af8a9108340fa8210ba3e915c3222a116650e10772"
+}
