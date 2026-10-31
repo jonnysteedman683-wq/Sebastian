@@ -67,7 +67,8 @@ def _stub(result: ToolResult) -> ToolResult:
 def compact(messages: Sequence[Message], policy: ContextPolicy) -> tuple[list[Message], int]:
     """Return ``(history, n_elided)`` with old tool results stubbed until it fits the policy."""
     out = list(messages)
-    if history_chars(out) <= policy.max_history_chars:
+    current_chars = history_chars(out)
+    if current_chars <= policy.max_history_chars:
         return out, 0
     protected_from = max(len(out) - policy.keep_recent, 1)
     elided = 0
@@ -77,8 +78,14 @@ def compact(messages: Sequence[Message], policy: ContextPolicy) -> tuple[list[Me
             r.content.startswith(ELIDED_PREFIX) for r in msg.tool_results
         ):
             continue
-        out[i] = replace(msg, tool_results=tuple(_stub(r) for r in msg.tool_results))
+
+        old_len = sum(len(r.content) for r in msg.tool_results)
+        new_results = tuple(_stub(r) for r in msg.tool_results)
+        new_len = sum(len(r.content) for r in new_results)
+
+        out[i] = replace(msg, tool_results=new_results)
+        current_chars += new_len - old_len
         elided += 1
-        if history_chars(out) <= policy.max_history_chars:
+        if current_chars <= policy.max_history_chars:
             break
     return out, elided
