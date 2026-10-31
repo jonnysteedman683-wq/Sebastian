@@ -36,6 +36,8 @@ sebastian run "Fix the flaky test" -w ./repo --allow-cmd pytest --pr         # c
 sebastian run "Bump the version" -w ./repo --allow-cmd pytest --push-main  # Gauntlet-proven -> push to main
 #   publishing is done by the harness after the run, never the agent; clean repo required,
 #   fast-forward only, .github/ and git config files are never published
+sebastian run --task-file TASK.md -w ./project  # task text from a file; front matter: allow_cmd, max_steps,
+#   max_tokens, max_cost, model, gauntlet (flags win; no approval or sandbox keys)
 sebastian resume <run_id> -w ./project # continue a run that hit its budget or an API error
 sebastian show <run_id>              # one run as an HTML timeline (--text for the terminal)
 sebastian undo <run_id> -w ./project # roll back a run's file changes (run_id from `sebastian traces`)
