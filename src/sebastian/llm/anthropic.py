@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from sebastian.llm.base import LLMError, TransientLLMError
+from sebastian.llm.base import LLMError, TransientLLMError, parse_retry_after
 from sebastian.tools.base import Tool
 from sebastian.types import LLMResponse, Message, Role, ToolCall, Usage
 
@@ -90,7 +90,9 @@ class AnthropicLLM:
             raise TransientLLMError(str(exc)) from exc
         except anthropic.APIStatusError as exc:
             if exc.status_code in _TRANSIENT_STATUS:
-                raise TransientLLMError(str(exc)) from exc
+                resp_headers = getattr(getattr(exc, "response", None), "headers", None) or {}
+                wait = parse_retry_after(resp_headers.get("retry-after"), str(exc))
+                raise TransientLLMError(str(exc), retry_after=wait) from exc
             raise LLMError(str(exc)) from exc
 
         text = "".join(b.text for b in resp.content if b.type == "text")
