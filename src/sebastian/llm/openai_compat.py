@@ -28,11 +28,11 @@ import json
 import os
 import urllib.error
 import urllib.request
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 from urllib.parse import urlsplit
 
-from sebastian.llm.base import LLMError, TransientLLMError
+from sebastian.llm.base import LLMError, TransientLLMError, parse_retry_after
 from sebastian.tools.base import Tool
 from sebastian.types import LLMResponse, Message, Role, ToolCall, Usage
 
@@ -45,8 +45,12 @@ _FORBIDDEN_KEY_ENV_PREFIXES = ("GH_", "GITHUB_")
 _TRANSIENT_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
 _MAX_ERROR_BODY = 500
 
-# (url, headers, body, timeout) -> (status, response body). Swappable for tests.
-Transport = Callable[[str, dict[str, str], bytes, float], tuple[int, bytes]]
+# (url, headers, body, timeout) -> (status, response body[, response headers]). Swappable for
+# tests. Returning the headers is optional; they are only used to read ``Retry-After`` (B52).
+Transport = Callable[
+    [str, dict[str, str], bytes, float],
+    tuple[int, bytes] | tuple[int, bytes, Mapping[str, str]],
+]
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -70,15 +74,21 @@ def _open(req: urllib.request.Request, timeout: float) -> Any:
 
 def _urllib_transport(
     url: str, headers: dict[str, str], body: bytes, timeout: float
-) -> tuple[int, bytes]:
+) -> tuple[int, bytes, Mapping[str, str]]:
     req = urllib.request.Request(url, data=body, headers=headers, method="POST")  # noqa: S310
     try:
         with _open(req, timeout) as resp:
-            return int(resp.status), resp.read()
+            return int(resp.status), resp.read(), _retry_headers(getattr(resp, "headers", None))
     except urllib.error.HTTPError as exc:
-        return int(exc.code), exc.read()
+        return int(exc.code), exc.read(), _retry_headers(getattr(exc, "headers", None))
     except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
         raise TransientLLMError(f"cannot reach {urlsplit(url).netloc}: {exc}") from exc
+
+
+def _retry_headers(headers: Any) -> dict[str, str]:
+    """Keep only ``Retry-After``: nothing else from the response is needed or kept."""
+    value = headers.get("Retry-After") if headers is not None else None
+    return {"retry-after": str(value)} if value is not None else {}
 
 
 def check_base_url(base_url: str) -> str:
@@ -216,14 +226,18 @@ class OpenAICompatLLM:
         }
         if self._api_key:
             headers["Authorization"] = f"Bearer {self._api_key}"
-        status, body = self._transport(
+        reply = self._transport(
             self.base_url + "/chat/completions",
             headers,
             json.dumps(payload).encode("utf-8"),
             self.timeout,
         )
+        status, body = reply[0], reply[1]
         if status in _TRANSIENT_STATUS:
-            raise TransientLLMError(f"HTTP {status}: {_snippet(body)}")
+            got: Mapping[str, str] = reply[2] if len(reply) > 2 else {}
+            hdr = {k.lower(): v for k, v in got.items()}.get("retry-after")
+            wait = parse_retry_after(hdr, body.decode("utf-8", "replace")[: _MAX_ERROR_BODY * 4])
+            raise TransientLLMError(f"HTTP {status}: {_snippet(body)}", retry_after=wait)
         if not 200 <= status < 300:
             raise LLMError(f"HTTP {status}: {_snippet(body)}{self._key_hint(status)}")
         return parse_response(body)
