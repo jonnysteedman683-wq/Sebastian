@@ -1,5 +1,5 @@
 {
-  "summary": "2 commit(s): fix: honour the provider's retry delay on HTTP 429 (B52); Merge pull request #110 from jonnysteedman683-wq/fix/b52-retry-after",
+  "summary": "3 commit(s): fix: configurable output cap; fail fast on 'Request too large' (B53); Merge remote-tracking branch 'origin/main' into fix/b53-max-output-tokens; Merge pull request #111 from jonnysteedman683-wq/fix/b53-max-output-tokens",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
@@ -8,7 +8,7 @@
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "719ef67c4287925f1574c2ed50606e66694c7331",
+          "sha": "70a1836082a48ae9c0d7d2ac59d7bbc0f2b9d461",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 110,
+  "seq": 111,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "d485da4d2990114ab4fb3594995d31d77a42846d",
-    "to_sha": "719ef67c4287925f1574c2ed50606e66694c7331"
+    "from_sha": "719ef67c4287925f1574c2ed50606e66694c7331",
+    "to_sha": "70a1836082a48ae9c0d7d2ac59d7bbc0f2b9d461"
   },
-  "generated_at": "2026-10-31T11:49:17Z",
+  "generated_at": "2026-10-31T12:06:10Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -83,5 +83,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "266120a6157b9ef4ebaaf7aa79ccfd8733bc21728981e88f832b3a9943513d45"
+  "signature": "3cfbf20261f6223d7cd4aff984dc4679816b37c18d795559198b90d56e5bbf07"
 }
