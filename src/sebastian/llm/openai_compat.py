@@ -44,6 +44,7 @@ _FORBIDDEN_KEY_ENVS = frozenset({"ANTHROPIC_API_KEY"})
 _FORBIDDEN_KEY_ENV_PREFIXES = ("GH_", "GITHUB_")
 _TRANSIENT_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
 _MAX_ERROR_BODY = 500
+_TOO_LARGE = b"request too large"  # Groq: permanent for this request, not a rate limit
 
 # (url, headers, body, timeout) -> (status, response body[, response headers]). Swappable for
 # tests. Returning the headers is optional; they are only used to read ``Retry-After`` (B52).
@@ -151,6 +152,8 @@ class OpenAICompatLLM:
     ) -> None:
         if not model.strip():
             raise LLMError("model name must not be empty")
+        if max_tokens < 1:
+            raise LLMError("max_tokens must be >= 1")
         self.model = model
         self.base_url = check_base_url(base_url)
         self.max_tokens = max_tokens
@@ -233,6 +236,12 @@ class OpenAICompatLLM:
             self.timeout,
         )
         status, body = reply[0], reply[1]
+        if status in {413, 429} and _TOO_LARGE in body.lower():  # B53: retrying won't help
+            raise LLMError(
+                f"HTTP {status}: {_snippet(body)}\nThe request asks for more than this endpoint "
+                f"allows (max_tokens={self.max_tokens}). Lower it with "
+                "SEBASTIAN_MAX_OUTPUT_TOKENS or --max-output-tokens."
+            )
         if status in _TRANSIENT_STATUS:
             got: Mapping[str, str] = reply[2] if len(reply) > 2 else {}
             hdr = {k.lower(): v for k, v in got.items()}.get("retry-after")
