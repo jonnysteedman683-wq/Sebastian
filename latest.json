@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): perf: Optimize context compaction to O(N); Merge pull request #108 from jonnysteedman683-wq/sebastian/bolt-context-compact-8219778764098663146",
+  "summary": "2 commit(s): refactor: extract shared stdlib-only Gauntlet core (B76); Merge pull request #109 from jonnysteedman683-wq/refactor/b76-shared-gauntlet-core",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "2 file(s) changed",
-      "description": "Detected automatically from code: 2 file(s) changed.",
+      "title": "6 file(s) changed",
+      "description": "Detected automatically from code: 6 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "62fbf677fc3d7229415e25ef6814efe1509593d2",
-          "path": ".jules/bolt.md"
+          "sha": "d485da4d2990114ab4fb3594995d31d77a42846d",
+          "path": "CHANGELOG.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 108,
+  "seq": 109,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "f257573526041ac399d2187885a954bdba4364f5",
-    "to_sha": "62fbf677fc3d7229415e25ef6814efe1509593d2"
+    "from_sha": "62fbf677fc3d7229415e25ef6814efe1509593d2",
+    "to_sha": "d485da4d2990114ab4fb3594995d31d77a42846d"
   },
-  "generated_at": "2026-10-31T11:08:11Z",
+  "generated_at": "2026-10-31T11:35:17Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -83,5 +83,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "238afb13cb50bcd41f04c219b6f9db336cea91cffe916b69b23fe91546fccae4"
+  "signature": "886c8e69c0c315f388c263d79b7f2b3e9284993423645f529c0f39bf628e12a7"
 }
