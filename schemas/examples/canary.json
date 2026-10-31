@@ -41,6 +41,7 @@
       "demo",
       "doctor",
       "traces",
+      "cost",
       "trust",
       "memory",
       "undo",
@@ -69,5 +70,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "09243adc426881cf737912b2ae8762377d1262f0c1bb38c68eb920baebc6f938"
+  "signature": "0538159f36c8879c7066e56f1f4d7d2ccafc089d58a84b2e54884c4baff6f409"
 }
