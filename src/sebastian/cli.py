@@ -5,6 +5,7 @@ version."""
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import secrets
 import sys
@@ -231,6 +232,13 @@ def _add_show_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -
 def _add_run_options(run: argparse.ArgumentParser) -> None:
     run.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
     run.add_argument("--model", help="override SEBASTIAN_MODEL")
+    run.add_argument(
+        "--max-output-tokens",
+        type=_positive_int,
+        metavar="N",
+        help="cap each reply from an OpenAI-compatible server (default "
+        "SEBASTIAN_MAX_OUTPUT_TOKENS or 4096); lower it for small free tiers",
+    )
     run.add_argument(
         "--allow-cmd",
         action="append",
@@ -875,7 +883,7 @@ def _real_factory(cfg: Config) -> Callable[[str], LLM]:
     """Real model clients for the configured backend (``SEBASTIAN_BACKEND``, B37)."""
 
     def make(name: str) -> LLM:
-        return make_llm(name, cfg.backend, cfg.base_url, cfg.api_key_env)
+        return make_llm(name, cfg.backend, cfg.base_url, cfg.api_key_env, cfg.max_output_tokens)
 
     return make
 
@@ -976,6 +984,8 @@ def main(
         return early[args.cmd]()
 
     cfg = Config.from_env()
+    if getattr(args, "max_output_tokens", None):
+        cfg = dataclasses.replace(cfg, max_output_tokens=args.max_output_tokens)
     ensure_home(cfg.home)  # P1-08: sessions, traces and memory live here; keep it private
     try:
         prices = load_prices(cfg.home)

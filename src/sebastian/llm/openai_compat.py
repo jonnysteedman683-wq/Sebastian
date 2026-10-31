@@ -44,6 +44,7 @@ _FORBIDDEN_KEY_ENVS = frozenset({"ANTHROPIC_API_KEY"})
 _FORBIDDEN_KEY_ENV_PREFIXES = ("GH_", "GITHUB_")
 _TRANSIENT_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
 _MAX_ERROR_BODY = 500
+_TOO_LARGE = b"request too large"  # Groq: permanent for this request, not a rate limit
 
 # (url, headers, body, timeout) -> (status, response body). Swappable for tests.
 Transport = Callable[[str, dict[str, str], bytes, float], tuple[int, bytes]]
@@ -141,6 +142,8 @@ class OpenAICompatLLM:
     ) -> None:
         if not model.strip():
             raise LLMError("model name must not be empty")
+        if max_tokens < 1:
+            raise LLMError("max_tokens must be >= 1")
         self.model = model
         self.base_url = check_base_url(base_url)
         self.max_tokens = max_tokens
@@ -222,6 +225,12 @@ class OpenAICompatLLM:
             json.dumps(payload).encode("utf-8"),
             self.timeout,
         )
+        if status in {413, 429} and _TOO_LARGE in body.lower():  # B53: retrying won't help
+            raise LLMError(
+                f"HTTP {status}: {_snippet(body)}\nThe request asks for more than this endpoint "
+                f"allows (max_tokens={self.max_tokens}). Lower it with "
+                "SEBASTIAN_MAX_OUTPUT_TOKENS or --max-output-tokens."
+            )
         if status in _TRANSIENT_STATUS:
             raise TransientLLMError(f"HTTP {status}: {_snippet(body)}")
         if not 200 <= status < 300:

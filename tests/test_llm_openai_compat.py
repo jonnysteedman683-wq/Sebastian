@@ -371,16 +371,18 @@ def test_cli_uses_the_configured_backend(
     monkeypatch.setenv("SEBASTIAN_BASE_URL", "http://localhost:11434/v1")
     monkeypatch.setattr(sys, "stdin", io.StringIO(""))
     server = FakeServer((200, reply("hello from a local model")))
-    seen: list[tuple[str, str, str, str]] = []
+    seen: list[tuple[str, str, str, str, int | None]] = []
 
-    def fake_make(model: str, backend: str, base_url: str, key_env: str) -> OpenAICompatLLM:
-        seen.append((model, backend, base_url, key_env))
+    def fake_make(
+        model: str, backend: str, base_url: str, key_env: str, max_output_tokens: int | None = None
+    ) -> OpenAICompatLLM:
+        seen.append((model, backend, base_url, key_env, max_output_tokens))
         return OpenAICompatLLM(model, base_url, transport=server)
 
     monkeypatch.setattr(cli, "make_llm", fake_make)
     ws = tmp_path / "ws"
     ws.mkdir()
     args = ["run", "hi", "-w", str(ws), "--no-memory", "--model", "qwen3"]
-    assert cli.main(args) == 0
-    assert seen == [("qwen3", "openai", "http://localhost:11434/v1", "")]
+    assert cli.main([*args, "--max-output-tokens", "900"]) == 0
+    assert seen == [("qwen3", "openai", "http://localhost:11434/v1", "", 900)]
     assert "hello from a local model" in capsys.readouterr().out

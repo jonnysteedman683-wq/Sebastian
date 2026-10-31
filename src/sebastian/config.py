@@ -11,6 +11,8 @@ from pathlib import Path
 # Verified current Anthropic model IDs (Oct 2026): claude-opus-5-5, claude-sonnet-5-5,
 # claude-haiku-5-5. Re-verify on every maintenance pass (work order §6.3).
 DEFAULT_MODEL = "claude-sonnet-5-5"
+MAX_OUTPUT_TOKENS_ENV = "SEBASTIAN_MAX_OUTPUT_TOKENS"  # B53
+DEFAULT_MAX_OUTPUT_TOKENS = 4096
 
 
 def _int(env: Mapping[str, str], key: str, default: int) -> int:
@@ -42,6 +44,7 @@ class Config:
     base_url: str = ""  # OpenAI-compatible endpoint, e.g. http://localhost:11434/v1 for Ollama
     api_key_env: str = ""  # P1-19: variable holding the key for a non-OpenAI base URL
     max_cost: float = 0.0  # B40: USD per run; 0 = no dollar limit (needs prices.json)
+    max_output_tokens: int = 4096  # B53: per-call output cap sent to OpenAI-compatible servers
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> Config:
@@ -60,6 +63,7 @@ class Config:
             base_url=env.get("SEBASTIAN_BASE_URL", ""),
             api_key_env=env.get("SEBASTIAN_API_KEY_ENV", "").strip(),
             max_cost=_cost(env.get("SEBASTIAN_MAX_COST", "")),
+            max_output_tokens=_int(env, MAX_OUTPUT_TOKENS_ENV, DEFAULT_MAX_OUTPUT_TOKENS),
         )
 
 
