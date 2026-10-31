@@ -59,6 +59,7 @@ from sebastian.tools.builtin import (
     python_roots,
 )
 from sebastian.trace import NullTracer, Tracer
+from sebastian.trust import Level
 from sebastian.types import StopReason, ToolCall
 
 # Fallback when guard.yml cannot be read; must equal its `guarded=` regex (a test checks).
@@ -119,6 +120,7 @@ class EvolveReport:
     baseline_metrics: tuple[int | None, float | None] | None = None  # P1-04: (tests, coverage)
     candidate_metrics: tuple[int | None, float | None] | None = None
     pr_url: str = ""  # B26b: what the opener returned, recorded in the PR ledger
+    trust: Level | None = None  # B26c: the level that decided what was published
 
     def summary(self) -> str:
         """One readable block for the CLI."""
@@ -149,6 +151,8 @@ class EvolveReport:
             lines.append(f"  patch: {self.patch}")
         if self.pr_url:
             lines.append(f"  pr: {self.pr_url}")
+        if self.trust is not None:
+            lines.append(f"  trust: {self.trust.label} ({PUBLISH_RULE[self.trust]})")
         return "\n".join(lines)
 
 
@@ -450,6 +454,16 @@ Rules:
 """
 
 
+# B26c: what each trust level lets evolve publish. L3 is never earned (trust.MAX_LEVEL) and
+# evolve has no merge code at all, so an auto-merge would need its own owner-approved item.
+PUBLISH_RULE = {
+    Level.L0_SUGGEST: "publishes nothing; the branch stays local",
+    Level.L1_DRAFT_PR: "may push and open a draft PR",
+    Level.L2_PR: "may push and open a PR ready for review",
+    Level.L3_AUTO_MERGE: "same as L2; evolve never merges",
+}
+
+
 # --- the cycle ---------------------------------------------------------------------------
 
 
@@ -476,6 +490,9 @@ class EvolveConfig:
     )
     home: Path = field(default_factory=lambda: Path.home() / ".sebastian")
     gauntlet: GauntletPolicy | None = None  # B34: the inner run must pass VERIFY and CRITIQUE
+    # B26c: the earned trust level. L0 publishes nothing (the branch stays local), L1 and up
+    # may push; whether the PR is a draft is the opener's job. None = no ladder (library use).
+    trust: Level | None = None
 
 
 def evolve_once(
@@ -551,13 +568,7 @@ def evolve_once(
                 "-c", "user.email=sebastian@users.noreply.github.com",
                 "commit", "-q", "-m", f"feat: {item.title} ({item.id}, evolve)",
             )  # fmt: skip
-            if cfg.push:
-                # The remote is the owner's own config (the agent can't reach .git), so a
-                # local-path origin is allowed for this one user-initiated push.
-                _git(cand, "-c", "protocol.file.allow=user", "push", "-q", "-u", "origin",
-                     report.branch)  # fmt: skip
-                if opener is not None:
-                    report.pr_url = opener(cand, report.branch, item) or ""
+            _publish(report, cand, cfg, item, opener)
         else:
             report.patch = _save_patch(cand, cfg.home, report.branch)
         return report
@@ -567,6 +578,27 @@ def evolve_once(
         shutil.rmtree(scratch, ignore_errors=True)
         if not keep_branch:
             _git(root, "branch", "-q", "-D", report.branch)
+
+
+def _publish(
+    report: EvolveReport,
+    cand: Path,
+    cfg: EvolveConfig,
+    item: BacklogItem,
+    opener: Callable[[Path, str, BacklogItem], str | None] | None,
+) -> None:
+    """Push an accepted branch and open its PR, as far as the trust level allows (B26c)."""
+    report.trust = cfg.trust
+    if not cfg.push:
+        return
+    if cfg.trust is Level.L0_SUGGEST:
+        report.reason += f"; trust {cfg.trust.label}: not pushed, the branch stays local"
+        return
+    # The remote is the owner's own config (the agent can't reach .git), so a local-path
+    # origin is allowed for this one user-initiated push.
+    _git(cand, "-c", "protocol.file.allow=user", "push", "-q", "-u", "origin", report.branch)
+    if opener is not None:
+        report.pr_url = opener(cand, report.branch, item) or ""
 
 
 def _git_pointer(cand: Path) -> tuple[bytes, str]:
@@ -664,7 +696,8 @@ def _gate(
     if not all(step() for step in steps):
         return False
     report.accepted = True
-    report.reason = "all gates passed" + (" (pushed)" if cfg.push else " (committed locally)")
+    pushed = cfg.push and cfg.trust is not Level.L0_SUGGEST
+    report.reason = "all gates passed" + (" (pushed)" if pushed else " (committed locally)")
     return True
 
 
@@ -779,8 +812,8 @@ def _save_patch(cand: Path, home: Path, branch: str) -> Path | None:
     return out
 
 
-def open_pr(worktree: Path, branch: str, item: BacklogItem) -> str:
-    """Open a PR for an accepted branch with the GitHub CLI (never merges); return its URL."""
+def open_pr(worktree: Path, branch: str, item: BacklogItem, draft: bool = False) -> str:
+    """Open a PR (a draft when ``draft``) with the GitHub CLI; never merges. Returns its URL."""
     exe = shutil.which("gh")
     if exe is None:
         raise EvolveError("gh is not installed; the branch was pushed, open the PR manually")
@@ -801,6 +834,7 @@ def open_pr(worktree: Path, branch: str, item: BacklogItem) -> str:
             f"feat: {item.title} ({item.id})",
             "--body",
             body,
+            *(["--draft"] if draft else []),
         ],
         cwd=worktree,
         capture_output=True,

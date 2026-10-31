@@ -1,6 +1,6 @@
 """Trust ladder (B26a): how much autonomy Sebastian's live eval record has earned.
 
-Read-only and advisory: nothing enforces the level yet (that is B26c). Levels:
+Read-only here; ``sebastian evolve`` enforces the level (B26c). Levels:
 
 - L0 suggest: propose changes only.
 - L1 draft-pr: may open draft PRs.
