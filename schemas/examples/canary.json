@@ -50,6 +50,7 @@
       "version",
       "models",
       "show",
+      "diff",
       "crosstest",
       "unisync"
     ],
@@ -68,5 +69,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "6045bc2986040db1bce3e69e93d9579eebd32eae5afe0450bc721d80f74b1465"
+  "signature": "09243adc426881cf737912b2ae8762377d1262f0c1bb38c68eb920baebc6f938"
 }

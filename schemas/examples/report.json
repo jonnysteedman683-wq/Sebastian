@@ -104,6 +104,7 @@
       "version",
       "models",
       "show",
+      "diff",
       "crosstest",
       "unisync"
     ],
@@ -130,5 +131,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "b580b1bdfb3856edb730003a73a5ce3a3a65e507bac7426d38cb23834b5dd42f"
+  "signature": "5b423308bc7cd05a11751e462cfdd35153d083f53a5187f6e3f47d2b241c038a"
 }

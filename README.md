@@ -38,6 +38,7 @@ sebastian run "Bump the version" -w ./repo --allow-cmd pytest --push-main  # Gau
 #   fast-forward only, .github/ and git config files are never published
 sebastian resume <run_id> -w ./project # continue a run that hit its budget or an API error
 sebastian show <run_id>              # one run as an HTML timeline (--text for the terminal)
+sebastian diff <run_id>              # unified diff of every file the run changed (read-only)
 sebastian undo <run_id> -w ./project # roll back a run's file changes (run_id from `sebastian traces`)
 sebastian evolve --repo . --pr  # improve itself: next backlog item, bubblewrap-sandboxed gates (required), opens a PR (never merges)
 sebastian evolve --repo . --gauntlet-revert     # same, but the inner run must prove itself; needs_help = rejected

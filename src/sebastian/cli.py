@@ -1,5 +1,5 @@
 """CLI: run (optionally --pr / --push-main), resume, demo,
- traces, show, undo, scar, evolve, redteam, models, dashboard, trust,
+ traces, show, diff, undo, scar, evolve, redteam, models, dashboard, trust,
 version."""
 
 from __future__ import annotations
@@ -227,6 +227,8 @@ def _add_show_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -
     show.add_argument("run_id", help="run id, or a unique prefix of at least 6 characters")
     show.add_argument("-o", "--out", type=Path, help="HTML file (default: sebastian-run-<id>.html)")
     show.add_argument("--text", action="store_true", help="print a text timeline instead")
+    diff = sub.add_parser("diff", help="unified diff of every file a run changed")
+    diff.add_argument("run_id", help="run id, or a unique prefix of at least 6 characters")
 
 
 def _add_run_options(run: argparse.ArgumentParser) -> None:
@@ -505,6 +507,22 @@ def _show(cfg: Config, args: argparse.Namespace) -> int:
     out.write_text(render_html(run_id, entries, time.time()), encoding="utf-8")
     print(out)
     return 0
+
+
+def _diff(store: Checkpoints, args: argparse.Namespace) -> int:
+    from sebastian.rundiff import run_diff  # noqa: PLC0415
+
+    try:
+        result = run_diff(store, args.run_id)
+    except CheckpointError as exc:
+        print(f"diff: {exc}", file=sys.stderr)
+        return 1
+    sys.stdout.write(result.text)
+    for line in result.skipped:
+        print(f"diff: skipped {line}", file=sys.stderr)
+    if not result.files and not result.skipped:
+        print(f"diff: run {result.run_id} left no changes in place", file=sys.stderr)
+    return 1 if result.skipped else 0
 
 
 def _dashboard(cfg: Config, args: argparse.Namespace) -> int:
@@ -1009,6 +1027,7 @@ def main(
         "memory": lambda: _memory(cfg, args),
         "models": lambda: _models(cfg, args, llm_factory, prices),
         "show": lambda: _show(cfg, args),
+        "diff": lambda: _diff(Checkpoints(cfg.home / "checkpoints"), args),
         "unisync": lambda: _unisync(args),
     }
     if args.cmd in tools_only:
