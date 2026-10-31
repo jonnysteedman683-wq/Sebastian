@@ -260,7 +260,7 @@ def test_urllib_transport_maps_errors(monkeypatch: pytest.MonkeyPatch) -> None:
         return Resp()
 
     monkeypatch.setattr(oc, "_open", ok)
-    assert oc._urllib_transport("https://h/v1", {"Content-Type": "x"}, b"{}", 5) == (200, b"{}")
+    assert oc._urllib_transport("https://h/v1", {"Content-Type": "x"}, b"{}", 5) == (200, b"{}", {})
     assert calls == [("https://h/v1", "x", 5)]
 
     def down(req: Any, timeout: float) -> Resp:
@@ -278,7 +278,7 @@ def test_http_error_body_is_returned(monkeypatch: pytest.MonkeyPatch) -> None:
         raise urllib.error.HTTPError(req.full_url, 429, "slow", {}, io.BytesIO(b"rate"))  # type: ignore[arg-type]
 
     monkeypatch.setattr(oc, "_open", http_error)
-    assert oc._urllib_transport("https://h/v1", {}, b"{}", 5) == (429, b"rate")
+    assert oc._urllib_transport("https://h/v1", {}, b"{}", 5) == (429, b"rate", {})
 
 
 # --- base URL policy ------------------------------------------------------------------------
