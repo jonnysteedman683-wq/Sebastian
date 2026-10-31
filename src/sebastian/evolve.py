@@ -118,6 +118,7 @@ class EvolveReport:
     sandbox: str = ""  # how the gates ran: "bwrap" or "none"
     baseline_metrics: tuple[int | None, float | None] | None = None  # P1-04: (tests, coverage)
     candidate_metrics: tuple[int | None, float | None] | None = None
+    pr_url: str = ""  # B26b: what the opener returned, recorded in the PR ledger
 
     def summary(self) -> str:
         """One readable block for the CLI."""
@@ -146,6 +147,8 @@ class EvolveReport:
             lines.append(f"  changed: {', '.join(self.changed)}")
         if self.patch:
             lines.append(f"  patch: {self.patch}")
+        if self.pr_url:
+            lines.append(f"  pr: {self.pr_url}")
         return "\n".join(lines)
 
 
@@ -481,7 +484,7 @@ def evolve_once(
     config: EvolveConfig | None = None,
     tracer: Tracer | None = None,
     clock: Clock | None = None,
-    opener: Callable[[Path, str, BacklogItem], None] | None = None,
+    opener: Callable[[Path, str, BacklogItem], str | None] | None = None,
 ) -> EvolveReport:
     """Run one self-improvement cycle on ``repo``. Never merges; returns what happened."""
     cfg = config or EvolveConfig()
@@ -554,7 +557,7 @@ def evolve_once(
                 _git(cand, "-c", "protocol.file.allow=user", "push", "-q", "-u", "origin",
                      report.branch)  # fmt: skip
                 if opener is not None:
-                    opener(cand, report.branch, item)
+                    report.pr_url = opener(cand, report.branch, item) or ""
         else:
             report.patch = _save_patch(cand, cfg.home, report.branch)
         return report
@@ -776,8 +779,8 @@ def _save_patch(cand: Path, home: Path, branch: str) -> Path | None:
     return out
 
 
-def open_pr(worktree: Path, branch: str, item: BacklogItem) -> None:
-    """Open a PR for an accepted branch with the GitHub CLI (never merges)."""
+def open_pr(worktree: Path, branch: str, item: BacklogItem) -> str:
+    """Open a PR for an accepted branch with the GitHub CLI (never merges); return its URL."""
     exe = shutil.which("gh")
     if exe is None:
         raise EvolveError("gh is not installed; the branch was pushed, open the PR manually")
@@ -806,3 +809,5 @@ def open_pr(worktree: Path, branch: str, item: BacklogItem) -> None:
     )
     if proc.returncode != 0:
         raise EvolveError(f"gh pr create failed: {proc.stderr.strip()[:300]}")
+    lines = proc.stdout.strip().splitlines()
+    return lines[-1].strip() if lines else ""

@@ -15,6 +15,7 @@ from sebastian.approval import ApprovalGate
 from sebastian.cli import main
 from sebastian.evolve import (
     DEFAULT_GUARDED,
+    BacklogItem,
     EvolveConfig,
     EvolveError,
     ScopedApprover,
@@ -251,14 +252,21 @@ def test_push_and_opener(repo: Path, tmp_path: Path) -> None:
     subprocess.run([GIT, "init", "-q", "--bare", str(remote)], check=True)
     git(repo, "remote", "add", "origin", str(remote))
     opened: list[str] = []
+
+    def opener(wt: Path, branch: str, item: BacklogItem) -> str:
+        opened.append(f"{branch}:{item.id}")
+        return "https://x/pull/1"
+
     report = evolve_once(
         repo,
         agent(write("1", "greet.txt", "hello")),
         cfg(tmp_path, push=True),
-        opener=lambda wt, branch, item: opened.append(f"{branch}:{item.id}"),
+        opener=opener,
     )
     assert report.accepted
     assert opened == [f"{report.branch}:B3"]
+    assert report.pr_url == "https://x/pull/1"  # B26b: kept for the PR ledger
+    assert "  pr: https://x/pull/1" in report.summary()
     assert report.branch in git(remote, "branch")
 
 

@@ -45,6 +45,7 @@ sebastian scar <run_id> -w ./project # turn a failed run into a permanent eval c
 sebastian redteam -n 10               # attacker model vs Sebastian; breaches become eval cases
 sebastian redteam --target critic     # attacks on the Gauntlet reviewer; any PASS is a breach
 sebastian dashboard                  # HTML page: eval trend, injection resistance, scars, runs
+sebastian trust --sync               # earned autonomy level; --sync records merged/reverted evolve PRs
 sebastian crosstest --manifest agents.json  # every agent's suite vs every agent; read-only (docs/CROSSTEST.md)
 python -m sebastian.evals            # offline, no key
 python -m sebastian.evals --live     # real model: capability + prompt-injection score
