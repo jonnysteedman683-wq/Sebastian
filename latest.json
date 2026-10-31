@@ -1,14 +1,14 @@
 {
-  "summary": "2 commit(s): refactor: extract shared stdlib-only Gauntlet core (B76); Merge pull request #109 from jonnysteedman683-wq/refactor/b76-shared-gauntlet-core",
+  "summary": "2 commit(s): fix: honour the provider's retry delay on HTTP 429 (B52); Merge pull request #110 from jonnysteedman683-wq/fix/b52-retry-after",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "6 file(s) changed",
-      "description": "Detected automatically from code: 6 file(s) changed.",
+      "title": "8 file(s) changed",
+      "description": "Detected automatically from code: 8 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "d485da4d2990114ab4fb3594995d31d77a42846d",
+          "sha": "719ef67c4287925f1574c2ed50606e66694c7331",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 109,
+  "seq": 110,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "62fbf677fc3d7229415e25ef6814efe1509593d2",
-    "to_sha": "d485da4d2990114ab4fb3594995d31d77a42846d"
+    "from_sha": "d485da4d2990114ab4fb3594995d31d77a42846d",
+    "to_sha": "719ef67c4287925f1574c2ed50606e66694c7331"
   },
-  "generated_at": "2026-10-31T11:35:17Z",
+  "generated_at": "2026-10-31T11:49:17Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -83,5 +83,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "886c8e69c0c315f388c263d79b7f2b3e9284993423645f529c0f39bf628e12a7"
+  "signature": "266120a6157b9ef4ebaaf7aa79ccfd8733bc21728981e88f832b3a9943513d45"
 }
