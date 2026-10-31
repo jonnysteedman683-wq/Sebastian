@@ -6,7 +6,7 @@ Sebastian is an autonomous, tool-using AI agent framework designed with a "safet
 ## Architecture
 
 **Entry points:** `sebastian` CLI (`cli.py`), `sebastian-watch` CLI (`watch/cli.py`).
-**Agent loop:** `agent.py` drives the core loop (plan -> act -> reflect), managing tool calls and the conversation session. `gauntlet.py` adds strict stage verification.
+**Agent loop:** `agent.py` drives the core loop (plan -> act -> reflect), managing tool calls and the conversation session. `gauntlet.py` adds strict stage verification. Its pure contracts live in `gauntlet_core.py` (stdlib-only, hash-pinned, vendored byte-identical into LESTINXOR-AGENT as `lestinxor/gauntlet_core.py`).
 **Tool layer:** `tools/` handles tool execution, notably providing `workspace.py` for sandbox jails and `builtin.py` for standard file and command operations. All external actions pass through the `approval.py` gate.
 **Memory/state:** `memory.py` provides atomic episodic memory storage using BM25 for recall. `checkpoint.py` manages file snapshots to support undo operations. `session.py` serialises the active conversation.
 **LLM backend(s):** `llm/` provides a provider-agnostic interface with `anthropic.py` and `openai_compat.py` (which covers OpenAI, Ollama, OpenRouter, etc.).
