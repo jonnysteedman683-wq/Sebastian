@@ -5,7 +5,11 @@ CRITIQUE can send the run back to ACT (or to PLAN after repeated failures). The 
 by ``GauntletPolicy.max_loops``. Past that bound, or when a stage cannot produce anything usable,
 the run goes to HELP: it stops and reports, nothing more.
 
-This module holds the stage machine, PREDICT (B11a), VERIFY (B11b), CRITIQUE (B11c) and the
+The pure, dependency-free contracts (``Stage``, ``next_stage``, ``parse_prediction``,
+``parse_verdict``) live in ``sebastian.gauntlet_core``, which other agents vendor byte-for-byte;
+they are re-exported here so every existing import keeps working.
+
+This module holds the stage machine wiring, PREDICT (B11a), VERIFY (B11b), CRITIQUE (B11c) and the
 HELP report (B11d). ``Sebastian`` drives the stages when it is given a ``GauntletPolicy``
 (``sebastian run --gauntlet``). Every model call here is tool-free, and the agent charges each
 call to the run's ``Governor``. VERIFY runs the predicted checks through
@@ -19,26 +23,81 @@ from __future__ import annotations
 
 import difflib
 import re
-import shlex
 from dataclasses import dataclass
-from enum import StrEnum
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 from sebastian.approval import ApprovalGate
+from sebastian.gauntlet_core import (
+    _BLOCK,
+    _EXE,
+    _FORWARD,
+    _RETRYABLE_STAGES,
+    _SHELL_CHARS,
+    _VERDICT,
+    CORE_VERSION,
+    MAX_COMMAND_CHARS,
+    MAX_FINDING_CHARS,
+    MAX_FINDINGS,
+    MAX_PREDICTED_COMMANDS,
+    MAX_PREDICTED_FILES,
+    TERMINAL,
+    GauntletError,
+    LoopPolicy,
+    Prediction,
+    Stage,
+    Transition,
+    Verdict,
+    next_stage,
+    parse_prediction,
+    parse_verdict,
+)
 from sebastian.llm.base import LLM
 from sebastian.tools.base import ToolError, ToolRegistry
 from sebastian.tools.workspace import Workspace, WorkspaceError
 from sebastian.trace import NullTracer, Tracer
 from sebastian.types import LLMResponse, Message, Role, ToolCall
 
-MAX_PREDICTED_FILES = 20
-MAX_PREDICTED_COMMANDS = 5
-MAX_COMMAND_CHARS = 300
+__all__ = [
+    "CORE_VERSION",
+    "CRITIC_SYSTEM",
+    "MAX_CHECK_OUTPUT",
+    "MAX_COMMAND_CHARS",
+    "MAX_DIFF_CHARS",
+    "MAX_FINDINGS",
+    "MAX_FINDING_CHARS",
+    "MAX_HELP_FINDINGS",
+    "MAX_PREDICTED_COMMANDS",
+    "MAX_PREDICTED_FILES",
+    "PREDICT_INSTRUCTION",
+    "TERMINAL",
+    "CheckResult",
+    "CritiqueOutcome",
+    "GauntletError",
+    "GauntletPolicy",
+    "LoopPolicy",
+    "PredictOutcome",
+    "Prediction",
+    "Stage",
+    "Transition",
+    "Verdict",
+    "VerifyOutcome",
+    "critic_for",
+    "critique",
+    "critique_messages",
+    "help_report",
+    "next_stage",
+    "parse_prediction",
+    "parse_verdict",
+    "predict",
+    "predict_messages",
+    "verify",
+    "workspace_diff",
+]
+
+_REEXPORTED_PRIVATE = (_BLOCK, _EXE, _FORWARD, _RETRYABLE_STAGES, _SHELL_CHARS, _VERDICT)
+
 MAX_CHECK_OUTPUT = 2000  # tail of each check's output kept for the findings
 _EXIT = re.compile(r"\Aexit_code=(-?\d+)\n")
-_EXE = re.compile(r"^[A-Za-z0-9_.+-]{1,64}$")
-_SHELL_CHARS = frozenset("|;&<>`$\n")  # run_command uses no shell; reject them to avoid confusion
-_BLOCK = re.compile(r"<checks>(.*?)</checks>", re.DOTALL)
 
 PREDICT_INSTRUCTION = """\
 
@@ -56,33 +115,6 @@ least one `run:` line that tests it.
 """
 
 
-class Stage(StrEnum):
-    """Where a Gauntlet run is."""
-
-    PLAN = "plan"
-    PREDICT = "predict"
-    ACT = "act"
-    VERIFY = "verify"
-    CRITIQUE = "critique"
-    DONE = "done"
-    HELP = "help"
-
-
-TERMINAL = frozenset({Stage.DONE, Stage.HELP})
-_RETRYABLE_STAGES = frozenset({Stage.VERIFY, Stage.CRITIQUE})
-_FORWARD = {
-    Stage.PLAN: Stage.PREDICT,
-    Stage.PREDICT: Stage.ACT,
-    Stage.ACT: Stage.VERIFY,
-    Stage.VERIFY: Stage.CRITIQUE,
-    Stage.CRITIQUE: Stage.DONE,
-}
-
-
-class GauntletError(ValueError):
-    """Invalid policy, prediction or transition."""
-
-
 @dataclass(frozen=True, slots=True)
 class GauntletPolicy:
     """Bounds for one Gauntlet run (design section 3)."""
@@ -98,105 +130,6 @@ class GauntletPolicy:
             raise GauntletError("max_loops must be at least 1")
         if self.replan_after < 1:
             raise GauntletError("replan_after must be at least 1")
-
-
-@dataclass(frozen=True, slots=True)
-class Prediction:
-    """What PREDICT says will change and how VERIFY will check it."""
-
-    files: tuple[str, ...] = ()
-    commands: tuple[str, ...] = ()
-
-    @property
-    def touches_code(self) -> bool:
-        """True when any predicted file is Python source."""
-        return any(f.endswith(".py") for f in self.files)
-
-
-@dataclass(frozen=True, slots=True)
-class Transition:
-    """The result of leaving a stage."""
-
-    stage: Stage
-    loops: int  # failed VERIFY/CRITIQUE rounds so far
-    reason: str = ""
-
-
-def next_stage(stage: Stage, passed: bool, loops: int, policy: GauntletPolicy) -> Transition:
-    """Where to go after ``stage`` passed or failed its gate.
-
-    PLAN, PREDICT and ACT failing means there is nothing to check, so the run goes to HELP. A
-    failed VERIFY or CRITIQUE counts one loop; at ``max_loops`` the run goes to HELP. Otherwise,
-    every ``replan_after``-th loop goes back to PLAN and the rest go back to ACT.
-    """
-    if stage in TERMINAL:
-        raise GauntletError(f"{stage} is terminal")
-    if loops < 0:
-        raise GauntletError("loops must be non-negative")
-    if passed:
-        return Transition(_FORWARD[stage], loops)
-    if stage not in _RETRYABLE_STAGES:
-        return Transition(Stage.HELP, loops, f"{stage} failed")
-    loops += 1
-    if loops >= policy.max_loops:
-        return Transition(Stage.HELP, loops, f"{stage} failed {loops} time(s); loop limit reached")
-    if loops % policy.replan_after == 0:
-        return Transition(Stage.PLAN, loops, f"{stage} failed; replanning")
-    return Transition(Stage.ACT, loops, f"{stage} failed; retrying")
-
-
-def parse_prediction(text: str, policy: GauntletPolicy | None = None) -> Prediction:
-    """Strictly parse the single ``<checks>`` block. Any malformed line rejects the whole block."""
-    blocks = _BLOCK.findall(text)
-    if len(blocks) != 1:
-        raise GauntletError(f"expected exactly one <checks> block, found {len(blocks)}")
-    files: list[str] = []
-    commands: list[str] = []
-    for raw in blocks[0].splitlines():
-        line = raw.strip()
-        if not line:
-            continue
-        key, sep, value = line.partition(":")
-        value = value.strip()
-        if not sep or not value:
-            raise GauntletError(f"malformed line: {line[:80]!r}")
-        if key.strip() == "file":
-            files.append(_check_path(value))
-        elif key.strip() == "run":
-            commands.append(_check_command(value))
-        else:
-            raise GauntletError(f"unknown key {key.strip()[:20]!r}; use file: or run:")
-    if len(files) > MAX_PREDICTED_FILES:
-        raise GauntletError(f"too many files predicted (max {MAX_PREDICTED_FILES})")
-    if len(commands) > MAX_PREDICTED_COMMANDS:
-        raise GauntletError(f"too many commands predicted (max {MAX_PREDICTED_COMMANDS})")
-    pred = Prediction(tuple(dict.fromkeys(files)), tuple(dict.fromkeys(commands)))
-    if not pred.files and not pred.commands:
-        raise GauntletError("prediction is empty")
-    if (policy or GauntletPolicy()).checks_required and pred.touches_code and not pred.commands:
-        raise GauntletError("Python changes predicted but no run: check given")
-    return pred
-
-
-def _check_path(value: str) -> str:
-    p = PurePosixPath(value)
-    if p.is_absolute() or ".." in p.parts or "\\" in value or "\x00" in value:
-        raise GauntletError(f"predicted path escapes the workspace: {value[:80]!r}")
-    return p.as_posix()
-
-
-def _check_command(value: str) -> str:
-    if len(value) > MAX_COMMAND_CHARS:
-        raise GauntletError("predicted command too long")
-    if any(ch in value for ch in _SHELL_CHARS):
-        raise GauntletError(f"shell operators are not allowed: {value[:80]!r}")
-    try:
-        argv = shlex.split(value)
-    except ValueError as exc:
-        raise GauntletError(f"unparseable command: {exc}") from exc
-    if not argv or not _EXE.match(argv[0]):
-        raise GauntletError(f"command must start with a bare executable name: {value[:80]!r}")
-    return shlex.join(argv)
 
 
 def predict_messages(task: str, plan: str = "") -> list[Message]:
@@ -329,9 +262,6 @@ def verify(
 # --- CRITIQUE (B11c) ------------------------------------------------------------------------
 
 MAX_DIFF_CHARS = 20_000
-MAX_FINDINGS = 10
-MAX_FINDING_CHARS = 300
-_VERDICT = re.compile(r"\AVERDICT:\s*(PASS|FAIL)\s*\Z")
 
 CRITIC_SYSTEM = """\
 You are a strict code reviewer. Another agent claims it finished a task, and its own checks \
@@ -352,40 +282,6 @@ VERDICT: FAIL
 def critic_for(policy: GauntletPolicy, planner: LLM | None, actor: LLM) -> LLM:
     """The critic model: ``policy.critic_llm``, else the planner model, else the actor (Q1)."""
     return policy.critic_llm or planner or actor
-
-
-@dataclass(frozen=True, slots=True)
-class Verdict:
-    """A parsed critic reply. Anything malformed is a FAIL."""
-
-    passed: bool
-    findings: tuple[str, ...] = ()
-    malformed: bool = False
-
-
-def parse_verdict(text: str) -> Verdict:
-    """Strict parse: first line ``VERDICT: PASS|FAIL``, then only ``- finding`` lines.
-
-    A second VERDICT line, any other text, or a FAIL with no findings is malformed, and malformed
-    always means FAIL. A PASS carrying findings is treated as a FAIL: the critic contradicted
-    itself.
-    """
-    lines = [ln.strip() for ln in text.strip().splitlines() if ln.strip()]
-    m = _VERDICT.match(lines[0]) if lines else None
-    if m is None:
-        return Verdict(False, ("critic reply did not start with VERDICT: PASS or FAIL",), True)
-    findings = []
-    for ln in lines[1:]:
-        if not ln.startswith("- ") or ln.upper().lstrip("- ").startswith("VERDICT"):
-            return Verdict(False, (f"critic reply malformed near: {ln[:80]!r}",), True)
-        findings.append(ln[2:].strip()[:MAX_FINDING_CHARS])
-    if len(findings) > MAX_FINDINGS:
-        return Verdict(False, (f"critic gave more than {MAX_FINDINGS} findings",), True)
-    if m.group(1) == "PASS":
-        return Verdict(not findings, tuple(findings))
-    if not findings:
-        return Verdict(False, ("critic said FAIL without saying why",), True)
-    return Verdict(False, tuple(findings))
 
 
 def critique_messages(

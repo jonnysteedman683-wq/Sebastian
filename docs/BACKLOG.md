@@ -53,6 +53,7 @@ Rules:
   - [x] **B11d HELP + `needs_help` + `--gauntlet` + `--critic-model`.** *Done when:* `max_loops` exhaustion ends as `needs_help`; inventory examples re-signed.
   - [x] **B11e Evals.** Gauntlet on/off comparison and red-team attacks aimed at the critic.
 - [x] **B12 Licence.** MIT (owner decision, 19 Oct 2026).
+- [x] **B76 Shared Gauntlet core.** 🔒 (touches `gauntlet.py`; owner asked, 31 Oct 2026). Move the pure contracts (`Stage`, `next_stage`, `parse_prediction`, `parse_verdict`) into stdlib-only `gauntlet_core.py`, re-exported from `gauntlet.py`, version- and hash-pinned so LESTINXOR-AGENT can vendor it byte-identical. *Done when:* no behaviour change (existing suite unchanged), purity + pin tests pass.
 
 ## Proposed
 
