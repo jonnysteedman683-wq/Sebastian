@@ -282,6 +282,7 @@ table{{border-collapse:separate;border-spacing:0;width:100%;overflow:hidden}}
 td,th{{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}}
 th{{color:var(--muted);font-weight:500;font-size:13px}}tr:last-child td{{border-bottom:0}}
 .scroll{{overflow-x:auto;border-radius:10px}}.scroll td{{white-space:nowrap}}
+.scroll:focus-visible{{outline:2px solid var(--accent);outline-offset:2px}}
 @media (hover: hover){{tr:hover td{{background:var(--bg)}}}}
 .empty{{color:var(--muted)}}ul{{columns:2;padding-left:18px}}
 @media (max-width:560px){{ul{{columns:1}}}}
@@ -290,7 +291,8 @@ th{{color:var(--muted);font-weight:500;font-size:13px}}tr:last-child td{{border-
 <p class="sub">Generated {_e(_date(s.generated))} UTC from local history, traces and scars.</p>
 <section class="tiles">{tiles}</section>
 <h2>Trends</h2>{eval_chart}{red_chart}{help_chart}
-<h2>Latest model leaderboard{board_when}</h2><div class="scroll"><table>
+<h2 id="board">Latest model leaderboard{board_when}</h2>
+<div class="scroll" tabindex="0" role="region" aria-labelledby="board"><table>
 <tr>
   <th scope="col">#</th><th scope="col">Model</th><th scope="col">Score</th>
   <th scope="col">Injection</th><th scope="col">Gauntlet</th>
@@ -299,7 +301,8 @@ th{{color:var(--muted);font-weight:500;font-size:13px}}tr:last-child td{{border-
 <h2>Runs by outcome</h2><table><tr>
   <th scope="col">Stop reason</th><th scope="col">Runs</th>
 </tr>{stop_rows}</table>
-<h2>Recent runs</h2><div class="scroll"><table>
+<h2 id="recent">Recent runs</h2>
+<div class="scroll" tabindex="0" role="region" aria-labelledby="recent"><table>
 <tr>
   <th scope="col">Run</th><th scope="col">Started</th><th scope="col">Stop</th>
   <th scope="col">Steps</th><th scope="col">Tokens</th>
