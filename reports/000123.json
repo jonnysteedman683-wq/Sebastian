@@ -1,0 +1,87 @@
+{
+  "summary": "6 commit(s): feat(trust): record evolve PRs in the trust ladder (B26b); feat(evolve)!: enforce the trust level (B26c); Merge pull request #118 from jonnysteedman683-wq/sebastian/B26c-enforce-trust; Merge remote-tracking branch 'origin/main' into sebastian/B26b-pr-record; Merge remote-tracking branch 'origin/main' into sebastian/B26b-pr-record; Merge pull request #117 from jonnysteedman683-wq/sebastian/B26b-pr-record",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "12 file(s) changed",
+      "description": "Detected automatically from code: 12 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "baee42d2ca26f283d5a156eb03a727b152b03aaa",
+          "path": "CHANGELOG.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 123,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "a2d6396583ffc963e65aa03a23e182401ad25a9c",
+    "to_sha": "baee42d2ca26f283d5a156eb03a727b152b03aaa"
+  },
+  "generated_at": "2026-11-02T02:33:25Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "crosstest",
+      "dashboard",
+      "demo",
+      "doctor",
+      "evolve",
+      "memory",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "unisync",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "0d7399eb6de29a07b9a881226e8cd53229db3a600d9e3e5a8eb89cf707953747"
+}
