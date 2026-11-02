@@ -35,7 +35,7 @@ graph TD
   - `anthropic` (>=1.15) - Optional, MIT license. Latest version ~0.45.2.
   - `jsonschema` (>=4.26) - Optional (watch), MIT license. Latest version ~4.23.0.
 - **Dev dependencies:**
-  - `ruff` (>=0.17) - MIT license
+  - `ruff` (>=0.17,<0.18) - MIT license
   - `mypy` (>=2.4) - MIT license
   - `pytest` (>=9.0) - MIT license
   - `pytest-cov` (>=6.0) - MIT license
@@ -56,34 +56,34 @@ graph TD
 - `SEBASTIAN_BACKEND`: `anthropic` (default) or `openai`. Not sensitive.
 - `SEBASTIAN_BASE_URL`: API URL, default `https://api.openai.com/v1`. Not sensitive.
 - `SEBASTIAN_API_KEY_ENV`: Env var name for custom backend keys. Not sensitive.
-- Budget configs: `SEBASTIAN_MAX_STEPS` (25), `SEBASTIAN_MAX_COST` (0), `SEBASTIAN_MAX_TOKENS` (200000), `SEBASTIAN_MAX_SECONDS` (600). Read by `cli.py` / `budget.py`. Not sensitive.
+- Budget configs: `SEBASTIAN_MAX_STEPS` (25), `SEBASTIAN_MAX_COST` (0.0), `SEBASTIAN_MAX_TOKENS` (200000), `SEBASTIAN_MAX_SECONDS` (600), `SEBASTIAN_MAX_OUTPUT_TOKENS` (4096). Read by `cli.py` / `config.py` / `budget.py`. Not sensitive.
 - `SEBASTIAN_HOME`: Path for memory/traces (`~/.sebastian`). Not sensitive.
 
 ## Test inventory
 
 - **Framework:** `pytest`
-- **Count:** 907 passed, 2 skipped.
-- **Coverage:** 98.77% overall (core loop, tools, and memory >90%).
+- **Count:** 1069 passed, 2 failed, 2 skipped.
+- **Coverage:** 98.80% overall.
 - **Untested modules:** `__main__.py` in `sebastian` and `sebastian/watch` (pure CLI entrypoints).
 
 ## Runtime check
 
-```bash
-# Install
-pip install -e '.[dev,anthropic,watch]'
-# Start and task
-sebastian demo -w /tmp/ws
-```
+- **Install:** `python -m pip install -e ".[dev,anthropic,watch]"`
+- **Start:** `sebastian demo -w /tmp/ws` (creates a temporary workspace and runs tests)
+- **Baseline Test:** `PYTHONPATH=src python -m pytest --cov`
+- **Baseline Commit Hash:** 70a1836082a48ae9c0d7d2ac59d7bbc0f2b9d461
 
 ## Debt register
 
-- Stale docs: `docs/SEBASTIAN_MAP.md` mentioned "memory recall is keyword overlap", now replaced by BM25 (B15). Needs update.
-- B55: Gauntlet loops unnecessarily on malformed critic responses.
 - B50: Approval gate asks for permission on non-allowlisted commands.
 - B51: InteractiveApprover reads typed-ahead input.
-- B52: RetryingLLM ignores 429 Retry-After headers.
-- B53: OpenAICompatLLM hardcodes max_tokens to 4096.
 - B54: Models calling tools on tool-free requests fail ungracefully.
+- B55: Gauntlet loops unnecessarily on malformed critic responses.
+- B67: non-`.git` repo-skeleton gap in the workspace jail.
+- B68: Harden `watch.gitio` git invocations.
+- B70: `apply_patch` tool.
+- B71: `fetch_url` retrieval tool.
+- B56: diff subcommand missing.
 
 ## UniSync (added 2026-10-31)
 

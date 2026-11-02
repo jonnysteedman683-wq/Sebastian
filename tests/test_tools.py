@@ -355,6 +355,36 @@ def test_workspace_rejects_symlink_into_git(tmp_path: Path) -> None:
         Workspace(tmp_path).resolve("link/config")
 
 
-@pytest.mark.parametrize("ok", [".gitignore", ".github/x.yml", "a.git", "x/.gitkeep", "git/x"])
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "HEAD",
+        "foo/HEAD",
+        "config",
+        "sub/refs/tags",
+        "objects/info",
+        "hooks/pre-commit",
+        "packed-refs",
+        "FETCH_HEAD",
+    ],
+)
+def test_workspace_rejects_git_reserved_names(ws: Workspace, bad: str) -> None:
+    with pytest.raises(WorkspaceError, match="git-dir reserved names"):
+        ws.resolve(bad)
+
+
+@pytest.mark.parametrize(
+    "ok",
+    [
+        ".gitignore",
+        ".github/x.yml",
+        "a.git",
+        "x/.gitkeep",
+        "git/x",
+        "config.py",
+        "my_refs.txt",
+        "HEAD.txt",
+    ],
+)
 def test_workspace_allows_git_lookalikes(ws: Workspace, ok: str) -> None:
     assert ws.resolve(ok).name == Path(ok).name
