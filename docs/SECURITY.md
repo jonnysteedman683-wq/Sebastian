@@ -89,6 +89,7 @@ under `python -m sebastian.evals --live --gauntlet` or `--compare`, not plain `-
   rejects too (no fail-open), unless `--allow-missing-baseline`; the candidate's own metrics
   must always be readable.
 - **No merge:** the best outcome is a branch or PR for a human to review.
+- **Earned publishing (B26c):** the CLI computes the evolve model's trust level (`trust.assess` over `history.jsonl`: live evals, red-team rounds and evolve PRs, where a reverted PR is a failed round, B26b) and passes it in `EvolveConfig.trust`. At L0 an accepted branch is committed locally and never pushed; L1 pushes and opens a **draft** PR; L2 pushes and opens a ready PR. L3 is never earned (`trust.MAX_LEVEL`) and evolve has no merge code, so auto-merge would need its own owner-approved item. There is no flag to raise the level; it comes only from the record.
 - **Gauntlet (opt-in, `--gauntlet`, B34):** the inner run must also pass its own predicted checks and a tool-free critic. A `needs_help` run is rejected outright (the outer gates never rescue it) and its patch is kept for review. This only adds gates; the scope, the outer gates and the no-merge rule are unchanged. Predicted checks still go through the scoped approver, so they are limited to `pytest`, `ruff` and `mypy`.
 - **Host git is hardened (P1-05):** evolve's own git calls run outside any sandbox, in
   worktrees the agent could write to. Every call passes `-c core.fsmonitor=`,

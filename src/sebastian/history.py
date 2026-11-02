@@ -15,8 +15,17 @@ from typing import Any
 HISTORY_FILE = "history.jsonl"
 # "leaderboard" / "leaderboard-gauntlet" come from `sebastian models` (P2-14), kept apart from
 # "eval" so a multi-model run never overwrites the configured model's live eval trend.
+# "evolve_pr" is one PR evolve opened that merged (1/1) or was reverted (0/1) (B26b).
 KINDS = frozenset(
-    {"eval", "gauntlet", "redteam", "redteam_critic", "leaderboard", "leaderboard-gauntlet"}
+    {
+        "eval",
+        "gauntlet",
+        "redteam",
+        "redteam_critic",
+        "leaderboard",
+        "leaderboard-gauntlet",
+        "evolve_pr",
+    }
 )
 
 
