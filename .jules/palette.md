@@ -5,3 +5,7 @@
 ## 2026-11-01 - Scrollable Table Accessibility
 **Learning:** Scrollable containers (like responsive tables) need `tabindex="0"` and `role="region"` with an `aria-labelledby` attribute so keyboard users can scroll them and screen readers announce them properly.
 **Action:** Added region roles and focus-visible styling to dashboard scroll containers.
+
+## 2023-11-14 - HTML Element Structural Semantics
+**Learning:** Generating raw HTML tiles using unassociated `<div>` tags lacks semantic meaning. Wrapping key/value data natively with definition lists (`<dl>`, `<dt>`, `<dd>`) yields immediate accessibility improvements.
+**Action:** Replaced key/value `<div>` tiles with semantic definition lists in the HTML template string and updated the inline CSS to reset `<dd>` margins so visual rendering is unaffected.

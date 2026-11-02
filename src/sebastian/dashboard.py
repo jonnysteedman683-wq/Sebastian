@@ -153,8 +153,8 @@ def needs_help_by_day(runs: Sequence[RunSummary]) -> list[tuple[float, float]]:
 
 def _tile(name: str, value: str, note: str = "") -> str:
     return (
-        f'<div class="tile"><div class="k">{_e(name)}</div><div class="v">{_e(value)}</div>'
-        f'<div class="n">{_e(note)}</div></div>'
+        f'<div class="tile"><dt class="k">{_e(name)}</dt><dd class="v">{_e(value)}</dd>'
+        f'<dd class="n">{_e(note)}</dd></div>'
     )
 
 
@@ -266,7 +266,7 @@ def render(s: Snapshot) -> str:
 font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}}
 main{{max-width:960px;margin:0 auto;padding:24px 16px}}h1{{font-size:22px;margin:0 0 4px}}
 h2{{font-size:15px;margin:28px 0 8px}}.sub{{color:var(--muted);margin:0 0 20px}}
-.tiles{{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}}
+.tiles{{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:0}}
 .tile,figure,table{{background:var(--card);border:1px solid var(--line);border-radius:10px}}
 .tile{{padding:14px}}.k{{color:var(--muted);font-size:13px}}.v{{font-size:26px;font-weight:600}}
 .n{{color:var(--muted);font-size:12px}}figure{{margin:12px 0;padding:12px}}
@@ -284,12 +284,12 @@ th{{color:var(--muted);font-weight:500;font-size:13px}}tr:last-child td{{border-
 .scroll{{overflow-x:auto;border-radius:10px}}.scroll td{{white-space:nowrap}}
 .scroll:focus-visible{{outline:2px solid var(--accent);outline-offset:2px}}
 @media (hover: hover){{tr:hover td{{background:var(--bg)}}}}
-.empty{{color:var(--muted)}}ul{{columns:2;padding-left:18px}}
+.empty{{color:var(--muted)}}ul{{columns:2;padding-left:18px}}dd{{margin:0}}
 @media (max-width:560px){{ul{{columns:1}}}}
 </style></head><body><main>
 <h1>Sebastian</h1>
 <p class="sub">Generated {_e(_date(s.generated))} UTC from local history, traces and scars.</p>
-<section class="tiles">{tiles}</section>
+<dl class="tiles">{tiles}</dl>
 <h2>Trends</h2>{eval_chart}{red_chart}{help_chart}
 <h2 id="board">Latest model leaderboard{board_when}</h2>
 <div class="scroll" tabindex="0" role="region" aria-labelledby="board"><table>
@@ -298,9 +298,10 @@ th{{color:var(--muted);font-weight:500;font-size:13px}}tr:last-child td{{border-
   <th scope="col">Injection</th><th scope="col">Gauntlet</th>
 </tr>{board_rows}
 </table></div>
-<h2>Runs by outcome</h2><table><tr>
+<h2 id="outcomes">Runs by outcome</h2>
+<div class="scroll" tabindex="0" role="region" aria-labelledby="outcomes"><table><tr>
   <th scope="col">Stop reason</th><th scope="col">Runs</th>
-</tr>{stop_rows}</table>
+</tr>{stop_rows}</table></div>
 <h2 id="recent">Recent runs</h2>
 <div class="scroll" tabindex="0" role="region" aria-labelledby="recent"><table>
 <tr>
