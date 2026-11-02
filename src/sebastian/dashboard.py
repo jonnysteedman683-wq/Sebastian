@@ -255,6 +255,7 @@ def render(s: Snapshot) -> str:
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>Sebastian dashboard</title>
 <style>
 :root{{--bg:#fbfbfa;--fg:#1d1d1b;--muted:#6b6b66;--line:#e4e3df;--card:#fff;--accent:#2f6fde;
@@ -281,6 +282,7 @@ table{{border-collapse:separate;border-spacing:0;width:100%;overflow:hidden}}
 td,th{{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}}
 th{{color:var(--muted);font-weight:500;font-size:13px}}tr:last-child td{{border-bottom:0}}
 .scroll{{overflow-x:auto;border-radius:10px}}.scroll td{{white-space:nowrap}}
+@media (hover: hover){{tr:hover td{{background:var(--bg)}}}}
 .empty{{color:var(--muted)}}ul{{columns:2;padding-left:18px}}
 @media (max-width:560px){{ul{{columns:1}}}}
 </style></head><body><main>
@@ -289,11 +291,19 @@ th{{color:var(--muted);font-weight:500;font-size:13px}}tr:last-child td{{border-
 <section class="tiles">{tiles}</section>
 <h2>Trends</h2>{eval_chart}{red_chart}{help_chart}
 <h2>Latest model leaderboard{board_when}</h2><div class="scroll"><table>
-<tr><th>#</th><th>Model</th><th>Score</th><th>Injection</th><th>Gauntlet</th></tr>{board_rows}
+<tr>
+  <th scope="col">#</th><th scope="col">Model</th><th scope="col">Score</th>
+  <th scope="col">Injection</th><th scope="col">Gauntlet</th>
+</tr>{board_rows}
 </table></div>
-<h2>Runs by outcome</h2><table><tr><th>Stop reason</th><th>Runs</th></tr>{stop_rows}</table>
+<h2>Runs by outcome</h2><table><tr>
+  <th scope="col">Stop reason</th><th scope="col">Runs</th>
+</tr>{stop_rows}</table>
 <h2>Recent runs</h2><div class="scroll"><table>
-<tr><th>Run</th><th>Started</th><th>Stop</th><th>Steps</th><th>Tokens</th></tr>
+<tr>
+  <th scope="col">Run</th><th scope="col">Started</th><th scope="col">Stop</th>
+  <th scope="col">Steps</th><th scope="col">Tokens</th>
+</tr>
 {run_rows}</table></div>
 <h2>Scars ({len(s.scars)})</h2><ul>{scar_items}</ul>
 </main></body></html>
