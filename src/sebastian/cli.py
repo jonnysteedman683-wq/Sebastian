@@ -85,10 +85,11 @@ def _build_parser() -> argparse.ArgumentParser:
     )
 
     scar = sub.add_parser("scar", help="turn a failed run into a permanent eval case")
-    scar.add_argument("run_id")
+    scar.add_argument("run_id", help="failed run id, or 'list' / 'prune' to manage scars")
     scar.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
     scar.add_argument("--out", type=Path, default=Path("evals/scars"), help="scar directory")
     scar.add_argument("--name", help="scar name (default: from the task)")
+    scar.add_argument("--yes", action="store_true", help="prune: don't ask for confirmation")
 
     evo = sub.add_parser("evolve", help="improve Sebastian's own repo: one backlog item, gated")
     evo.add_argument("--repo", type=Path, default=Path.cwd(), help="Sebastian git checkout")
@@ -391,6 +392,12 @@ def _undo(store: Checkpoints, args: argparse.Namespace) -> int:
 def _scar(cfg: Config, args: argparse.Namespace) -> int:
     from sebastian.evals.scar import ScarError, make_scar, write_scar  # noqa: PLC0415
 
+    if args.run_id in {"list", "prune"}:
+        try:
+            return _scar_admin(args)
+        except ScarError as exc:
+            print(f"scar: {exc}", file=sys.stderr)
+            return 2
     try:
         spec = make_scar(
             args.run_id,
@@ -409,6 +416,37 @@ def _scar(cfg: Config, args: argparse.Namespace) -> int:
         "Tighten 'expect' (files, answer_contains) before committing.",
         file=sys.stderr,
     )
+    return 0
+
+
+def _scar_admin(args: argparse.Namespace) -> int:
+    """``scar list`` and ``scar prune`` (B60)."""
+    from sebastian.scarlist import duplicates, scars  # noqa: PLC0415
+
+    found = scars(args.out)
+    if args.run_id == "list":
+        if not found:
+            print("(no scars)")
+        for s in found:
+            print(f"{s.path.stem}  {s.source}  {s.name}  {s.date}")
+        return 0
+    drop = duplicates(found)
+    if not drop:
+        print("no duplicate scars")
+        return 0
+    for s in drop:
+        print(f"remove {s.path}")
+    if not args.yes:
+        try:
+            answer = input(f"remove {len(drop)} duplicate scar(s)? [y/N] ")
+        except EOFError:
+            answer = ""
+        if answer.strip().lower() not in {"y", "yes"}:
+            print("nothing removed", file=sys.stderr)
+            return 1
+    for s in drop:
+        s.path.unlink()
+    print(f"removed {len(drop)} scar(s)")
     return 0
 
 

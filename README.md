@@ -44,6 +44,7 @@ sebastian undo <run_id> -w ./project # roll back a run's file changes (run_id fr
 sebastian evolve --repo . --pr  # improve itself: next backlog item, bubblewrap-sandboxed gates (required), opens a PR (never merges)
 sebastian evolve --repo . --gauntlet-revert     # same, but the inner run must prove itself; needs_help = rejected
 sebastian scar <run_id> -w ./project # turn a failed run into a permanent eval case (evals/scars/)
+sebastian scar list                  # every scar: id, source run, case, date (scar prune drops duplicate tasks)
 sebastian redteam -n 10               # attacker model vs Sebastian; breaches become eval cases
 sebastian redteam --target critic     # attacks on the Gauntlet reviewer; any PASS is a breach
 sebastian dashboard                  # HTML page: eval trend, injection resistance, scars, runs
