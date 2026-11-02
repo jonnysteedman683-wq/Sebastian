@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import functools
 import json
 import secrets
 import sys
@@ -182,6 +183,14 @@ def _add_report_parsers(sub: argparse._SubParsersAction[argparse.ArgumentParser]
     cross.add_argument("--id", dest="item_id", help="backlog id to use (default: next free B<n>)")
     trust = sub.add_parser("trust", help="the autonomy level the live eval record has earned")
     trust.add_argument("--model", help="only count rounds for this model")
+    trust.add_argument(
+        "--sync",
+        action="store_true",
+        help="first ask GitHub (gh) what became of the PRs evolve opened and record merges and "
+        "reverts (B26b)",
+    )
+    trust.add_argument("--repo", type=Path, default=Path.cwd(), help="--sync: repo to scan")
+    trust.add_argument("--ref", default="HEAD", help="--sync: branch to look for reverts on")
     mem = sub.add_parser("memory", help="list or forget remembered episodes")
     mem.add_argument("action", choices=["list", "forget"])
     mem.add_argument("task", nargs="?", help="forget: the task to delete")
@@ -456,8 +465,11 @@ def _scar_admin(args: argparse.Namespace) -> int:
 
 def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], LLM]) -> int:
     from sebastian.evolve import EvolveConfig, EvolveError, evolve_once, open_pr  # noqa: PLC0415
+    from sebastian.trust import Level, assess  # noqa: PLC0415
 
     model = args.model or cfg.model
+    # B26c: the record this model has earned decides what the cycle may publish.
+    level = assess(history.load(cfg.home / history.HISTORY_FILE), model).level
     llm = llm_factory(model)
     gauntlet = None
     if args.gauntlet or args.gauntlet_revert or args.critic_model:
@@ -476,6 +488,7 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
         max_resumes=max(args.resumes, 0),
         home=cfg.home,
         gauntlet=gauntlet,
+        trust=level,
     )
     if args.no_evals:
         config.eval_cmd = None
@@ -485,12 +498,19 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
             llm,
             config,
             tracer=JsonlTracer(cfg.home / "traces.jsonl", SystemClock()),
-            opener=open_pr if args.pr else None,
+            opener=functools.partial(open_pr, draft=level is Level.L1_DRAFT_PR)
+            if args.pr
+            else None,
         )
     except EvolveError as exc:
         print(f"evolve: {exc}", file=sys.stderr)
         return 2
     print(report.summary())
+    if report.pr_url:
+        from sebastian.prledger import record_opened  # noqa: PLC0415
+
+        item_id = report.item.id if report.item else ""
+        record_opened(cfg.home, report.pr_url, report.branch, item_id, model, time.time())
     unisync.report(
         unisync.run_summary(
             "evolve",
@@ -656,8 +676,18 @@ def _crosstest_request(agents: list[Agent], args: argparse.Namespace) -> int:
 
 
 def _trust(cfg: Config, args: argparse.Namespace) -> int:
+    from sebastian import prledger  # noqa: PLC0415
     from sebastian.trust import assess  # noqa: PLC0415
 
+    if args.sync:
+        try:
+            reverts = prledger.git_reverts(args.repo, args.ref)
+            lines = prledger.sync(cfg.home, prledger.gh_fetch, reverts, time.time())
+        except prledger.LedgerError as exc:
+            print(f"trust: {exc}", file=sys.stderr)
+            return 2
+        for line in lines:
+            print(line, file=sys.stderr)
     a = assess(history.load(cfg.home / history.HISTORY_FILE), args.model)
     print(f"{a.level.label}  rounds={a.rounds}  streak={a.streak}  {a.reason}")
     return 0

@@ -15,6 +15,7 @@ from sebastian.approval import ApprovalGate
 from sebastian.cli import main
 from sebastian.evolve import (
     DEFAULT_GUARDED,
+    BacklogItem,
     EvolveConfig,
     EvolveError,
     ScopedApprover,
@@ -25,6 +26,7 @@ from sebastian.evolve import (
 )
 from sebastian.llm import ScriptedLLM
 from sebastian.tools import CommandPolicy, Workspace, command_tool, file_tools
+from sebastian.trust import Level
 from sebastian.types import LLMResponse, ToolCall
 
 PY = sys.executable
@@ -251,14 +253,21 @@ def test_push_and_opener(repo: Path, tmp_path: Path) -> None:
     subprocess.run([GIT, "init", "-q", "--bare", str(remote)], check=True)
     git(repo, "remote", "add", "origin", str(remote))
     opened: list[str] = []
+
+    def opener(wt: Path, branch: str, item: BacklogItem) -> str:
+        opened.append(f"{branch}:{item.id}")
+        return "https://x/pull/1"
+
     report = evolve_once(
         repo,
         agent(write("1", "greet.txt", "hello")),
         cfg(tmp_path, push=True),
-        opener=lambda wt, branch, item: opened.append(f"{branch}:{item.id}"),
+        opener=opener,
     )
     assert report.accepted
     assert opened == [f"{report.branch}:B3"]
+    assert report.pr_url == "https://x/pull/1"  # B26b: kept for the PR ledger
+    assert "  pr: https://x/pull/1" in report.summary()
     assert report.branch in git(remote, "branch")
 
 
@@ -322,6 +331,112 @@ def test_open_pr_uses_gh(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
         open_pr(tmp_path, "x", item)
     with pytest.raises(EvolveError, match="git is not installed"):
         evolve_once(tmp_path, agent(), cfg(tmp_path))
+
+
+# --- trust ladder enforcement (B26c) -----------------------------------------------------
+
+
+def _remote(repo: Path, tmp_path: Path) -> Path:
+    remote = tmp_path / "remote.git"
+    subprocess.run([GIT, "init", "-q", "--bare", str(remote)], check=True)
+    git(repo, "remote", "add", "origin", str(remote))
+    return remote
+
+
+def test_l0_publishes_nothing(repo: Path, tmp_path: Path) -> None:
+    remote = _remote(repo, tmp_path)
+    opened: list[str] = []
+
+    def opener(wt: Path, branch: str, item: BacklogItem) -> str:
+        opened.append(branch)
+        return "https://x/pull/1"
+
+    report = evolve_once(
+        repo,
+        agent(write("1", "greet.txt", "hello")),
+        cfg(tmp_path, push=True, trust=Level.L0_SUGGEST),
+        opener=opener,
+    )
+    assert report.accepted
+    assert opened == []
+    assert report.pr_url == ""
+    assert git(remote, "branch") == ""  # nothing pushed
+    assert report.branch in branches(repo)  # the owner can still look at it locally
+    assert report.reason == (
+        "all gates passed (committed locally); trust L0 suggest: not pushed, the branch stays local"
+    )
+    assert "  trust: L0 suggest (publishes nothing; the branch stays local)" in report.summary()
+
+
+@pytest.mark.parametrize("level", [Level.L1_DRAFT_PR, Level.L2_PR])
+def test_l1_and_l2_push_and_open(repo: Path, tmp_path: Path, level: Level) -> None:
+    remote = _remote(repo, tmp_path)
+    report = evolve_once(
+        repo,
+        agent(write("1", "greet.txt", "hello")),
+        cfg(tmp_path, push=True, trust=level),
+        opener=lambda wt, branch, item: f"https://x/pull/{level.value}",
+    )
+    assert report.reason == "all gates passed (pushed)"
+    assert report.pr_url == f"https://x/pull/{level.value}"
+    assert report.branch in git(remote, "branch")
+    assert f"  trust: {level.label} (" in report.summary()
+
+
+def test_open_pr_draft_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from sebastian.evolve import open_pr
+
+    log = tmp_path / "gh.log"
+    fake = tmp_path / "gh"
+    fake.write_text(f'#!/bin/sh\nprintf "%s\\n" "$@" > {log}\necho https://x/pull/9\n')
+    fake.chmod(0o755)
+    monkeypatch.setattr("shutil.which", lambda n: str(fake) if n == "gh" else None)
+    item = BacklogItem("B3", "Add greeting", "x")
+    assert open_pr(tmp_path, "b", item, draft=True) == "https://x/pull/9"
+    assert log.read_text().splitlines()[-1] == "--draft"
+    open_pr(tmp_path, "b", item)
+    assert "--draft" not in log.read_text().splitlines()
+
+
+@pytest.mark.parametrize(
+    ("passing_rounds", "level", "draft"),
+    [(0, Level.L0_SUGGEST, False), (3, Level.L1_DRAFT_PR, True), (6, Level.L2_PR, False)],
+)
+def test_cli_evolve_uses_the_earned_level(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    passing_rounds: int,
+    level: Level,
+    draft: bool,
+) -> None:
+    import functools
+
+    import sebastian.evolve as evo
+    from sebastian import history
+    from sebastian.evolve import EvolveReport
+
+    home = tmp_path / "home"
+    monkeypatch.setenv("SEBASTIAN_HOME", str(home))
+    monkeypatch.setattr(sys, "stdin", io.StringIO(""))
+    for i in range(passing_rounds):
+        rec = history.Record(float(i), "eval", "m1", 10, 10)
+        history.append(home / history.HISTORY_FILE, rec)
+    history.append(home / history.HISTORY_FILE, history.Record(99.0, "eval", "other", 0, 10))
+    seen: dict[str, object] = {}
+
+    def fake(repo: Path, llm: object, config: EvolveConfig, **kw: object) -> EvolveReport:
+        seen["trust"] = config.trust
+        seen["opener"] = kw["opener"]
+        return EvolveReport(None)
+
+    monkeypatch.setattr(evo, "evolve_once", fake)
+    unsafe = ["--sandbox", "none", "--unsafe-no-sandbox"]
+    args = ["evolve", "--repo", str(tmp_path), "--model", "m1", "--pr", *unsafe]
+    main(args, llm_factory=lambda m: agent())
+    assert seen["trust"] is level  # another model's failed round doesn't count against m1
+    opener = seen["opener"]
+    assert isinstance(opener, functools.partial)
+    assert opener.keywords == {"draft": draft}
 
 
 # --- sandboxed gates (B27) ----------------------------------------------------------------
