@@ -1,5 +1,5 @@
 """CLI: run (optionally --pr / --push-main), resume, demo,
- traces, show, diff, undo, scar, evolve, redteam, models, dashboard, trust,
+ traces, cost, show, diff, undo, scar, evolve, redteam, models, dashboard, trust,
 version."""
 
 from __future__ import annotations
@@ -174,6 +174,9 @@ def _add_report_parsers(sub: argparse._SubParsersAction[argparse.ArgumentParser]
     mem.add_argument("-q", "--query", help="list: rank by relevance to this text")
     mem.add_argument("-n", "--limit", type=_positive_int, default=20, help="list: episodes to show")
     mem.add_argument("--yes", action="store_true", help="forget: don't ask for confirmation")
+    cost = sub.add_parser("cost", help="tokens and cost per model per day from traces.jsonl")
+    cost.add_argument("--days", type=_positive_int, default=7, help="UTC days to include")
+    cost.add_argument("--model", help="only this model")
 
 
 def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -359,6 +362,13 @@ def _print_traces(path: Path, limit: int) -> int:
         )
         cost = f"  cost=${r.cost:.4f}" if r.cost else ""
         print(f"{r.run_id}  {started}  {r.stop}  steps={r.steps}  tokens={r.tokens}{cost}")
+    return 0
+
+
+def _cost(cfg: Config, args: argparse.Namespace) -> int:
+    from sebastian.costs import report  # noqa: PLC0415
+
+    print(report(cfg.home / "traces.jsonl", time.time(), args.days, args.model))
     return 0
 
 
@@ -974,7 +984,7 @@ def _run_agent(ctx: AgentContext) -> int:
             make(escalation_model) if escalation_model and escalation_model != model else None
         ),
         gauntlet=gauntlet,
-        run_info=dict(run_info or {}),
+        run_info={**(run_info or {}), "model": model},  # B58: `sebastian cost` groups by it
     )
     return _start(agent, args, ws)
 
@@ -1017,6 +1027,7 @@ def main(
 
     tools_only: dict[str, Callable[[], int]] = {
         "traces": lambda: _print_traces(cfg.home / "traces.jsonl", args.limit),
+        "cost": lambda: _cost(cfg, args),
         "undo": lambda: _undo(Checkpoints(cfg.home / "checkpoints"), args),
         "scar": lambda: _scar(cfg, args),
         "evolve": lambda: _evolve(cfg, args, factory),
