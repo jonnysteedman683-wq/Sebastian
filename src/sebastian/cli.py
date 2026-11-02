@@ -84,12 +84,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--force", action="store_true", help="also restore files changed since the run"
     )
 
-    scar = sub.add_parser("scar", help="turn a failed run into a permanent eval case")
-    scar.add_argument("run_id", help="failed run id, or 'list' / 'prune' to manage scars")
-    scar.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
-    scar.add_argument("--out", type=Path, default=Path("evals/scars"), help="scar directory")
-    scar.add_argument("--name", help="scar name (default: from the task)")
-    scar.add_argument("--yes", action="store_true", help="prune: don't ask for confirmation")
+    _add_scar_parser(sub)
 
     evo = sub.add_parser("evolve", help="improve Sebastian's own repo: one backlog item, gated")
     evo.add_argument("--repo", type=Path, default=Path.cwd(), help="Sebastian git checkout")
@@ -155,6 +150,15 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_show_parser(sub)
     _add_setup_parsers(sub)
     return p
+
+
+def _add_scar_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    scar = sub.add_parser("scar", help="turn a failed run into a permanent eval case")
+    scar.add_argument("run_id", help="failed run id, or 'list' / 'prune' to manage scars")
+    scar.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
+    scar.add_argument("--out", type=Path, default=Path("evals/scars"), help="scar directory")
+    scar.add_argument("--name", help="scar name (default: from the task)")
+    scar.add_argument("--yes", action="store_true", help="prune: don't ask for confirmation")
 
 
 def _add_report_parsers(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
