@@ -34,7 +34,7 @@ graph TD
   - `anthropic` (>=1.15) - Optional, MIT license. Latest version ~0.45.2.
   - `jsonschema` (>=4.26) - Optional (watch), MIT license. Latest version ~4.23.0.
 - **Dev dependencies:**
-  - `ruff` (>=0.17) - MIT license
+  - `ruff` (>=0.17,<0.18) - MIT license
   - `mypy` (>=2.4) - MIT license
   - `pytest` (>=9.0) - MIT license
   - `pytest-cov` (>=6.0) - MIT license
@@ -55,34 +55,45 @@ graph TD
 - `SEBASTIAN_BACKEND`: `anthropic` (default) or `openai`. Not sensitive.
 - `SEBASTIAN_BASE_URL`: API URL, default `https://api.openai.com/v1`. Not sensitive.
 - `SEBASTIAN_API_KEY_ENV`: Env var name for custom backend keys. Not sensitive.
-- Budget configs: `SEBASTIAN_MAX_STEPS` (25), `SEBASTIAN_MAX_COST` (0), `SEBASTIAN_MAX_TOKENS` (200000), `SEBASTIAN_MAX_SECONDS` (600). Read by `cli.py` / `budget.py`. Not sensitive.
+- Budget configs: `SEBASTIAN_MAX_STEPS` (25), `SEBASTIAN_MAX_COST` (0.0), `SEBASTIAN_MAX_TOKENS` (200000), `SEBASTIAN_MAX_SECONDS` (600), `SEBASTIAN_MAX_OUTPUT_TOKENS` (4096). Read by `cli.py` / `config.py` / `budget.py`. Not sensitive.
 - `SEBASTIAN_HOME`: Path for memory/traces (`~/.sebastian`). Not sensitive.
 
 ## Test inventory
 
 - **Framework:** `pytest`
-- **Count:** 907 passed, 2 skipped.
-- **Coverage:** 98.77% overall (core loop, tools, and memory >90%).
+- **Count:** 1069 passed, 2 failed, 2 skipped.
+- **Coverage:** 98.80% overall.
 - **Untested modules:** `__main__.py` in `sebastian` and `sebastian/watch` (pure CLI entrypoints).
 
 ## Runtime check
 
-```bash
-# Install
-pip install -e '.[dev,anthropic,watch]'
-# Start and task
-sebastian demo -w /tmp/ws
-```
+- **Install:** `python -m pip install -e ".[dev,anthropic,watch]"`
+- **Start:** `sebastian demo -w /tmp/ws` (creates a temporary workspace and runs tests)
+- **Baseline Test:** `PYTHONPATH=src python -m pytest --cov`
+- **Baseline Commit Hash:** 70a1836082a48ae9c0d7d2ac59d7bbc0f2b9d461
 
 ## Debt register
 
-- Stale docs: `docs/SEBASTIAN_MAP.md` mentioned "memory recall is keyword overlap", now replaced by BM25 (B15). Needs update.
-- B55: Gauntlet loops unnecessarily on malformed critic responses.
-- B50: Approval gate asks for permission on non-allowlisted commands.
-- B51: InteractiveApprover reads typed-ahead input.
-- B52: RetryingLLM ignores 429 Retry-After headers.
-- B53: OpenAICompatLLM hardcodes max_tokens to 4096.
-- B54: Models calling tools on tool-free requests fail ungracefully.
+Re-checked against the code on 2026-11-01 (main `70a1836`, B61). Each line cites where the debt
+lives; the matching backlog item is the fix. Removed as resolved: stale "keyword overlap" recall
+note (memory uses BM25, see Architecture), B52 (`llm/base.py:38` `parse_retry_after`), B53
+(`llm/openai_compat.py:149`, `max_tokens` is configurable).
+
+- B50: the allowlist is checked inside `run_command` (`tools/builtin.py:259`), after the approval
+  gate has already asked the human (`approval.py:146`), so un-runnable commands get prompts.
+- B51: `InteractiveApprover.approve` reads the answer with plain `input()` (`approval.py:156`);
+  nothing in `src/` flushes typed-ahead input.
+- B54: tool-free calls omit `tools` (`llm/openai_compat.py:221`), but a provider 400
+  `tool_use_failed` is not handled anywhere in `src/`, so such models die at step 0.
+- B55: the critic is asked once (`agent.py:447`); a malformed verdict is a FAIL
+  (`gauntlet_core.py:221-232`) and costs a whole ACT loop instead of one format re-ask.
+- B67: the jail blocks only path components named `.git` (`tools/workspace.py:33-34`), so a repo
+  skeleton (`HEAD`, `config`, `objects/`, `refs/`) can be written under any other name.
+- B68: `watch/gitio.py:36-41` runs git without the hardening evolve applies (`GIT_CONFIG_NOSYSTEM`,
+  `core.fsmonitor=`, `core.hooksPath=/dev/null`).
+- B70, B71 (missing capability, not a defect): no `apply_patch` or `fetch_url` tool in
+  `tools/builtin.py`; multi-hunk edits need one approval per `edit_file`.
+- B56: no `sebastian diff` subcommand in `cli.py` yet (open in #112).
 
 ## UniSync (added 2026-10-31)
 

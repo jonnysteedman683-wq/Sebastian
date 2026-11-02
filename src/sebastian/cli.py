@@ -31,6 +31,8 @@ from sebastian.memory import MemoryCorruptError, MemoryStore
 from sebastian.pricing import Price, PricingError, load_prices, priced, require_prices
 from sebastian.publish import PublishError, check_ready, open_pr, publish, valid_branch
 from sebastian.session import SessionError, SessionStore
+from sebastian.taskfile import TaskFileError
+from sebastian.taskfile import load as load_task_file
 from sebastian.tools import (
     CommandPolicy,
     ToolError,
@@ -53,7 +55,14 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd", required=True)
 
     run = sub.add_parser("run", help="run a task with a real model")
-    run.add_argument("task")
+    run.add_argument("task", nargs="?", help="the task (or give --task-file)")
+    run.add_argument(
+        "--task-file",
+        type=Path,
+        metavar="FILE",
+        help="read the task from FILE; optional front matter sets allow_cmd, max_steps, "
+        "max_tokens, max_cost, model, gauntlet (flags win)",
+    )
     _add_run_options(run)
     _add_publish_options(run)
 
@@ -75,11 +84,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--force", action="store_true", help="also restore files changed since the run"
     )
 
-    scar = sub.add_parser("scar", help="turn a failed run into a permanent eval case")
-    scar.add_argument("run_id")
-    scar.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
-    scar.add_argument("--out", type=Path, default=Path("evals/scars"), help="scar directory")
-    scar.add_argument("--name", help="scar name (default: from the task)")
+    _add_scar_parser(sub)
 
     evo = sub.add_parser("evolve", help="improve Sebastian's own repo: one backlog item, gated")
     evo.add_argument("--repo", type=Path, default=Path.cwd(), help="Sebastian git checkout")
@@ -145,6 +150,15 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_show_parser(sub)
     _add_setup_parsers(sub)
     return p
+
+
+def _add_scar_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    scar = sub.add_parser("scar", help="turn a failed run into a permanent eval case")
+    scar.add_argument("run_id", help="failed run id, or 'list' / 'prune' to manage scars")
+    scar.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
+    scar.add_argument("--out", type=Path, default=Path("evals/scars"), help="scar directory")
+    scar.add_argument("--name", help="scar name (default: from the task)")
+    scar.add_argument("--yes", action="store_true", help="prune: don't ask for confirmation")
 
 
 def _add_report_parsers(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -394,6 +408,12 @@ def _undo(store: Checkpoints, args: argparse.Namespace) -> int:
 def _scar(cfg: Config, args: argparse.Namespace) -> int:
     from sebastian.evals.scar import ScarError, make_scar, write_scar  # noqa: PLC0415
 
+    if args.run_id in {"list", "prune"}:
+        try:
+            return _scar_admin(args)
+        except ScarError as exc:
+            print(f"scar: {exc}", file=sys.stderr)
+            return 2
     try:
         spec = make_scar(
             args.run_id,
@@ -412,6 +432,37 @@ def _scar(cfg: Config, args: argparse.Namespace) -> int:
         "Tighten 'expect' (files, answer_contains) before committing.",
         file=sys.stderr,
     )
+    return 0
+
+
+def _scar_admin(args: argparse.Namespace) -> int:
+    """``scar list`` and ``scar prune`` (B60)."""
+    from sebastian.scarlist import duplicates, scars  # noqa: PLC0415
+
+    found = scars(args.out)
+    if args.run_id == "list":
+        if not found:
+            print("(no scars)")
+        for s in found:
+            print(f"{s.path.stem}  {s.source}  {s.name}  {s.date}")
+        return 0
+    drop = duplicates(found)
+    if not drop:
+        print("no duplicate scars")
+        return 0
+    for s in drop:
+        print(f"remove {s.path}")
+    if not args.yes:
+        try:
+            answer = input(f"remove {len(drop)} duplicate scar(s)? [y/N] ")
+        except EOFError:
+            answer = ""
+        if answer.strip().lower() not in {"y", "yes"}:
+            print("nothing removed", file=sys.stderr)
+            return 1
+    for s in drop:
+        s.path.unlink()
+    print(f"removed {len(drop)} scar(s)")
     return 0
 
 
@@ -989,6 +1040,29 @@ def _run_agent(ctx: AgentContext) -> int:
     return _start(agent, args, ws)
 
 
+def _apply_task_file(cfg: Config, args: argparse.Namespace) -> Config:
+    """Fill ``args``/``cfg`` from ``--task-file`` (B57); flags win. Raises ``TaskFileError``."""
+    if (args.task is None) == (args.task_file is None):
+        raise TaskFileError("run needs a task or --task-file (not both)")
+    if args.task_file is None:
+        return cfg
+    tf = load_task_file(args.task_file)
+    args.task = tf.task
+    if not args.allow_cmd and tf.allow_cmd:
+        args.allow_cmd = list(tf.allow_cmd)
+    if not args.model and tf.model:
+        args.model = tf.model
+    if args.max_cost is None and tf.max_cost is not None:
+        args.max_cost = tf.max_cost
+    if tf.gauntlet:
+        args.gauntlet = True
+    return dataclasses.replace(
+        cfg,
+        max_steps=tf.max_steps or cfg.max_steps,
+        max_tokens=tf.max_tokens or cfg.max_tokens,
+    )
+
+
 def _version() -> int:
     print(__version__)
     return 0
@@ -1016,8 +1090,10 @@ def main(
         cfg = dataclasses.replace(cfg, max_output_tokens=args.max_output_tokens)
     ensure_home(cfg.home)  # P1-08: sessions, traces and memory live here; keep it private
     try:
+        if args.cmd == "run":
+            cfg = _apply_task_file(cfg, args)
         prices = load_prices(cfg.home)
-    except PricingError as exc:
+    except (PricingError, TaskFileError) as exc:
         print(f"sebastian: {exc}", file=sys.stderr)
         return 2
     base_factory = llm_factory or _real_factory(cfg)
