@@ -1,0 +1,106 @@
+{
+  "summary": "6 commit(s): feat: sebastian diff <run_id> (B56); feat: sebastian cost (B58); Merge pull request #113 from jonnysteedman683-wq/sebastian/B58-cost; Merge remote-tracking branch 'origin/main' into sebastian/B56-run-diff; Merge remote-tracking branch 'origin/main' into sebastian/B56-run-diff; Merge pull request #112 from jonnysteedman683-wq/sebastian/B56-run-diff",
+  "changes": [
+    {
+      "category": "NEW_FEATURE",
+      "title": "New CLI command cost",
+      "description": "Detected automatically from code: New CLI command cost.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "6350dd0865cab5248a8a1301a14d13d59a758826",
+          "path": "src/sebastian/cli.py"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    },
+    {
+      "category": "NEW_FEATURE",
+      "title": "New CLI command diff",
+      "description": "Detected automatically from code: New CLI command diff.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "6350dd0865cab5248a8a1301a14d13d59a758826",
+          "path": "src/sebastian/cli.py"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 124,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "baee42d2ca26f283d5a156eb03a727b152b03aaa",
+    "to_sha": "6350dd0865cab5248a8a1301a14d13d59a758826"
+  },
+  "generated_at": "2026-11-02T02:38:15Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "cost",
+      "crosstest",
+      "dashboard",
+      "demo",
+      "diff",
+      "doctor",
+      "evolve",
+      "memory",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "unisync",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [
+      "cli: cost",
+      "cli: diff"
+    ],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "4567c4481bc9f16778b7819f46494c14c8211eba0f0f6a996a288f38c5923c29"
+}
