@@ -91,7 +91,7 @@ Rules:
   *Done when:* tests cover no history, pass rules, promotion and cap, one-level drop, model filter and the CLI.
 - [x] 🔒 **B26b PR record in the ladder.** `evolve` records each PR it opens and whether it merged or was reverted; a reverted PR counts as a failed round. Touches `evolve.py` (guarded).
   *Done when:* a reverted PR drops a level in `assess`.
-- [ ] 🔒 **B26c Enforce the level.** `evolve` opens nothing at L0, a draft PR at L1 and a ready PR at L2; L3 auto-merge only with an owner-set flag. Owner decision.
+- [x] 🔒 **B26c Enforce the level.** `evolve` opens nothing at L0, a draft PR at L1 and a ready PR at L2; L3 auto-merge only with an owner-set flag. Owner decision.
   *Done when:* tests show each level's behaviour in `evolve`.
 - [x] 🔒 **B21 Docstrings for `watch/`.** B7 excluded `src/sebastian/watch/` (guarded). Add docstrings there and drop its `D1` ignore in `pyproject.toml`.
   *Done when:* `ruff check .` passes with no `D1` ignore for `watch/`.

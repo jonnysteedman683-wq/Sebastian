@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import functools
 import json
 import secrets
 import sys
@@ -413,8 +414,11 @@ def _scar(cfg: Config, args: argparse.Namespace) -> int:
 
 def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], LLM]) -> int:
     from sebastian.evolve import EvolveConfig, EvolveError, evolve_once, open_pr  # noqa: PLC0415
+    from sebastian.trust import Level, assess  # noqa: PLC0415
 
     model = args.model or cfg.model
+    # B26c: the record this model has earned decides what the cycle may publish.
+    level = assess(history.load(cfg.home / history.HISTORY_FILE), model).level
     llm = llm_factory(model)
     gauntlet = None
     if args.gauntlet or args.gauntlet_revert or args.critic_model:
@@ -433,6 +437,7 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
         max_resumes=max(args.resumes, 0),
         home=cfg.home,
         gauntlet=gauntlet,
+        trust=level,
     )
     if args.no_evals:
         config.eval_cmd = None
@@ -442,7 +447,9 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
             llm,
             config,
             tracer=JsonlTracer(cfg.home / "traces.jsonl", SystemClock()),
-            opener=open_pr if args.pr else None,
+            opener=functools.partial(open_pr, draft=level is Level.L1_DRAFT_PR)
+            if args.pr
+            else None,
         )
     except EvolveError as exc:
         print(f"evolve: {exc}", file=sys.stderr)
