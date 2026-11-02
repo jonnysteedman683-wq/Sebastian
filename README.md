@@ -40,6 +40,8 @@ sebastian run --task-file TASK.md -w ./project  # task text from a file; front m
 #   max_tokens, max_cost, model, gauntlet (flags win; no approval or sandbox keys)
 sebastian resume <run_id> -w ./project # continue a run that hit its budget or an API error
 sebastian show <run_id>              # one run as an HTML timeline (--text for the terminal)
+sebastian diff <run_id>              # unified diff of every file the run changed (read-only)
+sebastian cost --days 7               # tokens and cost per model per day from traces (? = unpriced)
 sebastian undo <run_id> -w ./project # roll back a run's file changes (run_id from `sebastian traces`)
 sebastian evolve --repo . --pr  # improve itself: next backlog item, bubblewrap-sandboxed gates (required), opens a PR (never merges)
 #   the earned trust level decides how far it goes: L0 keeps the branch local, L1 opens a draft PR, L2 a ready PR

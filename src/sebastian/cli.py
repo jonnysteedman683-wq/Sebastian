@@ -1,5 +1,5 @@
 """CLI: run (optionally --pr / --push-main), resume, demo,
- traces, show, undo, scar, evolve, redteam, models, dashboard, trust,
+ traces, cost, show, diff, undo, scar, evolve, redteam, models, dashboard, trust,
 version."""
 
 from __future__ import annotations
@@ -197,6 +197,9 @@ def _add_report_parsers(sub: argparse._SubParsersAction[argparse.ArgumentParser]
     mem.add_argument("-q", "--query", help="list: rank by relevance to this text")
     mem.add_argument("-n", "--limit", type=_positive_int, default=20, help="list: episodes to show")
     mem.add_argument("--yes", action="store_true", help="forget: don't ask for confirmation")
+    cost = sub.add_parser("cost", help="tokens and cost per model per day from traces.jsonl")
+    cost.add_argument("--days", type=_positive_int, default=7, help="UTC days to include")
+    cost.add_argument("--model", help="only this model")
 
 
 def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -250,6 +253,8 @@ def _add_show_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -
     show.add_argument("run_id", help="run id, or a unique prefix of at least 6 characters")
     show.add_argument("-o", "--out", type=Path, help="HTML file (default: sebastian-run-<id>.html)")
     show.add_argument("--text", action="store_true", help="print a text timeline instead")
+    diff = sub.add_parser("diff", help="unified diff of every file a run changed")
+    diff.add_argument("run_id", help="run id, or a unique prefix of at least 6 characters")
 
 
 def _add_run_options(run: argparse.ArgumentParser) -> None:
@@ -380,6 +385,13 @@ def _print_traces(path: Path, limit: int) -> int:
         )
         cost = f"  cost=${r.cost:.4f}" if r.cost else ""
         print(f"{r.run_id}  {started}  {r.stop}  steps={r.steps}  tokens={r.tokens}{cost}")
+    return 0
+
+
+def _cost(cfg: Config, args: argparse.Namespace) -> int:
+    from sebastian.costs import report  # noqa: PLC0415
+
+    print(report(cfg.home / "traces.jsonl", time.time(), args.days, args.model))
     return 0
 
 
@@ -576,6 +588,22 @@ def _show(cfg: Config, args: argparse.Namespace) -> int:
     out.write_text(render_html(run_id, entries, time.time()), encoding="utf-8")
     print(out)
     return 0
+
+
+def _diff(store: Checkpoints, args: argparse.Namespace) -> int:
+    from sebastian.rundiff import run_diff  # noqa: PLC0415
+
+    try:
+        result = run_diff(store, args.run_id)
+    except CheckpointError as exc:
+        print(f"diff: {exc}", file=sys.stderr)
+        return 1
+    sys.stdout.write(result.text)
+    for line in result.skipped:
+        print(f"diff: skipped {line}", file=sys.stderr)
+    if not result.files and not result.skipped:
+        print(f"diff: run {result.run_id} left no changes in place", file=sys.stderr)
+    return 1 if result.skipped else 0
 
 
 def _dashboard(cfg: Config, args: argparse.Namespace) -> int:
@@ -1037,7 +1065,7 @@ def _run_agent(ctx: AgentContext) -> int:
             make(escalation_model) if escalation_model and escalation_model != model else None
         ),
         gauntlet=gauntlet,
-        run_info=dict(run_info or {}),
+        run_info={**(run_info or {}), "model": model},  # B58: `sebastian cost` groups by it
     )
     return _start(agent, args, ws)
 
@@ -1105,6 +1133,7 @@ def main(
 
     tools_only: dict[str, Callable[[], int]] = {
         "traces": lambda: _print_traces(cfg.home / "traces.jsonl", args.limit),
+        "cost": lambda: _cost(cfg, args),
         "undo": lambda: _undo(Checkpoints(cfg.home / "checkpoints"), args),
         "scar": lambda: _scar(cfg, args),
         "evolve": lambda: _evolve(cfg, args, factory),
@@ -1115,6 +1144,7 @@ def main(
         "memory": lambda: _memory(cfg, args),
         "models": lambda: _models(cfg, args, llm_factory, prices),
         "show": lambda: _show(cfg, args),
+        "diff": lambda: _diff(Checkpoints(cfg.home / "checkpoints"), args),
         "unisync": lambda: _unisync(args),
     }
     if args.cmd in tools_only:

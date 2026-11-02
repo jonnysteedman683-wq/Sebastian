@@ -41,6 +41,7 @@
       "demo",
       "doctor",
       "traces",
+      "cost",
       "trust",
       "memory",
       "undo",
@@ -50,6 +51,7 @@
       "version",
       "models",
       "show",
+      "diff",
       "crosstest",
       "unisync"
     ],
@@ -68,5 +70,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "6045bc2986040db1bce3e69e93d9579eebd32eae5afe0450bc721d80f74b1465"
+  "signature": "0538159f36c8879c7066e56f1f4d7d2ccafc089d58a84b2e54884c4baff6f409"
 }
