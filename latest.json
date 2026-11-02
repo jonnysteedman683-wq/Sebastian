@@ -1,14 +1,14 @@
 {
-  "summary": "4 commit(s): feat: run --task-file with front matter (B57); Merge main into sebastian/B57-task-files; refactor: move the scar parser into its own helper; Merge pull request #115 from jonnysteedman683-wq/sebastian/B57-task-files",
+  "summary": "4 commit(s): docs: refresh the debt register (B61); Merge remote-tracking branch 'origin/main' into sebastian/B61-debt-register; Merge remote-tracking branch 'origin/main' into sebastian/B61-debt-register; Merge pull request #116 from jonnysteedman683-wq/sebastian/B61-debt-register",
   "changes": [
     {
-      "category": "ABILITY_CHANGE",
-      "title": "6 file(s) changed",
-      "description": "Detected automatically from code: 6 file(s) changed.",
+      "category": "DOCS",
+      "title": "3 file(s) changed",
+      "description": "Detected automatically from code: 3 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "dc5c3db8715e5ed95133141d6648954e26ce0da5",
+          "sha": "a2d6396583ffc963e65aa03a23e182401ad25a9c",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 121,
+  "seq": 122,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "d2d7c3752f0a0631e572f82dc0f512564281911e",
-    "to_sha": "dc5c3db8715e5ed95133141d6648954e26ce0da5"
+    "from_sha": "dc5c3db8715e5ed95133141d6648954e26ce0da5",
+    "to_sha": "a2d6396583ffc963e65aa03a23e182401ad25a9c"
   },
-  "generated_at": "2026-11-02T02:24:41Z",
+  "generated_at": "2026-11-02T02:30:20Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -82,6 +82,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "NORMAL",
-  "signature": "f8ba84ca87a1e3732ae2e2e639eaf3fecfeef63eeae814b143cb65794ef7a486"
+  "priority": "LOW",
+  "signature": "6d612a6be6cd070bbef67c392a448654e57c4a99d4f790b34b33f976e35ebe22"
 }
