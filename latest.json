@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): perf: optimize trace entropy calculations; Merge pull request #123 from jonnysteedman683-wq/sebastian/bolt-perf-trace-6669415288064057197",
+  "summary": "4 commit(s): feat: run --task-file with front matter (B57); Merge main into sebastian/B57-task-files; refactor: move the scar parser into its own helper; Merge pull request #115 from jonnysteedman683-wq/sebastian/B57-task-files",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "2 file(s) changed",
-      "description": "Detected automatically from code: 2 file(s) changed.",
+      "title": "6 file(s) changed",
+      "description": "Detected automatically from code: 6 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "d2d7c3752f0a0631e572f82dc0f512564281911e",
-          "path": ".jules/bolt.md"
+          "sha": "dc5c3db8715e5ed95133141d6648954e26ce0da5",
+          "path": "CHANGELOG.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 120,
+  "seq": 121,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "82c6c9b644bfebe92eaf0191f72c370ae60c9ba5",
-    "to_sha": "d2d7c3752f0a0631e572f82dc0f512564281911e"
+    "from_sha": "d2d7c3752f0a0631e572f82dc0f512564281911e",
+    "to_sha": "dc5c3db8715e5ed95133141d6648954e26ce0da5"
   },
-  "generated_at": "2026-11-02T02:24:22Z",
+  "generated_at": "2026-11-02T02:24:41Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -83,5 +83,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "b0a6fd12684c1e879c9e967bdbd8e4a960d0e670bbf1b07cf8f5fa1b3b590f0c"
+  "signature": "f8ba84ca87a1e3732ae2e2e639eaf3fecfeef63eeae814b143cb65794ef7a486"
 }
