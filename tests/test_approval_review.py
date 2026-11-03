@@ -293,3 +293,25 @@ def test_args_digest_preserves_non_ascii() -> None:
     canon = '{"content":"你好"}'
     expected = hashlib.sha256(canon.encode("utf-8")).hexdigest()
     assert args_digest(call) == expected
+
+
+def test_existing_text_oserror(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from sebastian.approval import _existing_text
+
+    (tmp_path / "test.txt").write_text("hello")
+
+    def mock_read_text(*args: object, **kwargs: object) -> str:
+        raise PermissionError("no access")
+
+    monkeypatch.setattr(Path, "read_text", mock_read_text)
+    assert _existing_text("test.txt", tmp_path) is None
+
+
+def test_interactive_approver_eoferror(tmp_path: Path) -> None:
+    def ask(prompt: str) -> str:
+        raise EOFError()
+
+    tool = tools(tmp_path)["write_file"]
+    call = ToolCall("1", "write_file", {"path": "a.txt", "content": "hello"})
+    approver = InteractiveApprover(ask=ask, root=tmp_path)
+    assert not approver.approve(tool, call)
