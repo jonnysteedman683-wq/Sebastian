@@ -1,15 +1,15 @@
 {
-  "summary": "5 commit(s): perf(llm): optimize membership check by using set instead of tuple; perf(llm): optimize membership check by using set instead of tuple; docs: propose optimization for membership check in llm args parsing; Merge main into #90; keep proposal 8 and main's trace note; Merge pull request #90 from jonnysteedman683-wq/jules-16783995132994141478-e2ee3383",
+  "summary": "3 commit(s): test: add coverage for OSError in _existing_text and EOFError in InteractiveApprover; Merge main into #86; keep both sets of approval tests; Merge pull request #86 from jonnysteedman683-wq/sebastian/test-approval-review-coverage-17008311377059774459",
   "changes": [
     {
-      "category": "DOCS",
+      "category": "QUALITY",
       "title": "1 file(s) changed",
       "description": "Detected automatically from code: 1 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "aac09f8575b3883d6aa5df1691eb20b686d50b2c",
-          "path": "docs/PROPOSALS.md"
+          "sha": "098dc29c2fba8f77c2eeab168d803d14a2cb7391",
+          "path": "tests/test_approval_review.py"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 129,
+  "seq": 130,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "f49f731300ba07c2aabc4d850746db5ec6ad534e",
-    "to_sha": "aac09f8575b3883d6aa5df1691eb20b686d50b2c"
+    "from_sha": "aac09f8575b3883d6aa5df1691eb20b686d50b2c",
+    "to_sha": "098dc29c2fba8f77c2eeab168d803d14a2cb7391"
   },
-  "generated_at": "2026-11-03T07:27:57Z",
+  "generated_at": "2026-11-03T07:28:36Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -85,5 +85,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "LOW",
-  "signature": "28f841e5258ee2b6753d4a12a74d2a09c43b7c84d74783894ddf8dd399bcfe4d"
+  "signature": "2409faab9685ba81ff38dd04227cb59b3de0b948a511c0dd46a80d95adce0201"
 }

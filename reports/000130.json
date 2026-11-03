@@ -1,0 +1,89 @@
+{
+  "summary": "3 commit(s): test: add coverage for OSError in _existing_text and EOFError in InteractiveApprover; Merge main into #86; keep both sets of approval tests; Merge pull request #86 from jonnysteedman683-wq/sebastian/test-approval-review-coverage-17008311377059774459",
+  "changes": [
+    {
+      "category": "QUALITY",
+      "title": "1 file(s) changed",
+      "description": "Detected automatically from code: 1 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "098dc29c2fba8f77c2eeab168d803d14a2cb7391",
+          "path": "tests/test_approval_review.py"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 130,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "aac09f8575b3883d6aa5df1691eb20b686d50b2c",
+    "to_sha": "098dc29c2fba8f77c2eeab168d803d14a2cb7391"
+  },
+  "generated_at": "2026-11-03T07:28:36Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "cost",
+      "crosstest",
+      "dashboard",
+      "demo",
+      "diff",
+      "doctor",
+      "evolve",
+      "memory",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "unisync",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "LOW",
+  "signature": "2409faab9685ba81ff38dd04227cb59b3de0b948a511c0dd46a80d95adce0201"
+}
