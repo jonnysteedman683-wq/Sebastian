@@ -1,23 +1,40 @@
 {
-  "summary": "No changes in last 24h; head = 6350dd0",
-  "changes": [],
+  "summary": "6 commit(s): refactor: extract helper functions in dashboard render(); refactor: extract helper functions in dashboard render(); refactor: extract helper functions in dashboard render(); refactor: extract helper functions in dashboard render(); Merge main into #89; keep main's accessible leaderboard markup; Merge pull request #89 from jonnysteedman683-wq/sebastian/refactor-dashboard-render-13943084352204996593",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "2 file(s) changed",
+      "description": "Detected automatically from code: 2 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "555e1c7eb14cfb6eef41cbe7ed689c0cf8e39112",
+          "path": "src/sebastian/dashboard.py"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
   "prs": [],
   "security_alerts": [],
   "breaking_changes": [],
-  "open_questions": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 125,
+  "seq": 126,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
     "from_sha": "6350dd0865cab5248a8a1301a14d13d59a758826",
-    "to_sha": "6350dd0865cab5248a8a1301a14d13d59a758826"
+    "to_sha": "555e1c7eb14cfb6eef41cbe7ed689c0cf8e39112"
   },
-  "generated_at": "2026-11-03T03:14:26Z",
+  "generated_at": "2026-11-03T07:07:54Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -67,6 +84,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "LOW",
-  "signature": "1989d10ff4b0a7a2b779c3d1511c4a7ac08c0642879092ebdca2b29251de03c4"
+  "priority": "NORMAL",
+  "signature": "191972ee7b508a63773c53da9c9d5ee8a09f4e852bf7ad6f4f2c2bf3d1f26ba9"
 }
