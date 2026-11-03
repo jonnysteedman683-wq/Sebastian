@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): docs: complete Phase 1 Discovery map and baseline; Merge pull request #124 from jonnysteedman683-wq/sebastian/phase1-discovery-7333131169512159262",
+  "summary": "3 commit(s): feat: Add keyboard navigation attributes to outcomes table; Merge main into #125; keep {charts} with the <dl> tiles; Merge pull request #125 from jonnysteedman683-wq/sebastian/palette-dashboard-a11y-14918531854900890",
   "changes": [
     {
-      "category": "DOCS",
+      "category": "ABILITY_CHANGE",
       "title": "2 file(s) changed",
       "description": "Detected automatically from code: 2 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "ef65b2edb2c29f7233c050775167ed079106de9a",
-          "path": "docs/SEBASTIAN_MAP.md"
+          "sha": "f49f731300ba07c2aabc4d850746db5ec6ad534e",
+          "path": ".jules/palette.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 127,
+  "seq": 128,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "555e1c7eb14cfb6eef41cbe7ed689c0cf8e39112",
-    "to_sha": "ef65b2edb2c29f7233c050775167ed079106de9a"
+    "from_sha": "ef65b2edb2c29f7233c050775167ed079106de9a",
+    "to_sha": "f49f731300ba07c2aabc4d850746db5ec6ad534e"
   },
-  "generated_at": "2026-11-03T07:25:15Z",
+  "generated_at": "2026-11-03T07:25:38Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -84,6 +84,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "LOW",
-  "signature": "d80b688d6125426c805632746fdf95e341499a0be11426c66c9f14dee322ac3c"
+  "priority": "NORMAL",
+  "signature": "2b46260fdc8d21107044748ab94a8e33f79bf02c1f532ecb13faab923cc7513a"
 }
