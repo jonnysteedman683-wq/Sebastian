@@ -9,7 +9,7 @@ Host filesystem outside the workspace, host secrets/env, the API key, stored mem
 |---|---|---|
 | Path escape (`..`, absolute, symlink) | `Workspace.resolve` resolves symlinks, rejects anything outside root | `tests/test_tools.py::test_workspace_rejects_*` |
 | Writes or reads through a swapped-in symlink (P1-09) | `Checkpoints.rewind` (Gauntlet revert) and `workspace_diff` (the critic's view) go through `Workspace.resolve_strict`, which refuses a symlink anywhere in the path, even one that points back inside the jail. Rewind checks every path before writing any and raises `CheckpointError`; the diff reports such a file as skipped instead of reading it | `tests/test_jail_rewind.py` |
-| Git metadata tampering (P1-05) | `Workspace.resolve` rejects any path with a `.git` component, before or after resolving symlinks, so no file tool reads or writes git config, hooks or the worktree pointer | `test_workspace_rejects_git_paths`, `test_workspace_rejects_symlink_into_git` |
+| Git metadata tampering (P1-05) | `Workspace.resolve` rejects any path with a `.git` component, before or after resolving symlinks, and rejects reserved git-dir entry names (`HEAD`, `config`, `objects`, `refs`, `hooks`, `packed-refs`, `FETCH_HEAD`) when they would land directly in a workspace directory, so no file tool reads or writes git config, hooks, or the worktree pointer, preventing the creation of repo skeletons under any name | `test_workspace_rejects_git_paths`, `test_workspace_rejects_symlink_into_git`, `test_workspace_rejects_git_reserved_names` |
 | Search walking out of the jail | `search_files` never follows directory symlinks and re-resolves every file through `Workspace.resolve`, skipping escapes; skips `.git/`, binary and oversized files; capped at 200 matches | `test_search_stays_in_jail`, `test_search_skips_binary_large_and_git`, `test_search_caps_matches` |
 | Shell injection | No shell; `shlex.split` + exec of allowlisted basename only | `test_command_no_shell_injection`, `test_command_rejections` |
 | Env/secret leakage to subprocess | Env scrubbed to `PATH`, `LANG`, `LC_ALL`; `HOME` = workspace | `test_command_runs_in_workspace_with_scrubbed_env` |
@@ -89,6 +89,7 @@ under `python -m sebastian.evals --live --gauntlet` or `--compare`, not plain `-
   rejects too (no fail-open), unless `--allow-missing-baseline`; the candidate's own metrics
   must always be readable.
 - **No merge:** the best outcome is a branch or PR for a human to review.
+- **Earned publishing (B26c):** the CLI computes the evolve model's trust level (`trust.assess` over `history.jsonl`: live evals, red-team rounds and evolve PRs, where a reverted PR is a failed round, B26b) and passes it in `EvolveConfig.trust`. At L0 an accepted branch is committed locally and never pushed; L1 pushes and opens a **draft** PR; L2 pushes and opens a ready PR. L3 is never earned (`trust.MAX_LEVEL`) and evolve has no merge code, so auto-merge would need its own owner-approved item. There is no flag to raise the level; it comes only from the record.
 - **Gauntlet (opt-in, `--gauntlet`, B34):** the inner run must also pass its own predicted checks and a tool-free critic. A `needs_help` run is rejected outright (the outer gates never rescue it) and its patch is kept for review. This only adds gates; the scope, the outer gates and the no-merge rule are unchanged. Predicted checks still go through the scoped approver, so they are limited to `pytest`, `ruff` and `mypy`.
 - **Host git is hardened (P1-05):** evolve's own git calls run outside any sandbox, in
   worktrees the agent could write to. Every call passes `-c core.fsmonitor=`,
@@ -272,6 +273,14 @@ Residual: `--push-main` bypasses human review by design. Branch protection on th
 - The file is written by the agent that reads it, so it could carry a planted instruction from one run to the next. AGENTS.md/CLAUDE.md rank it below themselves, `WORK_ORDER.md` and `BACKLOG.md`, and say it can never justify skipping a check, touching a guarded path or reordering the backlog. The file states the same about itself.
 - Every edit to it arrives in a reviewed PR, like any other change. Review its diff as you would code; a note that reads like an instruction ("skip", "ignore", "you may") is a red flag.
 - It is not a guarded path, on purpose, so daily runs can append to it. The rules it refers to (AGENTS.md, CLAUDE.md, WORK_ORDER.md) stay guarded.
+
+## UniSync reporting (`unisync.py`; opt-in)
+
+- Off unless both `UNISYNC_SUPABASE_URL` and `UNISYNC_SUPABASE_KEY` are set. https only.
+- Sends run metadata only: command, outcome, run id, stop reason, steps, tokens; for `evolve`, the item id, branch and a reason capped at 300 characters. Never the task text, the answer, file contents or traces (tested in `tests/test_unisync.py`).
+- Can only post `heartbeat`, `memory.write` and `escalate`, which are valid for any agent at any time, so it cannot write an envelope that breaks the shared ledger's task rules for other agents. The head row's digest is re-checked before anything is written on top of it.
+- Best-effort: a failed write prints a warning and never changes a command's exit code or blocks a run.
+- The key is the ledger's service-role key until per-agent tokens exist (proposed in LESTINXOR-AGENT `docs/UNISYNC.md`). Keep it in the runner's secrets, never in the repo or in prompts; the agent loop never sees it because reporting runs in the harness after the run ends.
 
 ## Residual risks (escalated, not fixed)
 
