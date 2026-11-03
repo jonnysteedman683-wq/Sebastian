@@ -41,6 +41,7 @@
       "demo",
       "doctor",
       "traces",
+      "cost",
       "trust",
       "memory",
       "undo",
@@ -50,7 +51,9 @@
       "version",
       "models",
       "show",
-      "crosstest"
+      "diff",
+      "crosstest",
+      "unisync"
     ],
     "llm_backends": [
       "anthropic",
@@ -67,5 +70,5 @@
     "changed": []
   },
   "pr_previews": [],
-  "signature": "41d5eced3a4cdf3dc9bfc5cc9d155470ca6f6c5f05388c2684438d2b3af7aecb"
+  "signature": "0538159f36c8879c7066e56f1f4d7d2ccafc089d58a84b2e54884c4baff6f409"
 }

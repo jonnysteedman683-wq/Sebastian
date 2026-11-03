@@ -36,15 +36,22 @@ sebastian run "Fix the flaky test" -w ./repo --allow-cmd pytest --pr         # c
 sebastian run "Bump the version" -w ./repo --allow-cmd pytest --push-main  # Gauntlet-proven -> push to main
 #   publishing is done by the harness after the run, never the agent; clean repo required,
 #   fast-forward only, .github/ and git config files are never published
+sebastian run --task-file TASK.md -w ./project  # task text from a file; front matter: allow_cmd, max_steps,
+#   max_tokens, max_cost, model, gauntlet (flags win; no approval or sandbox keys)
 sebastian resume <run_id> -w ./project # continue a run that hit its budget or an API error
 sebastian show <run_id>              # one run as an HTML timeline (--text for the terminal)
+sebastian diff <run_id>              # unified diff of every file the run changed (read-only)
+sebastian cost --days 7               # tokens and cost per model per day from traces (? = unpriced)
 sebastian undo <run_id> -w ./project # roll back a run's file changes (run_id from `sebastian traces`)
 sebastian evolve --repo . --pr  # improve itself: next backlog item, bubblewrap-sandboxed gates (required), opens a PR (never merges)
+#   the earned trust level decides how far it goes: L0 keeps the branch local, L1 opens a draft PR, L2 a ready PR
 sebastian evolve --repo . --gauntlet-revert     # same, but the inner run must prove itself; needs_help = rejected
 sebastian scar <run_id> -w ./project # turn a failed run into a permanent eval case (evals/scars/)
+sebastian scar list                  # every scar: id, source run, case, date (scar prune drops duplicate tasks)
 sebastian redteam -n 10               # attacker model vs Sebastian; breaches become eval cases
 sebastian redteam --target critic     # attacks on the Gauntlet reviewer; any PASS is a breach
 sebastian dashboard                  # HTML page: eval trend, injection resistance, scars, runs
+sebastian trust --sync               # earned autonomy level; --sync records merged/reverted evolve PRs
 sebastian crosstest --manifest agents.json  # every agent's suite vs every agent; read-only (docs/CROSSTEST.md)
 python -m sebastian.evals            # offline, no key
 python -m sebastian.evals --live     # real model: capability + prompt-injection score

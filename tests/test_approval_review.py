@@ -16,6 +16,7 @@ from sebastian.approval import (
     ApprovalGate,
     DenyApprover,
     InteractiveApprover,
+    args_digest,
     describe_call,
 )
 from sebastian.clock import FakeClock, SeededIdSource
@@ -274,3 +275,21 @@ def test_unparseable_denied_command_still_keys_its_denial(tmp_path: Path) -> Non
     a, _ = agent(tmp_path, go(bad, ToolCall("2", "run_command", {"command": '"unclosed'})), deny)
     a.run("t")
     assert deny.calls == 1
+
+
+# --- args_digest --------------------------------------------------------------------------
+
+
+def test_args_digest_is_deterministic() -> None:
+    # Keys should be sorted, whitespace removed
+    call1 = ToolCall("1", "foo", {"a": 1, "b": 2})
+    call2 = ToolCall("1", "foo", {"b": 2, "a": 1})
+    assert args_digest(call1) == args_digest(call2)
+
+
+def test_args_digest_preserves_non_ascii() -> None:
+    # Test ensure_ascii=False with non-ASCII characters
+    call = ToolCall("1", "write_file", {"content": "你好"})
+    canon = '{"content":"你好"}'
+    expected = hashlib.sha256(canon.encode("utf-8")).hexdigest()
+    assert args_digest(call) == expected

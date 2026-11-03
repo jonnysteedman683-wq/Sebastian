@@ -16,6 +16,7 @@ from sebastian.clock import FakeClock, SeededIdSource
 from sebastian.config import Config
 from sebastian.llm import BACKENDS, LLMError, RetryingLLM, TransientLLMError, make_llm
 from sebastian.llm import openai_compat as oc
+from sebastian.llm.base import RetryConfig
 from sebastian.llm.openai_compat import OpenAICompatLLM, check_base_url, parse_response
 from sebastian.tools import ToolRegistry, Workspace, file_tools
 from sebastian.types import Message, Role, ToolCall, ToolResult, Usage
@@ -226,7 +227,7 @@ def test_odd_usage_and_content_types_are_tolerated() -> None:
 @pytest.mark.parametrize("status", [429, 500, 503])
 def test_transient_statuses_retry(status: int) -> None:
     server = FakeServer((status, b"busy"), (200, reply("ok")))
-    client = RetryingLLM(llm(server), sleep=lambda _s: None)
+    client = RetryingLLM(llm(server), config=RetryConfig(sleep=lambda _s: None))
     assert client.complete("S", [Message(Role.USER, text="t")], []).text == "ok"
     assert len(server.requests) == 2
 
@@ -259,7 +260,7 @@ def test_urllib_transport_maps_errors(monkeypatch: pytest.MonkeyPatch) -> None:
         return Resp()
 
     monkeypatch.setattr(oc, "_open", ok)
-    assert oc._urllib_transport("https://h/v1", {"Content-Type": "x"}, b"{}", 5) == (200, b"{}")
+    assert oc._urllib_transport("https://h/v1", {"Content-Type": "x"}, b"{}", 5) == (200, b"{}", {})
     assert calls == [("https://h/v1", "x", 5)]
 
     def down(req: Any, timeout: float) -> Resp:
@@ -277,7 +278,7 @@ def test_http_error_body_is_returned(monkeypatch: pytest.MonkeyPatch) -> None:
         raise urllib.error.HTTPError(req.full_url, 429, "slow", {}, io.BytesIO(b"rate"))  # type: ignore[arg-type]
 
     monkeypatch.setattr(oc, "_open", http_error)
-    assert oc._urllib_transport("https://h/v1", {}, b"{}", 5) == (429, b"rate")
+    assert oc._urllib_transport("https://h/v1", {}, b"{}", 5) == (429, b"rate", {})
 
 
 # --- base URL policy ------------------------------------------------------------------------
@@ -370,16 +371,18 @@ def test_cli_uses_the_configured_backend(
     monkeypatch.setenv("SEBASTIAN_BASE_URL", "http://localhost:11434/v1")
     monkeypatch.setattr(sys, "stdin", io.StringIO(""))
     server = FakeServer((200, reply("hello from a local model")))
-    seen: list[tuple[str, str, str, str]] = []
+    seen: list[tuple[str, str, str, str, int | None]] = []
 
-    def fake_make(model: str, backend: str, base_url: str, key_env: str) -> OpenAICompatLLM:
-        seen.append((model, backend, base_url, key_env))
+    def fake_make(
+        model: str, backend: str, base_url: str, key_env: str, max_output_tokens: int | None = None
+    ) -> OpenAICompatLLM:
+        seen.append((model, backend, base_url, key_env, max_output_tokens))
         return OpenAICompatLLM(model, base_url, transport=server)
 
     monkeypatch.setattr(cli, "make_llm", fake_make)
     ws = tmp_path / "ws"
     ws.mkdir()
     args = ["run", "hi", "-w", str(ws), "--no-memory", "--model", "qwen3"]
-    assert cli.main(args) == 0
-    assert seen == [("qwen3", "openai", "http://localhost:11434/v1", "")]
+    assert cli.main([*args, "--max-output-tokens", "900"]) == 0
+    assert seen == [("qwen3", "openai", "http://localhost:11434/v1", "", 900)]
     assert "hello from a local model" in capsys.readouterr().out

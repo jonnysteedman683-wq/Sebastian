@@ -30,8 +30,20 @@ class Workspace:
         # P1-05: no tool reads or writes git metadata. A rewritten .git file, config or hook
         # would run code the next time the host (outside any sandbox) runs git here.
         inside = resolved.relative_to(self.root).parts
-        if any(p.lower() == ".git" for p in (*candidate.parts, *inside)):
+        parts_to_check = (*candidate.parts, *inside)
+        if any(p.lower() == ".git" for p in parts_to_check):
             raise WorkspaceError(f"paths inside .git are not allowed: {relative}")
+        reserved_git_names = {
+            "head",
+            "config",
+            "objects",
+            "refs",
+            "hooks",
+            "packed-refs",
+            "fetch_head",
+        }
+        if any(p.lower() in reserved_git_names for p in parts_to_check):
+            raise WorkspaceError(f"git-dir reserved names are not allowed: {relative}")
         return resolved
 
     def resolve_strict(self, relative: str) -> Path:
