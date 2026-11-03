@@ -125,3 +125,13 @@ def test_anthropic_missing_package(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(builtins, "__import__", fake_import)
     with pytest.raises(LLMError, match="not installed"):
         AnthropicLLM("m")
+
+
+def test_anthropic_429_carries_retry_after() -> None:
+    """B52: the SDK error's Retry-After header reaches the retry wrapper."""
+    req = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+    res = httpx.Response(429, request=req, headers={"retry-after": "7"})
+    err = anthropic.APIStatusError("slow down", response=res, body=None)
+    with pytest.raises(TransientLLMError) as info:
+        AnthropicLLM("m", client=fake_client(err)).complete("s", [Message(Role.USER, "x")], [])
+    assert info.value.retry_after == 7.0

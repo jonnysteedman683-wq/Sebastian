@@ -34,6 +34,8 @@ How this repo links to Jonny's other agents and bots (Lestinxor, Grok, Claude, c
 
 ## Pitfalls seen
 
+- The static CLI inventory (`test_static_inventory_of_real_repo_matches_runtime`) counts every `add_parser(...)` literal in `cli.py` as a command, including nested subcommands. Use positional `choices=` for sub-actions instead (UniSync PR, `sebastian unisync ping|escalate`).
+
 - Before taking a new `B<n>` id, check open PRs as well as `BACKLOG.md`. Parallel PRs have
   claimed the same number (B72 was in flight in #75 while other work was numbering).
 - Branch from the latest `main` and never on top of another open PR. Stacked PRs #12/#13 merged

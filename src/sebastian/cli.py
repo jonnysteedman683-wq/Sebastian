@@ -1,20 +1,23 @@
 """CLI: run (optionally --pr / --push-main), resume, demo,
- traces, show, undo, scar, evolve, redteam, models, dashboard, trust,
+ traces, cost, show, diff, undo, scar, evolve, redteam, models, dashboard, trust,
 version."""
 
 from __future__ import annotations
 
 import argparse
+import dataclasses
+import functools
 import json
 import secrets
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from sebastian import __version__, history
+from sebastian import __version__, history, unisync
 from sebastian.agent import Sebastian
 from sebastian.approval import ApprovalGate, Approver, DenyApprover, InteractiveApprover
 from sebastian.budget import Budget
@@ -29,6 +32,8 @@ from sebastian.memory import MemoryCorruptError, MemoryStore
 from sebastian.pricing import Price, PricingError, load_prices, priced, require_prices
 from sebastian.publish import PublishError, check_ready, open_pr, publish, valid_branch
 from sebastian.session import SessionError, SessionStore
+from sebastian.taskfile import TaskFileError
+from sebastian.taskfile import load as load_task_file
 from sebastian.tools import (
     CommandPolicy,
     ToolError,
@@ -51,7 +56,14 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd", required=True)
 
     run = sub.add_parser("run", help="run a task with a real model")
-    run.add_argument("task")
+    run.add_argument("task", nargs="?", help="the task (or give --task-file)")
+    run.add_argument(
+        "--task-file",
+        type=Path,
+        metavar="FILE",
+        help="read the task from FILE; optional front matter sets allow_cmd, max_steps, "
+        "max_tokens, max_cost, model, gauntlet (flags win)",
+    )
     _add_run_options(run)
     _add_publish_options(run)
 
@@ -73,11 +85,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--force", action="store_true", help="also restore files changed since the run"
     )
 
-    scar = sub.add_parser("scar", help="turn a failed run into a permanent eval case")
-    scar.add_argument("run_id")
-    scar.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
-    scar.add_argument("--out", type=Path, default=Path("evals/scars"), help="scar directory")
-    scar.add_argument("--name", help="scar name (default: from the task)")
+    _add_scar_parser(sub)
 
     evo = sub.add_parser("evolve", help="improve Sebastian's own repo: one backlog item, gated")
     evo.add_argument("--repo", type=Path, default=Path.cwd(), help="Sebastian git checkout")
@@ -141,10 +149,17 @@ def _build_parser() -> argparse.ArgumentParser:
     _add_report_parsers(sub)
     _add_models_parser(sub)
     _add_show_parser(sub)
-
-    sub.add_parser("version")
-    sub.add_parser("doctor", help="check the setup (python, home, key, sandbox, state files)")
+    _add_setup_parsers(sub)
     return p
+
+
+def _add_scar_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    scar = sub.add_parser("scar", help="turn a failed run into a permanent eval case")
+    scar.add_argument("run_id", help="failed run id, or 'list' / 'prune' to manage scars")
+    scar.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
+    scar.add_argument("--out", type=Path, default=Path("evals/scars"), help="scar directory")
+    scar.add_argument("--name", help="scar name (default: from the task)")
+    scar.add_argument("--yes", action="store_true", help="prune: don't ask for confirmation")
 
 
 def _add_report_parsers(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -168,12 +183,23 @@ def _add_report_parsers(sub: argparse._SubParsersAction[argparse.ArgumentParser]
     cross.add_argument("--id", dest="item_id", help="backlog id to use (default: next free B<n>)")
     trust = sub.add_parser("trust", help="the autonomy level the live eval record has earned")
     trust.add_argument("--model", help="only count rounds for this model")
+    trust.add_argument(
+        "--sync",
+        action="store_true",
+        help="first ask GitHub (gh) what became of the PRs evolve opened and record merges and "
+        "reverts (B26b)",
+    )
+    trust.add_argument("--repo", type=Path, default=Path.cwd(), help="--sync: repo to scan")
+    trust.add_argument("--ref", default="HEAD", help="--sync: branch to look for reverts on")
     mem = sub.add_parser("memory", help="list or forget remembered episodes")
     mem.add_argument("action", choices=["list", "forget"])
     mem.add_argument("task", nargs="?", help="forget: the task to delete")
     mem.add_argument("-q", "--query", help="list: rank by relevance to this text")
     mem.add_argument("-n", "--limit", type=_positive_int, default=20, help="list: episodes to show")
     mem.add_argument("--yes", action="store_true", help="forget: don't ask for confirmation")
+    cost = sub.add_parser("cost", help="tokens and cost per model per day from traces.jsonl")
+    cost.add_argument("--days", type=_positive_int, default=7, help="UTC days to include")
+    cost.add_argument("--model", help="only this model")
 
 
 def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -227,11 +253,20 @@ def _add_show_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -
     show.add_argument("run_id", help="run id, or a unique prefix of at least 6 characters")
     show.add_argument("-o", "--out", type=Path, help="HTML file (default: sebastian-run-<id>.html)")
     show.add_argument("--text", action="store_true", help="print a text timeline instead")
+    diff = sub.add_parser("diff", help="unified diff of every file a run changed")
+    diff.add_argument("run_id", help="run id, or a unique prefix of at least 6 characters")
 
 
 def _add_run_options(run: argparse.ArgumentParser) -> None:
     run.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
     run.add_argument("--model", help="override SEBASTIAN_MODEL")
+    run.add_argument(
+        "--max-output-tokens",
+        type=_positive_int,
+        metavar="N",
+        help="cap each reply from an OpenAI-compatible server (default "
+        "SEBASTIAN_MAX_OUTPUT_TOKENS or 4096); lower it for small free tiers",
+    )
     run.add_argument(
         "--allow-cmd",
         action="append",
@@ -309,6 +344,18 @@ def _add_publish_options(run: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_setup_parsers(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
+    sub.add_parser("version")
+    sub.add_parser("doctor", help="check the setup (python, home, key, sandbox, state files)")
+    sync = sub.add_parser("unisync", help="post to the shared UniSync ledger (UNISYNC_SUPABASE_*)")
+    sync.add_argument(
+        "action",
+        choices=("ping", "escalate"),
+        help="ping: post a heartbeat; escalate: raise REASON",
+    )
+    sync.add_argument("reason", nargs="?", help="what to escalate (required for escalate)")
+
+
 def _non_negative_float(value: str) -> float:
     try:
         n = float(value)
@@ -341,6 +388,13 @@ def _print_traces(path: Path, limit: int) -> int:
     return 0
 
 
+def _cost(cfg: Config, args: argparse.Namespace) -> int:
+    from sebastian.costs import report  # noqa: PLC0415
+
+    print(report(cfg.home / "traces.jsonl", time.time(), args.days, args.model))
+    return 0
+
+
 def _undo(store: Checkpoints, args: argparse.Namespace) -> int:
     try:
         if args.list:
@@ -363,6 +417,12 @@ def _undo(store: Checkpoints, args: argparse.Namespace) -> int:
 def _scar(cfg: Config, args: argparse.Namespace) -> int:
     from sebastian.evals.scar import ScarError, make_scar, write_scar  # noqa: PLC0415
 
+    if args.run_id in {"list", "prune"}:
+        try:
+            return _scar_admin(args)
+        except ScarError as exc:
+            print(f"scar: {exc}", file=sys.stderr)
+            return 2
     try:
         spec = make_scar(
             args.run_id,
@@ -384,10 +444,44 @@ def _scar(cfg: Config, args: argparse.Namespace) -> int:
     return 0
 
 
+def _scar_admin(args: argparse.Namespace) -> int:
+    """``scar list`` and ``scar prune`` (B60)."""
+    from sebastian.scarlist import duplicates, scars  # noqa: PLC0415
+
+    found = scars(args.out)
+    if args.run_id == "list":
+        if not found:
+            print("(no scars)")
+        for s in found:
+            print(f"{s.path.stem}  {s.source}  {s.name}  {s.date}")
+        return 0
+    drop = duplicates(found)
+    if not drop:
+        print("no duplicate scars")
+        return 0
+    for s in drop:
+        print(f"remove {s.path}")
+    if not args.yes:
+        try:
+            answer = input(f"remove {len(drop)} duplicate scar(s)? [y/N] ")
+        except EOFError:
+            answer = ""
+        if answer.strip().lower() not in {"y", "yes"}:
+            print("nothing removed", file=sys.stderr)
+            return 1
+    for s in drop:
+        s.path.unlink()
+    print(f"removed {len(drop)} scar(s)")
+    return 0
+
+
 def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], LLM]) -> int:
     from sebastian.evolve import EvolveConfig, EvolveError, evolve_once, open_pr  # noqa: PLC0415
+    from sebastian.trust import Level, assess  # noqa: PLC0415
 
     model = args.model or cfg.model
+    # B26c: the record this model has earned decides what the cycle may publish.
+    level = assess(history.load(cfg.home / history.HISTORY_FILE), model).level
     llm = llm_factory(model)
     gauntlet = None
     if args.gauntlet or args.gauntlet_revert or args.critic_model:
@@ -406,6 +500,7 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
         max_resumes=max(args.resumes, 0),
         home=cfg.home,
         gauntlet=gauntlet,
+        trust=level,
     )
     if args.no_evals:
         config.eval_cmd = None
@@ -415,12 +510,29 @@ def _evolve(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str], 
             llm,
             config,
             tracer=JsonlTracer(cfg.home / "traces.jsonl", SystemClock()),
-            opener=open_pr if args.pr else None,
+            opener=functools.partial(open_pr, draft=level is Level.L1_DRAFT_PR)
+            if args.pr
+            else None,
         )
     except EvolveError as exc:
         print(f"evolve: {exc}", file=sys.stderr)
         return 2
     print(report.summary())
+    if report.pr_url:
+        from sebastian.prledger import record_opened  # noqa: PLC0415
+
+        item_id = report.item.id if report.item else ""
+        record_opened(cfg.home, report.pr_url, report.branch, item_id, model, time.time())
+    unisync.report(
+        unisync.run_summary(
+            "evolve",
+            "accepted" if report.accepted else "rejected",
+            item=report.item.id if report.item else "",
+            branch=report.branch,
+            reason=report.reason[:300],
+        ),
+        warn=_warn,
+    )
     return 0 if report.accepted else 1
 
 
@@ -476,6 +588,22 @@ def _show(cfg: Config, args: argparse.Namespace) -> int:
     out.write_text(render_html(run_id, entries, time.time()), encoding="utf-8")
     print(out)
     return 0
+
+
+def _diff(store: Checkpoints, args: argparse.Namespace) -> int:
+    from sebastian.rundiff import run_diff  # noqa: PLC0415
+
+    try:
+        result = run_diff(store, args.run_id)
+    except CheckpointError as exc:
+        print(f"diff: {exc}", file=sys.stderr)
+        return 1
+    sys.stdout.write(result.text)
+    for line in result.skipped:
+        print(f"diff: skipped {line}", file=sys.stderr)
+    if not result.files and not result.skipped:
+        print(f"diff: run {result.run_id} left no changes in place", file=sys.stderr)
+    return 1 if result.skipped else 0
 
 
 def _dashboard(cfg: Config, args: argparse.Namespace) -> int:
@@ -576,8 +704,18 @@ def _crosstest_request(agents: list[Agent], args: argparse.Namespace) -> int:
 
 
 def _trust(cfg: Config, args: argparse.Namespace) -> int:
+    from sebastian import prledger  # noqa: PLC0415
     from sebastian.trust import assess  # noqa: PLC0415
 
+    if args.sync:
+        try:
+            reverts = prledger.git_reverts(args.repo, args.ref)
+            lines = prledger.sync(cfg.home, prledger.gh_fetch, reverts, time.time())
+        except prledger.LedgerError as exc:
+            print(f"trust: {exc}", file=sys.stderr)
+            return 2
+        for line in lines:
+            print(line, file=sys.stderr)
     a = assess(history.load(cfg.home / history.HISTORY_FILE), args.model)
     print(f"{a.level.label}  rounds={a.rounds}  streak={a.streak}  {a.reason}")
     return 0
@@ -741,14 +879,57 @@ def _start(agent: Sebastian, args: argparse.Namespace, ws: Workspace) -> int:
         result = agent.run(args.task)
         code = _print_result(result)
         mode = _publish_mode(args)
-        if mode is None:
-            return code
-        return _publish(ws, result, args, mode) if code == 0 else code
+        if mode is not None and code == 0:
+            code = _publish(ws, result, args, mode)
+        _report_run(args.cmd, result, code)
+        return code
     try:
-        return _print_result(agent.resume(args.run_id))
+        result = agent.resume(args.run_id)
     except SessionError as exc:
         print(f"resume: {exc}", file=sys.stderr)
         return 1
+    code = _print_result(result)
+    _report_run(args.cmd, result, code)
+    return code
+
+
+def _warn(msg: str) -> None:
+    print(msg, file=sys.stderr)
+
+
+def _report_run(command: str, result: RunResult, code: int) -> None:
+    """Best-effort UniSync report of a finished run: metadata only, never changes the exit code."""
+    unisync.report(
+        unisync.run_summary(
+            command,
+            "ok" if code == 0 else "failed",
+            run_id=result.run_id,
+            stop=result.stop_reason.value,
+            steps=result.steps,
+            tokens=result.usage.total,
+        ),
+        warn=_warn,
+    )
+
+
+def _unisync(args: argparse.Namespace) -> int:
+    reporter = unisync.Reporter.from_env()
+    if reporter is None:
+        print("unisync: set UNISYNC_SUPABASE_URL and UNISYNC_SUPABASE_KEY", file=sys.stderr)
+        return 2
+    if args.action == "escalate" and not args.reason:
+        print("unisync: escalate needs a REASON", file=sys.stderr)
+        return 2
+    try:
+        if args.action == "ping":
+            posted = reporter.post("heartbeat")
+        else:
+            posted = reporter.post("escalate", reason=args.reason)
+    except (unisync.UnisyncError, OSError, ValueError) as exc:
+        print(f"unisync: {exc}", file=sys.stderr)
+        return 1
+    print(f"unisync: {posted.kind} written at seq {posted.seq} ({posted.digest[:12]})")
+    return 0
 
 
 def _demo_llm() -> ScriptedLLM:
@@ -811,22 +992,35 @@ def _real_factory(cfg: Config) -> Callable[[str], LLM]:
     """Real model clients for the configured backend (``SEBASTIAN_BACKEND``, B37)."""
 
     def make(name: str) -> LLM:
-        return make_llm(name, cfg.backend, cfg.base_url, cfg.api_key_env)
+        return make_llm(name, cfg.backend, cfg.base_url, cfg.api_key_env, cfg.max_output_tokens)
 
     return make
 
 
-def _run_agent(
-    cfg: Config,
-    args: argparse.Namespace,
-    make: Callable[[str], LLM],
-    prices: Mapping[str, Price],
-    ws: Workspace,
-    registry: ToolRegistry,
-    checkpoints: Checkpoints | None,
-    run_info: Mapping[str, str] | None = None,
-) -> int:
+@dataclass
+class AgentContext:
+    """Context for running the agent."""
+
+    cfg: Config
+    args: argparse.Namespace
+    make: Callable[[str], LLM]
+    prices: Mapping[str, Price]
+    ws: Workspace
+    registry: ToolRegistry
+    checkpoints: Checkpoints | None
+    run_info: Mapping[str, str] | None = None
+
+
+def _run_agent(ctx: AgentContext) -> int:
     """Build the agent for ``run`` / ``resume`` and start it."""
+    cfg = ctx.cfg
+    args = ctx.args
+    make = ctx.make
+    prices = ctx.prices
+    ws = ctx.ws
+    registry = ctx.registry
+    checkpoints = ctx.checkpoints
+    run_info = ctx.run_info
     if not _publish_ready(ws, args):
         return 2
     clock = SystemClock()
@@ -871,9 +1065,32 @@ def _run_agent(
             make(escalation_model) if escalation_model and escalation_model != model else None
         ),
         gauntlet=gauntlet,
-        run_info=dict(run_info or {}),
+        run_info={**(run_info or {}), "model": model},  # B58: `sebastian cost` groups by it
     )
     return _start(agent, args, ws)
+
+
+def _apply_task_file(cfg: Config, args: argparse.Namespace) -> Config:
+    """Fill ``args``/``cfg`` from ``--task-file`` (B57); flags win. Raises ``TaskFileError``."""
+    if (args.task is None) == (args.task_file is None):
+        raise TaskFileError("run needs a task or --task-file (not both)")
+    if args.task_file is None:
+        return cfg
+    tf = load_task_file(args.task_file)
+    args.task = tf.task
+    if not args.allow_cmd and tf.allow_cmd:
+        args.allow_cmd = list(tf.allow_cmd)
+    if not args.model and tf.model:
+        args.model = tf.model
+    if args.max_cost is None and tf.max_cost is not None:
+        args.max_cost = tf.max_cost
+    if tf.gauntlet:
+        args.gauntlet = True
+    return dataclasses.replace(
+        cfg,
+        max_steps=tf.max_steps or cfg.max_steps,
+        max_tokens=tf.max_tokens or cfg.max_tokens,
+    )
 
 
 def _version() -> int:
@@ -899,10 +1116,14 @@ def main(
         return early[args.cmd]()
 
     cfg = Config.from_env()
+    if getattr(args, "max_output_tokens", None):
+        cfg = dataclasses.replace(cfg, max_output_tokens=args.max_output_tokens)
     ensure_home(cfg.home)  # P1-08: sessions, traces and memory live here; keep it private
     try:
+        if args.cmd == "run":
+            cfg = _apply_task_file(cfg, args)
         prices = load_prices(cfg.home)
-    except PricingError as exc:
+    except (PricingError, TaskFileError) as exc:
         print(f"sebastian: {exc}", file=sys.stderr)
         return 2
     base_factory = llm_factory or _real_factory(cfg)
@@ -912,6 +1133,7 @@ def main(
 
     tools_only: dict[str, Callable[[], int]] = {
         "traces": lambda: _print_traces(cfg.home / "traces.jsonl", args.limit),
+        "cost": lambda: _cost(cfg, args),
         "undo": lambda: _undo(Checkpoints(cfg.home / "checkpoints"), args),
         "scar": lambda: _scar(cfg, args),
         "evolve": lambda: _evolve(cfg, args, factory),
@@ -922,6 +1144,8 @@ def main(
         "memory": lambda: _memory(cfg, args),
         "models": lambda: _models(cfg, args, llm_factory, prices),
         "show": lambda: _show(cfg, args),
+        "diff": lambda: _diff(Checkpoints(cfg.home / "checkpoints"), args),
+        "unisync": lambda: _unisync(args),
     }
     if args.cmd in tools_only:
         return tools_only[args.cmd]()
@@ -955,7 +1179,8 @@ def main(
             "network": "host" if sandbox == "none" else "isolated",
         }
 
-    return _run_agent(cfg, args, factory, prices, ws, registry, checkpoints, run_info)
+    ctx = AgentContext(cfg, args, factory, prices, ws, registry, checkpoints, run_info)
+    return _run_agent(ctx)
 
 
 if __name__ == "__main__":  # pragma: no cover

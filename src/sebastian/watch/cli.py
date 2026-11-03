@@ -124,7 +124,7 @@ def _run(args: argparse.Namespace, git: Git, schema: dict[str, Any]) -> int:
         baseline=args.baseline,
         dry_run=args.dry_run,
     )
-    if result.action in ("sent", "failed", "published"):
+    if result.action in {"sent", "failed", "published"}:
         result.state.save(args.state)
     if args.publish_dir and result.action == "published" and result.report is not None:
         _publish(args.publish_dir, result.report)

@@ -41,21 +41,26 @@ _ENV_ASSIGN = re.compile(
 )
 _CANDIDATE = re.compile(r"[A-Za-z0-9+/=_\-]{32,}")
 _HEXISH = re.compile(r"[0-9a-fA-F\-]+")  # git SHAs, digests, UUIDs: identifiers, not secrets
+_HAS_DIGIT = re.compile(r"\d")
+_HAS_UPPER = re.compile(r"[A-Z]")
+_HAS_LOWER = re.compile(r"[a-z]")
 ENTROPY_BITS = 4.0  # per character; random base62 of 32+ chars is about 4.7 to 5.2
 
 
 def _entropy(text: str) -> float:
     n = len(text)
-    return -sum(c / n * math.log2(c / n) for c in Counter(text).values())
+    if not n:
+        return 0.0
+    return math.log2(n) - sum(c * math.log2(c) for c in Counter(text).values()) / n
 
 
 def _looks_random(tok: str) -> bool:
     return (
         len(tok) >= 32
         and not _HEXISH.fullmatch(tok)
-        and any(c.isdigit() for c in tok)
-        and any(c.isupper() for c in tok)
-        and any(c.islower() for c in tok)
+        and bool(_HAS_DIGIT.search(tok))
+        and bool(_HAS_UPPER.search(tok))
+        and bool(_HAS_LOWER.search(tok))
         and _entropy(tok) >= ENTROPY_BITS
     )
 
@@ -177,7 +182,7 @@ def summarize_runs(path: str | Path, limit: int) -> list[RunSummary]:
             usage = rec.get("usage")
             if isinstance(usage, dict):
                 run.tokens = sum(
-                    v for k, v in usage.items() if k in ("input", "output") and type(v) is int
+                    v for k, v in usage.items() if k in {"input", "output"} and type(v) is int
                 )
                 cost = usage.get("cost")
                 if isinstance(cost, int | float) and not isinstance(cost, bool) and cost >= 0:
