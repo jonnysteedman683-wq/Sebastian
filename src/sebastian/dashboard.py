@@ -101,7 +101,8 @@ def multi_line_chart(title: str, series: Sequence[tuple[str, Points]], label: st
         path = " ".join(f"{x},{y}" for x, y in coords)
         tip = f"{_e(name)} " if name else ""
         body += f'<polyline class="{cls}" points="{path}"/>' + "".join(
-            f'<circle class="{cls}" cx="{x}" cy="{y}" r="3.5"><title>{tip}'
+            f'<circle class="{cls}" cx="{x}" cy="{y}" r="3.5" '
+            f'tabindex="0" role="graphics-symbol"><title>{tip}'
             f"{_e(_date(t))}: {_e(_pct(v))}</title></circle>"
             for (x, y), (t, v) in zip(coords, pts, strict=True)
         )
@@ -339,7 +340,8 @@ h2{{font-size:15px;margin:28px 0 8px}}.sub{{color:var(--muted);margin:0 0 20px}}
 .tile{{padding:14px}}.k{{color:var(--muted);font-size:13px}}.v{{font-size:26px;font-weight:600}}
 .n{{color:var(--muted);font-size:12px}}figure{{margin:12px 0;padding:12px}}
 figcaption{{font-weight:600;margin-bottom:6px}}svg{{width:100%;height:auto;display:block}}
-polyline{{fill:none;stroke:var(--accent);stroke-width:2}}circle{{fill:var(--accent)}}
+polyline{{fill:none;stroke:var(--accent);stroke-width:2}}circle{{fill:var(--accent);outline:none}}
+circle:focus-visible{{outline:2px solid var(--accent);outline-offset:2px}}
 polyline.s2{{stroke:var(--accent2);stroke-dasharray:6 4}}circle.s2{{fill:var(--accent2)}}
 .legend{{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-bottom:4px}}
 .key::before{{content:"";display:inline-block;width:18px;height:0;vertical-align:middle;
