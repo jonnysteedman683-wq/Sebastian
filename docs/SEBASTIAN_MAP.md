@@ -32,8 +32,8 @@ graph TD
 ## Dependency inventory
 
 - **Direct dependencies:**
-  - `anthropic` (>=1.15) - Optional, MIT license. Latest version ~0.45.2.
-  - `jsonschema` (>=4.26) - Optional (watch), MIT license. Latest version ~4.23.0.
+  - `anthropic` (>=1.15) - Optional, MIT license. Latest version 2.4.0.
+  - `jsonschema` (>=4.26) - Optional (watch), MIT license. Latest version 4.26.0.
 - **Dev dependencies:**
   - `ruff` (>=0.17,<0.18) - MIT license
   - `mypy` (>=2.4) - MIT license
@@ -62,8 +62,8 @@ graph TD
 ## Test inventory
 
 - **Framework:** `pytest`
-- **Count:** 1069 passed, 2 failed, 2 skipped.
-- **Coverage:** 98.80% overall.
+- **Count:** 1144 passed, 2 failed, 2 skipped.
+- **Coverage:** 98.88% overall.
 - **Untested modules:** `__main__.py` in `sebastian` and `sebastian/watch` (pure CLI entrypoints).
 
 ## Runtime check
@@ -71,7 +71,7 @@ graph TD
 - **Install:** `python -m pip install -e ".[dev,anthropic,watch]"`
 - **Start:** `sebastian demo -w /tmp/ws` (creates a temporary workspace and runs tests)
 - **Baseline Test:** `PYTHONPATH=src python -m pytest --cov`
-- **Baseline Commit Hash:** 70a1836082a48ae9c0d7d2ac59d7bbc0f2b9d461
+- **Baseline Commit Hash:** 6350dd0865cab5248a8a1301a14d13d59a758826
 
 ## Debt register
 
@@ -94,7 +94,7 @@ note (memory uses BM25, see Architecture), B52 (`llm/base.py:38` `parse_retry_af
   `core.fsmonitor=`, `core.hooksPath=/dev/null`).
 - B70, B71 (missing capability, not a defect): no `apply_patch` or `fetch_url` tool in
   `tools/builtin.py`; multi-hunk edits need one approval per `edit_file`.
-- B56: no `sebastian diff` subcommand in `cli.py` yet (open in #112).
+- TODOs: `src/sebastian/evals/cases.py` contains unused TODOs.
 
 ## UniSync (added 2026-10-31)
 
