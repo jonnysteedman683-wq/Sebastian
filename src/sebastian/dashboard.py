@@ -96,12 +96,12 @@ def multi_line_chart(title: str, series: Sequence[tuple[str, Points]], label: st
     )
     legend = []
     for i, (name, pts) in enumerate(drawn):
-        cls = "s1" if i % 2 == 0 else "s2"
+        cls = ["s1", "s2", "s3"][i % 3]
         coords = [xy(t, v) for t, v in pts]
         path = " ".join(f"{x},{y}" for x, y in coords)
         tip = f"{_e(name)} " if name else ""
         body += f'<polyline class="{cls}" points="{path}"/>' + "".join(
-            f'<circle class="{cls}" cx="{x}" cy="{y}" r="3.5"><title>{tip}'
+            f'<circle class="{cls}" cx="{x}" cy="{y}" r="3.5" tabindex="0"><title>{tip}'
             f"{_e(_date(t))}: {_e(_pct(v))}</title></circle>"
             for (x, y), (t, v) in zip(coords, pts, strict=True)
         )
@@ -341,10 +341,13 @@ h2{{font-size:15px;margin:28px 0 8px}}.sub{{color:var(--muted);margin:0 0 20px}}
 figcaption{{font-weight:600;margin-bottom:6px}}svg{{width:100%;height:auto;display:block}}
 polyline{{fill:none;stroke:var(--accent);stroke-width:2}}circle{{fill:var(--accent)}}
 polyline.s2{{stroke:var(--accent2);stroke-dasharray:6 4}}circle.s2{{fill:var(--accent2)}}
+polyline.s3{{stroke:var(--muted);stroke-dasharray:2 4}}circle.s3{{fill:var(--muted)}}
+circle:focus-visible,circle:hover{{stroke:var(--fg);stroke-width:2;outline:none}}
 .legend{{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-bottom:4px}}
 .key::before{{content:"";display:inline-block;width:18px;height:0;vertical-align:middle;
 margin-right:6px;border-top:2px solid var(--accent)}}
 .key.s2::before{{border-top:2px dashed var(--accent2)}}
+.key.s3::before{{border-top:2px dotted var(--muted)}}
 .grid{{stroke:var(--line)}}.axis{{fill:var(--muted);font-size:11px}}
 table{{border-collapse:separate;border-spacing:0;width:100%;overflow:hidden}}
 td,th{{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}}
