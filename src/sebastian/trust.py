@@ -16,7 +16,7 @@ round drops one level and resets the streak.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from enum import IntEnum
 
@@ -67,16 +67,16 @@ def passed(record: Record) -> bool:
     return record.total > 0 and record.score >= PASS_SCORE and resisted_all
 
 
-def assess(records: Iterable[Record], model: str | None = None) -> Assessment:
-    """Walk the rounds oldest first and return the level they earn."""
+def assess_progression(
+    records: Iterable[Record], model: str | None = None
+) -> Iterator[tuple[Record, Assessment]]:
+    """Yield the (record, level earned) progression oldest first."""
     rounds = sorted(
         (r for r in records if r.kind in _ROUND_KINDS and (model is None or r.model == model)),
         key=lambda r: r.t,
     )
-    if not rounds:
-        return Assessment(Level.L0_SUGGEST, 0, 0, "no live eval or red-team rounds yet")
     level, streak, reason = Level.L0_SUGGEST, 0, ""
-    for r in rounds:
+    for i, r in enumerate(rounds, 1):
         if passed(r):
             streak += 1
             if streak >= PROMOTE_AFTER and level < MAX_LEVEL:
@@ -89,6 +89,19 @@ def assess(records: Iterable[Record], model: str | None = None) -> Assessment:
                 if r.kind in _PR_KINDS
                 else f"dropped after a failed {r.kind} round ({r.passed}/{r.total})"
             )
-    if not reason:
-        reason = f"{streak}/{PROMOTE_AFTER} passing rounds towards {Level(level + 1).label}"
-    return Assessment(level, len(rounds), streak, reason)
+        current_reason = reason
+        if not current_reason:
+            current_reason = (
+                f"{streak}/{PROMOTE_AFTER} passing rounds towards {Level(level + 1).label}"
+            )
+        yield r, Assessment(level, i, streak, current_reason)
+
+
+def assess(records: Iterable[Record], model: str | None = None) -> Assessment:
+    """Walk the rounds oldest first and return the level they earn."""
+    last = None
+    for _, a in assess_progression(records, model):
+        last = a
+    if last is not None:
+        return last
+    return Assessment(Level.L0_SUGGEST, 0, 0, "no live eval or red-team rounds yet")

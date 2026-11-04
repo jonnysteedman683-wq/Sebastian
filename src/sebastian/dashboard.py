@@ -18,7 +18,7 @@ from typing import Any
 
 from sebastian.history import Record
 from sebastian.trace import RunSummary
-from sebastian.trust import assess
+from sebastian.trust import assess, assess_progression
 
 CHART_W, CHART_H, PAD = 640, 180, 28
 RECENT_RUNS = 15
@@ -233,10 +233,16 @@ def _render_charts(
     trust_pts = []
     all_latest = sorted(plain_e + gaunt_e, key=lambda x: x.t)
     if all_latest:
+        progression = list(assess_progression(s.records))
+        prog_idx = 0
         for r in all_latest:
-            past_records = [rec for rec in s.records if rec.t <= r.t]
-            level = assess(past_records).level
-            trust_pts.append((r.t, level.value / 3.0))
+            current_level = 0
+            while prog_idx < len(progression) and progression[prog_idx][0].t <= r.t:
+                current_level = progression[prog_idx][1].level.value
+                prog_idx += 1
+            if prog_idx > 0:
+                current_level = progression[prog_idx - 1][1].level.value
+            trust_pts.append((r.t, current_level / 3.0))
 
     eval_chart = multi_line_chart(
         "Live eval score" + (f" ({latest[-1].model})" if latest else ""),
