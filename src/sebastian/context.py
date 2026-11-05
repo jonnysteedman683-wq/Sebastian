@@ -51,8 +51,10 @@ def history_chars(messages: Sequence[Message]) -> int:
     total = 0
     for m in messages:
         total += len(m.text)
-        total += sum(len(c.name) + len(str(c.arguments)) for c in m.tool_calls)
-        total += sum(len(r.content) for r in m.tool_results)
+        if m.tool_calls:
+            total += sum(len(c.name) + len(str(c.arguments)) for c in m.tool_calls)
+        if m.tool_results:
+            total += sum(len(r.content) for r in m.tool_results)
     return total
 
 
