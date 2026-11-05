@@ -1,14 +1,14 @@
 {
-  "summary": "2 commit(s): 🎨 Palette: Add keyboard accessibility and 3rd series clarity to charts (#129); perf: avoid generator overhead in `history_chars` empty collections (#130)",
+  "summary": "2 commit(s): perf: optimize O(N^2) trust assessment in dashboard rendering; Merge pull request #128 from jonnysteedman683-wq/sebastian/bolt-dashboard-opt-2324079285506480134",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "4 file(s) changed",
-      "description": "Detected automatically from code: 4 file(s) changed.",
+      "title": "3 file(s) changed",
+      "description": "Detected automatically from code: 3 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "73f7b00800f8caf6ea2db0f931c111933b086a91",
+          "sha": "6fe04d830f64e07db37faf2776cc10509aea766c",
           "path": ".jules/bolt.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 133,
+  "seq": 134,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "098dc29c2fba8f77c2eeab168d803d14a2cb7391",
-    "to_sha": "73f7b00800f8caf6ea2db0f931c111933b086a91"
+    "from_sha": "73f7b00800f8caf6ea2db0f931c111933b086a91",
+    "to_sha": "6fe04d830f64e07db37faf2776cc10509aea766c"
   },
-  "generated_at": "2026-11-05T07:36:22Z",
+  "generated_at": "2026-11-05T12:10:20Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -85,5 +85,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "5343790248c207658649a29e1d0dac522140c48e1d34c1901dfa51f7b5c0fdf8"
+  "signature": "44c6e000b700fd9f0f05b044f64869e920d2262980f9a3424bc18f9d69923bec"
 }
