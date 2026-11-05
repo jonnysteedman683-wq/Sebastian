@@ -1,0 +1,89 @@
+{
+  "summary": "2 commit(s): docs: add phase 1 discovery map and report; Merge pull request #126 from jonnysteedman683-wq/sebastian/phase1-discovery-15997827852086544215",
+  "changes": [
+    {
+      "category": "DOCS",
+      "title": "2 file(s) changed",
+      "description": "Detected automatically from code: 2 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "75449ee3d68ffccc00760f88aa3815cdcaef1ea2",
+          "path": "docs/SEBASTIAN_MAP.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 135,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "6fe04d830f64e07db37faf2776cc10509aea766c",
+    "to_sha": "75449ee3d68ffccc00760f88aa3815cdcaef1ea2"
+  },
+  "generated_at": "2026-11-05T12:10:45Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "cost",
+      "crosstest",
+      "dashboard",
+      "demo",
+      "diff",
+      "doctor",
+      "evolve",
+      "memory",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "unisync",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "LOW",
+  "signature": "2b53cfbcb8b4fef3b2e94c913bbf3f15453e62148ce9932f5b006f36c779f3bb"
+}
