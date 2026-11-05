@@ -91,7 +91,7 @@ def multi_line_chart(title: str, series: Sequence[tuple[str, Points]], label: st
     rows = [(g, PAD + inner_h * (1 - g)) for g in (0.0, 0.5, 1.0)]
     body = "".join(
         f'<line class="grid" x1="{PAD}" x2="{CHART_W - PAD}" y1="{y}" y2="{y}"/>'
-        f'<text class="axis" x="4" y="{y + 4}">{int(g * 100)}%</text>'
+        f'<text class="axis" aria-hidden="true" x="4" y="{y + 4}">{int(g * 100)}%</text>'
         for g, y in rows
     )
     legend = []
@@ -107,10 +107,11 @@ def multi_line_chart(title: str, series: Sequence[tuple[str, Points]], label: st
         )
         if name:
             legend.append(f'<span class="key {cls}">{_e(name)}</span>')
-    keys = f'<div class="legend">{"".join(legend)}</div>' if legend else ""
+    keys = f'<div class="legend" aria-hidden="true">{"".join(legend)}</div>' if legend else ""
     return (
         f"<figure><figcaption>{_e(title)}</figcaption>{keys}"
-        f'<svg viewBox="0 0 {CHART_W} {CHART_H}" role="img" aria-label="{_e(label)}">'
+        f'<svg viewBox="0 0 {CHART_W} {CHART_H}" role="img" ' \
+        f'aria-label="{_e(label)}" focusable="false">'
         f"{body}</svg></figure>"
     )
 
