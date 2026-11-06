@@ -13,3 +13,7 @@
 ## 2026-11-04 - Chart Interactive Accessibility and Clarity
 **Learning:** SVG `<title>` tooltips require `<circle tabindex="0">` to be accessible to keyboard navigation. Moreover, visual states like `:focus-visible` or `:hover` are necessary to provide visible feedback since tooltips often do not appear without mouse hover.
 **Action:** Added `tabindex="0"` and explicit focus/hover states for points in inline SVG charts. Also added a third distinct visual style for series so data lines remain understandable in monochrome or without color reliance.
+
+## 2026-11-06 - Data Table Row Headers
+**Learning:** For HTML data tables, screen readers need row context just as much as column context. When the first column contains identifying data (like an ID, a rank, or a label), using `<td>` means the row has no semantic identifier. Using `<th scope="row">` provides this context.
+**Action:** Changed the first cell of each data row in dashboard tables from `<td>` to `<th scope="row">`. Added CSS to reset visual styling for row headers so they look identical to regular table data cells while remaining accessible.
