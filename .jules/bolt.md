@@ -17,3 +17,7 @@
 ## 2024-11-04 - Optimize dashboard trust chart rendering O(N²)
 **Learning:** In `dashboard.py` `_render_charts()`, repeatedly calling `assess(past_records)` inside a loop over `all_latest` caused an O(N²) bottleneck, as `assess` iterates and sorts all prior history to establish the trust level at that point in time. When thousands of records exist, generating the dashboard HTML blocked for over 5 seconds.
 **Action:** Extract the iterative logic into a generator `assess_progression()` that yields the assessment sequentially after each record. Then precalculate the progression points and use a two-pointer approach to map them to the timeline in O(N log N) time.
+
+## 2026-11-06 - [Generator comprehension overhead in hot loops]
+**Learning:** Generator comprehensions passed to functions like `sum()` inside tight loops incur significant overhead due to object creation and function calls for yielding items. Replacing these with simple `for` loops avoids this overhead. Additionally, combining multiple separate iterations over a collection into a single, unified loop significantly improves performance on hot paths.
+**Action:** Replace `sum(generator_expression)` in hot loops with explicit iteration and running totals, combining iterations when traversing the same lists multiple times.
