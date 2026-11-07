@@ -21,3 +21,6 @@
 ## 2026-11-07 - [Generator overhead in context compaction and dashboard]
 **Learning:** Even when guarded by an `if collection:` check, generator comprehensions like `sum(...)` over small collections (e.g., tool calls/results in a single message) still incur generator setup overhead in Python. When called frequently (like during history compaction or chart generation over thousands of runs), this overhead accumulates.
 **Action:** Replace `sum(len(x) for x in collection)` with a simple `for` loop and an accumulator variable in tight loops. Additionally, precompute `any()` or `sum()` over large collections (like trace runs) once if their results are used multiple times in the same function.
+## 2026-11-06 - [Generator comprehension overhead in hot loops]
+**Learning:** Generator comprehensions passed to functions like `sum()` inside tight loops incur significant overhead due to object creation and function calls for yielding items. Replacing these with simple `for` loops avoids this overhead. Additionally, combining multiple separate iterations over a collection into a single, unified loop significantly improves performance on hot paths.
+**Action:** Replace `sum(generator_expression)` in hot loops with explicit iteration and running totals, combining iterations when traversing the same lists multiple times.

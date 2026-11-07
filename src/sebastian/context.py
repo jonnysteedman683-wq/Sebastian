@@ -86,9 +86,7 @@ def compact(messages: Sequence[Message], policy: ContextPolicy) -> tuple[list[Me
         old_len = 0
         for r in msg.tool_results:
             old_len += len(r.content)
-
         new_results = tuple(_stub(r) for r in msg.tool_results)
-
         new_len = 0
         for r in new_results:
             new_len += len(r.content)
