@@ -1,0 +1,89 @@
+{
+  "summary": "2 commit(s): perf: optimize generator comprehensions in context and memory; Merge pull request #132 from jonnysteedman683-wq/sebastian/bolt-generator-optimizations-7590622067832087947",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "3 file(s) changed",
+      "description": "Detected automatically from code: 3 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "35a59c1e1ac235c8d0da177996d21c44059bb9fd",
+          "path": ".jules/bolt.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 140,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "6e75d8e10117ef339111ba14d4b38a200fd3e780",
+    "to_sha": "35a59c1e1ac235c8d0da177996d21c44059bb9fd"
+  },
+  "generated_at": "2026-11-07T06:24:12Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "cost",
+      "crosstest",
+      "dashboard",
+      "demo",
+      "diff",
+      "doctor",
+      "evolve",
+      "memory",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "unisync",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "28d384365c2154a9c1ffa869be0f5f1e7b50fee3e951990b59b2d0d8a2a2d6c3"
+}
