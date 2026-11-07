@@ -190,6 +190,7 @@ def render_html(run_id: str, entries: Sequence[Entry], generated: float) -> str:
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>Sebastian run</title>
 <style>
 :root{{--bg:#fbfbfa;--fg:#1d1d1b;--muted:#6b6b66;--line:#e4e3df;--card:#fff;
@@ -214,6 +215,6 @@ li.gauntlet{{border-left-color:var(--gauntlet)}}li.end{{border-left-color:var(--
 <h1>Run <code>{_e(run_id[:12])}</code></h1>
 <p class="sub">{_e(end.title if end else "No run_end yet: still running or interrupted")} ·
 {len(entries)} events · generated {_e(stamp)} UTC from traces.jsonl</p>
-<ol>{rows}</ol>
+<ol role="list">{rows}</ol>
 </main></body></html>
 """

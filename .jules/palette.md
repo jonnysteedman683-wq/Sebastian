@@ -20,3 +20,7 @@
 ## 2026-11-05 - SVG Decorative Elements Accessibility
 **Learning:** Screen readers will redundantly announce axis labels and legends in SVG charts if they are left accessible, cluttering the experience when data points are already accessible via `<title>` elements on inner points. Additionally, Internet Explorer can accidentally focus SVG elements unless `focusable="false"` is added.
 **Action:** Added `aria-hidden="true"` to chart axis text and legend elements. Added `focusable="false"` to the main `<svg>` container.
+
+## 2026-11-06 - Timeline List Semantics in Safari
+**Learning:** When using `list-style: none` on lists (like `<ol>` or `<ul>`) to remove default bullets or numbers, Safari VoiceOver intentionally drops the list semantics, preventing screen readers from announcing it as a list and providing item counts.
+**Action:** Added `role="list"` to the `<ol>` container to restore semantic meaning while keeping the visual styling.
