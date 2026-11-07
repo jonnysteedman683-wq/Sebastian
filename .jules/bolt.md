@@ -17,3 +17,7 @@
 ## 2024-11-04 - Optimize dashboard trust chart rendering O(N²)
 **Learning:** In `dashboard.py` `_render_charts()`, repeatedly calling `assess(past_records)` inside a loop over `all_latest` caused an O(N²) bottleneck, as `assess` iterates and sorts all prior history to establish the trust level at that point in time. When thousands of records exist, generating the dashboard HTML blocked for over 5 seconds.
 **Action:** Extract the iterative logic into a generator `assess_progression()` that yields the assessment sequentially after each record. Then precalculate the progression points and use a two-pointer approach to map them to the timeline in O(N log N) time.
+
+## 2026-11-07 - [O(N) memory and parsing bottleneck in JSONL traces]
+**Learning:** Trace files grow very large (MBs) due to storing full tool inputs and outputs. Reading them entirely into memory with `read_text().splitlines()` and calling `json.loads` on every line causes massive memory spikes and slow dashboard rendering, even though only a small fraction of lines (like `run_start` and `run_end`) are needed.
+**Action:** Use a file iterator (`with path.open() as fh: for line in fh:`) to keep memory usage O(1), and apply a fast string filter (e.g., `if '"run_start"' not in line`) before parsing JSON to skip expensive decoding of unneeded events.

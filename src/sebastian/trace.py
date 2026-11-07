@@ -161,30 +161,38 @@ def summarize_runs(path: str | Path, limit: int) -> list[RunSummary]:
     """
     runs: dict[str, RunSummary] = {}
     try:
-        lines = Path(path).read_text(encoding="utf-8").splitlines()
+        with Path(path).open(encoding="utf-8") as fh:
+            for line in fh:
+                if '"run_start"' not in line and '"run_end"' not in line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(rec, dict) or not isinstance(rec.get("run_id"), str):
+                    continue
+                run = runs.setdefault(rec["run_id"], RunSummary(rec["run_id"]))
+                event = rec.get("event")
+                if event == "run_start" and isinstance(rec.get("t"), int | float):
+                    run.started = float(rec["t"])
+                elif event == "run_end":
+                    run.stop = str(rec.get("stop", "unknown"))
+                    if isinstance(rec.get("steps"), int):
+                        run.steps = rec["steps"]
+                    usage = rec.get("usage")
+                    if isinstance(usage, dict):
+                        run.tokens = sum(
+                            v
+                            for k, v in usage.items()
+                            if k in {"input", "output"} and type(v) is int
+                        )
+                        cost = usage.get("cost")
+                        if (
+                            isinstance(cost, int | float)
+                            and not isinstance(cost, bool)
+                            and cost >= 0
+                        ):
+                            run.cost = float(cost)
     except FileNotFoundError:
         return []
-    for line in lines:
-        try:
-            rec = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(rec, dict) or not isinstance(rec.get("run_id"), str):
-            continue
-        run = runs.setdefault(rec["run_id"], RunSummary(rec["run_id"]))
-        event = rec.get("event")
-        if event == "run_start" and isinstance(rec.get("t"), int | float):
-            run.started = float(rec["t"])
-        elif event == "run_end":
-            run.stop = str(rec.get("stop", "unknown"))
-            if isinstance(rec.get("steps"), int):
-                run.steps = rec["steps"]
-            usage = rec.get("usage")
-            if isinstance(usage, dict):
-                run.tokens = sum(
-                    v for k, v in usage.items() if k in {"input", "output"} and type(v) is int
-                )
-                cost = usage.get("cost")
-                if isinstance(cost, int | float) and not isinstance(cost, bool) and cost >= 0:
-                    run.cost = float(cost)
     return list(runs.values())[-limit:]
