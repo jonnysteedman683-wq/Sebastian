@@ -161,8 +161,16 @@ class MemoryStore:
             return []
         docs = [_tokens(e.task + " " + e.summary) for e in self._episodes]
         n = len(docs)
-        avg = sum(len(d) for d in docs) / n or 1.0
-        df = {t: sum(1 for d in docs if t in d) for t in q}
+
+        df = {t: 0 for t in q}
+        total_len = 0
+        for d in docs:
+            total_len += len(d)
+            for t in q:
+                if t in d:
+                    df[t] += 1
+        avg = total_len / n or 1.0 if n else 1.0
+
         scored: list[tuple[float, int, Episode]] = []
         for i, (doc, ep) in enumerate(zip(docs, self._episodes, strict=True)):
             score = 0.0

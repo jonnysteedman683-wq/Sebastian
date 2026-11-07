@@ -17,3 +17,6 @@
 ## 2026-11-06 - Data Table Row Headers
 **Learning:** For HTML data tables, screen readers need row context just as much as column context. When the first column contains identifying data (like an ID, a rank, or a label), using `<td>` means the row has no semantic identifier. Using `<th scope="row">` provides this context.
 **Action:** Changed the first cell of each data row in dashboard tables from `<td>` to `<th scope="row">`. Added CSS to reset visual styling for row headers so they look identical to regular table data cells while remaining accessible.
+## 2026-11-05 - SVG Decorative Elements Accessibility
+**Learning:** Screen readers will redundantly announce axis labels and legends in SVG charts if they are left accessible, cluttering the experience when data points are already accessible via `<title>` elements on inner points. Additionally, Internet Explorer can accidentally focus SVG elements unless `focusable="false"` is added.
+**Action:** Added `aria-hidden="true"` to chart axis text and legend elements. Added `focusable="false"` to the main `<svg>` container.
