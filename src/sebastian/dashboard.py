@@ -272,7 +272,9 @@ def _render_charts(
 
 def _render_runs_by_outcome(stops: Counter[str]) -> str:
     return (
-        "".join(f"<tr><td>{_e(k)}</td><td>{v}</td></tr>" for k, v in sorted(stops.items()))
+        "".join(
+            f'<tr><th scope="row">{_e(k)}</th><td>{v}</td></tr>' for k, v in sorted(stops.items())
+        )
         or '<tr><td colspan="2" class="empty">No runs traced yet.</td></tr>'
     )
 
@@ -280,7 +282,8 @@ def _render_runs_by_outcome(stops: Counter[str]) -> str:
 def _render_recent_runs(runs: list[RunSummary]) -> str:
     return (
         "".join(
-            f"<tr><td><code>{_e(r.run_id[:12])}</code></td><td>{_e(_date(r.started))}</td>"
+            f'<tr><th scope="row"><code>{_e(r.run_id[:12])}</code></th>'
+            f"<td>{_e(_date(r.started))}</td>"
             f"<td>{_e(r.stop)}</td><td>{r.steps}</td><td>{r.tokens:,}</td></tr>"
             for r in reversed(runs[-RECENT_RUNS:])
         )
@@ -292,7 +295,8 @@ def _render_leaderboard(records: list[Record]) -> tuple[str, str]:
     board = latest_leaderboard(records)
     board_rows = (
         "".join(
-            f"<tr><td>{i}</td><td><code>{_e(p.model)}</code></td><td>{_e(_pct(p.score))}</td>"
+            f'<tr><th scope="row">{i}</th><td><code>{_e(p.model)}</code></td>'
+            f"<td>{_e(_pct(p.score))}</td>"
             f"<td>{_e(_pct(p.resistance) if p.resistance is not None else '-')}</td>"
             f"<td>{_e(_pct(g.score) if g else '-')}</td></tr>"
             for i, (p, g) in enumerate(board, 1)
@@ -358,10 +362,13 @@ margin-right:6px;border-top:2px solid var(--accent)}}
 .grid{{stroke:var(--line)}}.axis{{fill:var(--muted);font-size:11px}}
 table{{border-collapse:separate;border-spacing:0;width:100%;overflow:hidden}}
 td,th{{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}}
-th{{color:var(--muted);font-weight:500;font-size:13px}}tr:last-child td{{border-bottom:0}}
-.scroll{{overflow-x:auto;border-radius:10px}}.scroll td{{white-space:nowrap}}
+th[scope="col"]{{color:var(--muted);font-weight:500;font-size:13px}}
+th[scope="row"]{{font-weight:normal;color:inherit;font-size:inherit}}
+tr:last-child td,tr:last-child th[scope="row"]{{border-bottom:0}}
+.scroll{{overflow-x:auto;border-radius:10px}}
+.scroll td,.scroll th[scope="row"]{{white-space:nowrap}}
 .scroll:focus-visible{{outline:2px solid var(--accent);outline-offset:2px}}
-@media (hover: hover){{tr:hover td{{background:var(--bg)}}}}
+@media (hover: hover){{tr:hover td,tr:hover th[scope="row"]{{background:var(--bg)}}}}
 .empty{{color:var(--muted)}}ul{{columns:2;padding-left:18px}}dd{{margin:0}}
 @media (max-width:560px){{ul{{columns:1}}}}
 </style></head><body><main>
