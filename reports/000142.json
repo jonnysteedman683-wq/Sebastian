@@ -1,0 +1,89 @@
+{
+  "summary": "4 commit(s): perf: optimize trace summarization using string filtering and file iterator; perf: remove generator overhead and redundant iterations; Merge branch 'main' into sebastian/bolt-trace-optimization-14039941233969125447; Merge pull request #134 from jonnysteedman683-wq/sebastian/bolt-trace-optimization-14039941233969125447",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "2 file(s) changed",
+      "description": "Detected automatically from code: 2 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "20e134755dcd0c3c0cac61afecb5e72492a710ab",
+          "path": ".jules/bolt.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
+  "pr_previews": [],
+  "escalation_reasons": [],
+  "report_type": "repo_change_report",
+  "seq": 142,
+  "source_bot": "GROK-WATCHER",
+  "target_bot": "CO-ORDINATOR-BOT",
+  "repo": "jonnysteedman683-wq/Sebastian",
+  "branch": "main",
+  "range": {
+    "from_sha": "9d5a0a287ffcd5ee9033aed19262a76949e235e3",
+    "to_sha": "20e134755dcd0c3c0cac61afecb5e72492a710ab"
+  },
+  "generated_at": "2026-11-07T16:11:43Z",
+  "version": {
+    "before": "0.1.0",
+    "after": "0.1.0"
+  },
+  "ci_status": "unknown",
+  "capability_inventory": {
+    "tools": [
+      "edit_file",
+      "list_dir",
+      "read_file",
+      "run_command",
+      "search_files",
+      "write_file"
+    ],
+    "cli_commands": [
+      "cost",
+      "crosstest",
+      "dashboard",
+      "demo",
+      "diff",
+      "doctor",
+      "evolve",
+      "memory",
+      "models",
+      "redteam",
+      "resume",
+      "run",
+      "scar",
+      "show",
+      "traces",
+      "trust",
+      "undo",
+      "unisync",
+      "version"
+    ],
+    "llm_backends": [
+      "anthropic",
+      "openai_compat",
+      "scripted"
+    ],
+    "default_model": "claude-sonnet-5-5"
+  },
+  "capability_diff": {
+    "added": [],
+    "removed": [],
+    "changed": []
+  },
+  "risk_score": 0,
+  "escalate": false,
+  "priority": "NORMAL",
+  "signature": "8f24c65317383addf8b9221e49e1d35dcd68a2fded33f579d5f0c222884cceeb"
+}
