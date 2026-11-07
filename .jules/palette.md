@@ -13,3 +13,7 @@
 ## 2026-11-04 - Chart Interactive Accessibility and Clarity
 **Learning:** SVG `<title>` tooltips require `<circle tabindex="0">` to be accessible to keyboard navigation. Moreover, visual states like `:focus-visible` or `:hover` are necessary to provide visible feedback since tooltips often do not appear without mouse hover.
 **Action:** Added `tabindex="0"` and explicit focus/hover states for points in inline SVG charts. Also added a third distinct visual style for series so data lines remain understandable in monochrome or without color reliance.
+
+## 2026-11-05 - SVG Decorative Elements Accessibility
+**Learning:** Screen readers will redundantly announce axis labels and legends in SVG charts if they are left accessible, cluttering the experience when data points are already accessible via `<title>` elements on inner points. Additionally, Internet Explorer can accidentally focus SVG elements unless `focusable="false"` is added.
+**Action:** Added `aria-hidden="true"` to chart axis text and legend elements. Added `focusable="false"` to the main `<svg>` container.
