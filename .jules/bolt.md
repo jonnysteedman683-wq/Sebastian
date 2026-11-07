@@ -17,3 +17,7 @@
 ## 2024-11-04 - Optimize dashboard trust chart rendering O(N²)
 **Learning:** In `dashboard.py` `_render_charts()`, repeatedly calling `assess(past_records)` inside a loop over `all_latest` caused an O(N²) bottleneck, as `assess` iterates and sorts all prior history to establish the trust level at that point in time. When thousands of records exist, generating the dashboard HTML blocked for over 5 seconds.
 **Action:** Extract the iterative logic into a generator `assess_progression()` that yields the assessment sequentially after each record. Then precalculate the progression points and use a two-pointer approach to map them to the timeline in O(N log N) time.
+
+## 2026-11-07 - [Generator overhead in context compaction and dashboard]
+**Learning:** Even when guarded by an `if collection:` check, generator comprehensions like `sum(...)` over small collections (e.g., tool calls/results in a single message) still incur generator setup overhead in Python. When called frequently (like during history compaction or chart generation over thousands of runs), this overhead accumulates.
+**Action:** Replace `sum(len(x) for x in collection)` with a simple `for` loop and an accumulator variable in tight loops. Additionally, precompute `any()` or `sum()` over large collections (like trace runs) once if their results are used multiple times in the same function.

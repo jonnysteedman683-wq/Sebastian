@@ -52,9 +52,11 @@ def history_chars(messages: Sequence[Message]) -> int:
     for m in messages:
         total += len(m.text)
         if m.tool_calls:
-            total += sum(len(c.name) + len(str(c.arguments)) for c in m.tool_calls)
+            for c in m.tool_calls:
+                total += len(c.name) + len(str(c.arguments))
         if m.tool_results:
-            total += sum(len(r.content) for r in m.tool_results)
+            for r in m.tool_results:
+                total += len(r.content)
     return total
 
 
@@ -81,9 +83,15 @@ def compact(messages: Sequence[Message], policy: ContextPolicy) -> tuple[list[Me
         ):
             continue
 
-        old_len = sum(len(r.content) for r in msg.tool_results)
+        old_len = 0
+        for r in msg.tool_results:
+            old_len += len(r.content)
+
         new_results = tuple(_stub(r) for r in msg.tool_results)
-        new_len = sum(len(r.content) for r in new_results)
+
+        new_len = 0
+        for r in new_results:
+            new_len += len(r.content)
 
         out[i] = replace(msg, tool_results=new_results)
         current_chars += new_len - old_len

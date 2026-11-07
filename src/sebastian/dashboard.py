@@ -171,6 +171,12 @@ def _render_tiles(
     assessment: Any,
 ) -> str:
     completed = stops.get("completed", 0)
+
+    # Calculate spend once to avoid multiple O(N) iterations over runs (which can be thousands)
+    has_cost = any(r.cost for r in s.runs)
+    spend_value = f"${sum(r.cost for r in s.runs):,.2f}" if has_cost else "n/a"
+    spend_sub = "priced runs in the trace" if has_cost else "add prices.json to track cost"
+
     return "".join(
         [
             _tile(
@@ -210,10 +216,8 @@ def _render_tiles(
             ),
             _tile(
                 "Spend",
-                f"${sum(r.cost for r in s.runs):,.2f}" if any(r.cost for r in s.runs) else "n/a",
-                "priced runs in the trace"
-                if any(r.cost for r in s.runs)
-                else "add prices.json to track cost",
+                spend_value,
+                spend_sub,
             ),
             _tile("Trust level", assessment.level.label, _e(assessment.reason)),
         ]
