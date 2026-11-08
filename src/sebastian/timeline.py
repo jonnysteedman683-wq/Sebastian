@@ -24,6 +24,70 @@ class TimelineError(ValueError):
 
 
 @dataclass(frozen=True, slots=True)
+class RunStats:
+    """Stats for a single run to show in comparisons."""
+
+    stop: str
+    steps: int
+    tokens: int
+    cost: float
+    gauntlet_loops: int
+
+
+def _extract_stats(events: Sequence[dict[str, Any]]) -> RunStats:
+    stop = "running"
+    steps = 0
+    tokens = 0
+    cost = 0.0
+    gauntlet_loops = 0
+    for e in events:
+        ev = e.get("event")
+        if ev == "run_end":
+            stop = str(e.get("stop", stop))
+            steps = e.get("steps", steps) if isinstance(e.get("steps"), int) else steps
+            usage = e.get("usage")
+            if isinstance(usage, dict):
+                tokens = sum(
+                    v for k, v in usage.items() if k in {"input", "output"} and type(v) is int
+                )
+                c = usage.get("cost")
+                if isinstance(c, int | float) and not isinstance(c, bool) and c >= 0:
+                    cost = float(c)
+        elif ev == "gauntlet_stage":
+            loops = e.get("loops", 0)
+            if isinstance(loops, int) and loops > gauntlet_loops:
+                gauntlet_loops = loops
+    return RunStats(stop, steps, tokens, cost, gauntlet_loops)
+
+
+def find_first_diff_step(
+    events_a: Sequence[dict[str, Any]], events_b: Sequence[dict[str, Any]]
+) -> int | None:
+    """Find the step number (1-based) where the tool calls first differ.
+
+    Compares `llm_step` events in order. If they match completely but one run
+    has more steps, the difference is the first extra step.
+    """
+    calls_a = [
+        e.get("tool_calls", [])
+        for e in sorted(events_a, key=lambda x: x.get("seq", 0))
+        if e.get("event") == "llm_step"
+    ]
+    calls_b = [
+        e.get("tool_calls", [])
+        for e in sorted(events_b, key=lambda x: x.get("seq", 0))
+        if e.get("event") == "llm_step"
+    ]
+
+    for i, (ca, cb) in enumerate(zip(calls_a, calls_b, strict=False)):
+        if ca != cb:
+            return i + 1
+    if len(calls_a) != len(calls_b):
+        return min(len(calls_a), len(calls_b)) + 1
+    return None
+
+
+@dataclass(frozen=True, slots=True)
 class Entry:
     """One timeline row."""
 
@@ -174,6 +238,147 @@ def render_text(run_id: str, entries: Sequence[Entry]) -> str:
 
 def _e(value: object) -> str:
     return html.escape(str(value), quote=True)
+
+
+def render_comparison_text(
+    run_a: str,
+    entries_a: Sequence[Entry],
+    stats_a: RunStats,
+    run_b: str,
+    entries_b: Sequence[Entry],
+    stats_b: RunStats,
+    diff_step: int | None,
+) -> str:
+    """Plain-text comparison for two timelines."""
+    lines = [
+        f"Comparing {run_a} vs {run_b}",
+        f"Summary: A stopped with {stats_a.stop} after {stats_a.steps} steps "
+        f"(${stats_a.cost:.4f}, {stats_a.tokens:,} tokens, "
+        f"{stats_a.gauntlet_loops} Gauntlet loops)",
+        f"         B stopped with {stats_b.stop} after {stats_b.steps} steps "
+        f"(${stats_b.cost:.4f}, {stats_b.tokens:,} tokens, "
+        f"{stats_b.gauntlet_loops} Gauntlet loops)",
+    ]
+    if diff_step is not None:
+        lines.append(f"Tool calls first differ at step {diff_step}.")
+    else:
+        lines.append("No differences found in tool calls.")
+
+    lines.append("")
+    lines.append(f"--- Run A ({run_a}) ---")
+    lines.append(render_text(run_a, entries_a))
+    lines.append("")
+    lines.append(f"--- Run B ({run_b}) ---")
+    lines.append(render_text(run_b, entries_b))
+    return "\n".join(lines)
+
+
+def render_comparison_html(
+    run_a: str,
+    entries_a: Sequence[Entry],
+    stats_a: RunStats,
+    run_b: str,
+    entries_b: Sequence[Entry],
+    stats_b: RunStats,
+    diff_step: int | None,
+    generated: float,
+) -> str:
+    """Self-contained HTML comparison of two timelines side by side."""
+
+    def _render_entries(entries: Sequence[Entry]) -> str:
+        return "".join(
+            f'<li class="{_e(en.kind)}"><div class="when">+{en.offset:.1f}s</div>'
+            f'<div class="body"><span class="badge">{_e(en.kind)}</span> <b>{_e(en.title)}</b>'
+            + (f"<pre>{_e(en.detail)}</pre>" if en.detail else "")
+            + "</div></li>"
+            for en in entries
+        )
+
+    col_a = _render_entries(entries_a)
+    col_b = _render_entries(entries_b)
+    stamp = datetime.fromtimestamp(generated, UTC).strftime("%Y-%m-%d %H:%M")
+
+    diff_text = (
+        f"Tool calls first differ at step {_e(diff_step)}."
+        if diff_step is not None
+        else "No differences found in tool calls."
+    )
+
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sebastian comparison</title>
+<style>
+:root{{--bg:#fbfbfa;--fg:#1d1d1b;--muted:#6b6b66;--line:#e4e3df;--card:#fff;
+--model:#2f6fde;--tool:#15803d;--error:#b91c1c;--gate:#a16207;--gauntlet:#7c3aed}}
+@media (prefers-color-scheme:dark){{:root{{--bg:#151514;--fg:#ecebe7;--muted:#9a9993;
+--line:#2c2c2a;--card:#1d1d1c;--model:#7aa7ff;--tool:#4ade80;--error:#f87171;--gate:#facc15;
+--gauntlet:#c4b5fd}}}}
+*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--fg);
+font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}}
+main{{max-width:1800px;margin:0 auto;padding:24px 16px}}h1{{font-size:20px;margin:0}}
+.sub{{color:var(--muted);margin:2px 0 18px}}ol{{list-style:none;margin:0;padding:0}}
+li{{display:grid;grid-template-columns:72px 1fr;gap:10px;padding:10px 12px;margin:6px 0;
+background:var(--card);border:1px solid var(--line);border-left:4px solid var(--muted);
+border-radius:8px}}.when{{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}}
+.badge{{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}}
+pre{{white-space:pre-wrap;word-break:break-word;margin:6px 0 0;font-size:13px}}
+li.model{{border-left-color:var(--model)}}li.tool{{border-left-color:var(--tool)}}
+li.error{{border-left-color:var(--error)}}li.gate{{border-left-color:var(--gate)}}
+li.gauntlet{{border-left-color:var(--gauntlet)}}li.end{{border-left-color:var(--fg)}}
+.comparison{{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}}
+.summary-table{{width:100%;border-collapse:collapse;margin-bottom:24px;background:var(--card);
+border-radius:8px;overflow:hidden;border:1px solid var(--line)}}
+.summary-table th, .summary-table td{{padding:8px 12px;border:1px solid var(--line);
+text-align:left}}
+.summary-table th{{background:var(--line);color:var(--fg)}}
+.summary-table caption{{margin-bottom:8px;font-weight:bold;text-align:left}}
+@media (max-width:800px){{.comparison{{grid-template-columns:1fr}}}}
+@media (max-width:520px){{li{{grid-template-columns:1fr;gap:2px}}}}
+</style></head><body><main>
+<h1>Comparison: <code>{_e(run_a[:12])}</code> vs <code>{_e(run_b[:12])}</code></h1>
+<p class="sub">Generated {_e(stamp)} UTC from traces.jsonl. <b>{diff_text}</b></p>
+
+<table class="summary-table">
+  <tr>
+    <th>Run</th>
+    <th>Stop Reason</th>
+    <th>Steps</th>
+    <th>Tokens</th>
+    <th>Cost</th>
+    <th>Gauntlet Loops</th>
+  </tr>
+  <tr>
+    <td><b>A:</b> <code>{_e(run_a[:12])}</code></td>
+    <td>{_e(stats_a.stop)}</td>
+    <td>{_e(stats_a.steps)}</td>
+    <td>{_e("{stats_a.tokens:,}")}</td>
+    <td>{_e("${stats_a.cost:.4f}")}</td>
+    <td>{_e(stats_a.gauntlet_loops)}</td>
+  </tr>
+  <tr>
+    <td><b>B:</b> <code>{_e(run_b[:12])}</code></td>
+    <td>{_e(stats_b.stop)}</td>
+    <td>{_e(stats_b.steps)}</td>
+    <td>{_e("{stats_b.tokens:,}")}</td>
+    <td>{_e("${stats_b.cost:.4f}")}</td>
+    <td>{_e(stats_b.gauntlet_loops)}</td>
+  </tr>
+</table>
+
+<div class="comparison">
+  <div>
+    <h2>Run A</h2>
+    <ol role="list">{col_a}</ol>
+  </div>
+  <div>
+    <h2>Run B</h2>
+    <ol role="list">{col_b}</ol>
+  </div>
+</div>
+</main></body></html>
+"""
 
 
 def render_html(run_id: str, entries: Sequence[Entry], generated: float) -> str:

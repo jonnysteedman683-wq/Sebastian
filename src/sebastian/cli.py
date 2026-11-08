@@ -251,6 +251,7 @@ def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser])
 def _add_show_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     show = sub.add_parser("show", help="one run's trace as an HTML (or text) timeline")
     show.add_argument("run_id", help="run id, or a unique prefix of at least 6 characters")
+    show.add_argument("--vs", help="compare with another run ID")
     show.add_argument("-o", "--out", type=Path, help="HTML file (default: sebastian-run-<id>.html)")
     show.add_argument("--text", action="store_true", help="print a text timeline instead")
     diff = sub.add_parser("diff", help="unified diff of every file a run changed")
@@ -569,18 +570,50 @@ def _redteam(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str],
 def _show(cfg: Config, args: argparse.Namespace) -> int:
     from sebastian.timeline import (  # noqa: PLC0415
         TimelineError,
+        _extract_stats,
         build,
+        find_first_diff_step,
         load_events,
+        render_comparison_html,
+        render_comparison_text,
         render_html,
         render_text,
     )
 
     try:
         run_id, events = load_events(cfg.home / "traces.jsonl", args.run_id)
+        if args.vs:
+            run_b, events_b = load_events(cfg.home / "traces.jsonl", args.vs)
     except TimelineError as exc:
         print(f"show: {exc}", file=sys.stderr)
         return 1
+
     entries = build(events)
+
+    if args.vs:
+        entries_b = build(events_b)
+        stats_a = _extract_stats(events)
+        stats_b = _extract_stats(events_b)
+        diff_step = find_first_diff_step(events, events_b)
+
+        if args.text:
+            print(
+                render_comparison_text(
+                    run_id, entries, stats_a, run_b, entries_b, stats_b, diff_step
+                )
+            )
+            return 0
+
+        out = args.out or Path(f"sebastian-compare-{run_id[:12]}-{run_b[:12]}.html")
+        out.write_text(
+            render_comparison_html(
+                run_id, entries, stats_a, run_b, entries_b, stats_b, diff_step, time.time()
+            ),
+            encoding="utf-8",
+        )
+        print(out)
+        return 0
+
     if args.text:
         print(render_text(run_id, entries))
         return 0
