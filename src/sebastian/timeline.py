@@ -191,7 +191,7 @@ def render_html(run_id: str, entries: Sequence[Entry], generated: float) -> str:
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Sebastian run</title>
+<title>Sebastian run {_e(run_id[:12])}</title>
 <style>
 :root{{--bg:#fbfbfa;--fg:#1d1d1b;--muted:#6b6b66;--line:#e4e3df;--card:#fff;
 --model:#2f6fde;--tool:#15803d;--error:#b91c1c;--gate:#a16207;--gauntlet:#7c3aed}}
