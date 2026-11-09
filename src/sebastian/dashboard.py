@@ -110,7 +110,7 @@ def multi_line_chart(title: str, series: Sequence[tuple[str, Points]], label: st
     keys = f'<div class="legend" aria-hidden="true">{"".join(legend)}</div>' if legend else ""
     return (
         f"<figure><figcaption>{_e(title)}</figcaption>{keys}"
-        f'<svg viewBox="0 0 {CHART_W} {CHART_H}" role="img" '
+        f'<svg viewBox="0 0 {CHART_W} {CHART_H}" role="group" '
         f'aria-label="{_e(label)}" focusable="false">'
         f"{body}</svg></figure>"
     )
