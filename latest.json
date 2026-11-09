@@ -1,14 +1,6 @@
 {
-  "summary": "No changes in last 24h; head = 193cfba",
-  "changes": [],
-  "prs": [],
-  "security_alerts": [],
-  "breaking_changes": [],
-  "open_questions": [],
-  "pr_previews": [],
-  "escalation_reasons": [],
-  "report_type": "repo_change_report",
-  "seq": 145,
+  "report_type": "canary",
+  "seq": 146,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
@@ -17,12 +9,22 @@
     "from_sha": "193cfba1f78b6d23c17bed4d38eafd0e01e76c4e",
     "to_sha": "193cfba1f78b6d23c17bed4d38eafd0e01e76c4e"
   },
-  "generated_at": "2026-11-09T01:20:15Z",
+  "generated_at": "2026-11-09T01:44:32Z",
+  "priority": "HIGH",
+  "escalate": true,
+  "escalation_reasons": [
+    "CANARY - test only, no action needed"
+  ],
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
   },
   "ci_status": "unknown",
+  "summary": "Weekly canary.",
+  "changes": [],
+  "prs": [],
+  "security_alerts": [],
+  "breaking_changes": [],
   "capability_inventory": {
     "tools": [
       "edit_file",
@@ -60,13 +62,13 @@
     ],
     "default_model": "claude-sonnet-5-5"
   },
+  "open_questions": [],
+  "risk_score": 0,
   "capability_diff": {
     "added": [],
     "removed": [],
     "changed": []
   },
-  "risk_score": 0,
-  "escalate": false,
-  "priority": "LOW",
-  "signature": "4b0c1225d26d20a55a202b72199fd325d30414876017f1fd19c45d398746eb5b"
+  "pr_previews": [],
+  "signature": "9840fe619fdacef57bcd9b450297d3105c496a263868c84cbcec6fc3a0a6558e"
 }
