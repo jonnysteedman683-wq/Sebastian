@@ -12,7 +12,17 @@ import pytest
 
 from sebastian.cli import main
 from sebastian.gauntlet import GauntletPolicy
-from sebastian.timeline import TimelineError, build, load_events, render_html, render_text
+from sebastian.timeline import (
+    TimelineError,
+    _extract_stats,
+    build,
+    find_first_diff_step,
+    load_events,
+    render_comparison_html,
+    render_comparison_text,
+    render_html,
+    render_text,
+)
 from sebastian.trace import JsonlTracer
 from test_gauntlet_run import FAIL, PASS, PLAN, PREDICT, make, write
 
@@ -149,3 +159,124 @@ def test_cli_show(home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     assert "Verify: failed" in capsys.readouterr().out
     assert main(["show", "nope"]) == 1
     assert "at least 6" in capsys.readouterr().err
+
+
+def test_comparison_stats_and_diff() -> None:
+    events_a = [
+        {"run_id": "a", "seq": 1, "t": 1, "event": "run_start"},
+        {"run_id": "a", "seq": 2, "t": 2, "event": "llm_step", "tool_calls": ["c1", "c2"]},
+        {"run_id": "a", "seq": 3, "t": 3, "event": "gauntlet_stage", "loops": 1},
+        {"run_id": "a", "seq": 4, "t": 4, "event": "llm_step", "tool_calls": ["c3"]},
+        {
+            "run_id": "a",
+            "seq": 5,
+            "t": 5,
+            "event": "run_end",
+            "stop": "completed",
+            "steps": 2,
+            "usage": {"input": 10, "output": 20, "cost": 0.05},
+        },
+    ]
+    events_b = [
+        {"run_id": "b", "seq": 1, "t": 1, "event": "run_start"},
+        {"run_id": "b", "seq": 2, "t": 2, "event": "llm_step", "tool_calls": ["c1", "c2"]},
+        {"run_id": "b", "seq": 3, "t": 3, "event": "gauntlet_stage", "loops": 2},
+        {"run_id": "b", "seq": 4, "t": 4, "event": "llm_step", "tool_calls": ["c4"]},
+        {
+            "run_id": "b",
+            "seq": 5,
+            "t": 5,
+            "event": "run_end",
+            "stop": "needs_help",
+            "steps": 2,
+            "usage": {"input": 15, "output": 25, "cost": 0.08},
+        },
+    ]
+
+    stats_a = _extract_stats(events_a)
+    assert stats_a.stop == "completed"
+    assert stats_a.steps == 2
+    assert stats_a.tokens == 30
+    assert stats_a.cost == 0.05
+    assert stats_a.gauntlet_loops == 1
+
+    stats_b = _extract_stats(events_b)
+    assert stats_b.stop == "needs_help"
+    assert stats_b.gauntlet_loops == 2
+
+    diff_step = find_first_diff_step(events_a, events_b)
+    assert diff_step == 2
+
+    # Test identical calls, differing length
+    events_c = events_a[:3]
+    assert find_first_diff_step(events_a, events_c) == 2
+
+
+def test_comparison_rendering() -> None:
+    events_a = [
+        {"run_id": "a", "seq": 1, "t": 1, "event": "run_start"},
+        {
+            "run_id": "a",
+            "seq": 2,
+            "t": 2,
+            "event": "run_end",
+            "stop": "completed",
+            "steps": 1,
+            "usage": {"input": 10, "output": 20, "cost": 0.05},
+        },
+    ]
+    events_b = [
+        {"run_id": "b", "seq": 1, "t": 1, "event": "run_start"},
+        {
+            "run_id": "b",
+            "seq": 2,
+            "t": 2,
+            "event": "run_end",
+            "stop": "needs_help",
+            "steps": 1,
+            "usage": {"input": 15, "output": 25, "cost": 0.08},
+        },
+    ]
+
+    stats_a = _extract_stats(events_a)
+    stats_b = _extract_stats(events_b)
+    diff_step = find_first_diff_step(events_a, events_b)
+
+    entries_a = build(events_a)
+    entries_b = build(events_b)
+
+    text = render_comparison_text(
+        "runa123", entries_a, stats_a, "runb123", entries_b, stats_b, diff_step
+    )
+    assert "Comparing runa123 vs runb123" in text
+    assert "A stopped with completed after 1 steps ($0.0500, 30 tokens, 0 Gauntlet loops)" in text
+    assert "B stopped with needs_help after 1 steps ($0.0800, 40 tokens, 0 Gauntlet loops)" in text
+    assert "No differences found in tool calls" in text
+
+    html_out = render_comparison_html(
+        "runa123", entries_a, stats_a, "runb123", entries_b, stats_b, diff_step, 0.0
+    )
+    assert "Comparison: <code>runa123" in html_out
+    assert "No differences found in tool calls" in html_out
+    assert "$0.0500" in html_out
+    assert "needs_help" in html_out
+
+
+def test_cli_show_comparison(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path_a, run_a = gauntlet_trace(tmp_path)
+    path_b, run_b = gauntlet_trace(tmp_path)  # Create another run
+
+    lines_a = path_a.read_text().splitlines()
+    lines_b = path_b.read_text().splitlines()
+    (home / "traces.jsonl").write_text("\n".join(lines_a + lines_b))
+
+    monkeypatch.chdir(tmp_path)
+    assert main(["show", run_a[:8], "--vs", run_b[:8]]) == 0
+    out = Path(capsys.readouterr().out.strip())
+    assert out.name == f"sebastian-compare-{run_a[:12]}-{run_b[:12]}.html"
+    assert "Comparison: <code>" in (tmp_path / out).read_text()
+
+    assert main(["show", run_a[:8], "--vs", run_b[:8], "--text"]) == 0
+    assert "Comparing " in capsys.readouterr().out

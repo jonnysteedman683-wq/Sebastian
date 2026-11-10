@@ -60,4 +60,5 @@ How this repo links to Jonny's other agents and bots (Lestinxor, Grok, Claude, c
 
 Newest first. Format: `YYYY-MM-DD | item | PR | outcome | one-line note`.
 
+- 2026-11-08 | B59 | this PR | success | Added --vs comparison in timeline rendering.
 - 2026-10-30 | (memory created) | this PR | - | Seeded from the history of PRs #11-#79.

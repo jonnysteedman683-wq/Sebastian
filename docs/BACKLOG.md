@@ -196,7 +196,7 @@ Rules:
   *Done when:* tests show each key reaching the run's config, a flag overriding the file, an unknown key and a sandbox/approval key both refused, and a plain file with no front matter used as the task text.
 - [x] **B58 `sebastian cost`.** Tokens and cost per model per day from `traces.jsonl` (`--days N`, default 7; `--model M`). Runs with no reported cost show `?`, not `$0`. Read-only, reusing the trace reader `traces` already uses.
   *Done when:* tests with a scripted trace file cover two models over two days, a run with no cost, a missing or empty file (`(no runs)`) and `--days`/`--model` filtering.
-- [ ] **B59 Compare two runs.** `sebastian show A --vs B [--text]`: the two timelines side by side, with a summary row (stop reason, steps, tokens, cost, Gauntlet loops) and the first step where their tool calls differ. All content escaped as in `show`.
+- [x] **B59 Compare two runs.** `sebastian show A --vs B [--text]`: the two timelines side by side, with a summary row (stop reason, steps, tokens, cost, Gauntlet loops) and the first step where their tool calls differ. All content escaped as in `show`.
   *Done when:* tests cover identical runs, runs that differ at step N, different stop reasons, and a hostile task string that is escaped in the HTML.
 - [x] **B60 `sebastian scar list` and `scar prune`.** `scar list` prints each scar (id, source run, case name, date) from `evals/scars/`; `scar prune` removes scars whose task text is identical (same normalised key as memory), keeping the newest, after a `[y/N]` prompt unless `--yes`. Uses `evals.scar.load_scars`; no change to `src/sebastian/evals/`.
   *Done when:* tests cover an empty directory, listing order, a prune that removes only duplicates, a decline that removes nothing, and `--yes`.
