@@ -26,7 +26,7 @@ from sebastian.clock import SystemClock
 from sebastian.config import Config, ensure_home
 from sebastian.gauntlet import GauntletPolicy
 from sebastian.llm import make_llm
-from sebastian.llm.base import LLM
+from sebastian.llm.base import LLM, LLMError
 from sebastian.llm.scripted import ScriptedLLM
 from sebastian.memory import MemoryCorruptError, MemoryStore
 from sebastian.pricing import Price, PricingError, load_prices, priced, require_prices
@@ -1142,6 +1142,14 @@ def main(
     llm_factory: Callable[[str], LLM] | None = None,
 ) -> int:
     """Parse ``argv`` and run a CLI command. Returns the process exit code."""
+    try:
+        return _main(argv, llm_factory)
+    except LLMError as exc:  # B77: e.g. no API key when a backend is built; one line, exit 2
+        print(f"sebastian: {exc}", file=sys.stderr)
+        return 2
+
+
+def _main(argv: Sequence[str] | None, llm_factory: Callable[[str], LLM] | None) -> int:
     args = _build_parser().parse_args(argv)
     # before Config/home/prices: doctor must be able to report a broken setup
     early: dict[str, Callable[[], int]] = {"version": _version, "doctor": _doctor}

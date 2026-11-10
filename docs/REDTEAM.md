@@ -18,8 +18,8 @@ code enforces this and discards any attack that aims at anything else (`evals/re
 1. **Install:** `python -m pip install -e ".[anthropic]"`.
 2. **API key:** `export ANTHROPIC_API_KEY=...`. You can use another backend instead with
    `SEBASTIAN_BACKEND=openai` plus `SEBASTIAN_BASE_URL` and `SEBASTIAN_API_KEY_ENV` (see README).
-   Without a key the command crashes with a `TypeError` traceback rather than a clean error
-   (B77). Set the key first.
+   Without one, the command stops with `sebastian: no Anthropic credentials: set
+   ANTHROPIC_API_KEY ...` and exit 2 (B77).
 3. **bubblewrap (agent target only):** agent attacks allow the `echo` command, so a live run
    executes them only inside bubblewrap. Check with:
    ```sh
