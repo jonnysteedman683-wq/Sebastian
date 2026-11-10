@@ -92,8 +92,6 @@ note (memory uses BM25, see Architecture), B52 (`llm/base.py:38` `parse_retry_af
   skeleton (`HEAD`, `config`, `objects/`, `refs/`) can be written under any other name.
 - B68: `watch/gitio.py:36-41` runs git without the hardening evolve applies (`GIT_CONFIG_NOSYSTEM`,
   `core.fsmonitor=`, `core.hooksPath=/dev/null`).
-- B77 (found 2026-11-10, B69): with no API key the Anthropic SDK's `TypeError` escapes
-  `llm/anthropic.py:88` uncaught, so `run` and `redteam` end in a traceback, not a clean error.
 - B70, B71 (missing capability, not a defect): no `apply_patch` or `fetch_url` tool in
   `tools/builtin.py`; multi-hunk edits need one approval per `edit_file`.
 - TODOs: `src/sebastian/evals/cases.py` contains unused TODOs.

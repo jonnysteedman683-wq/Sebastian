@@ -36,6 +36,12 @@ class AnthropicLLM:
                     "anthropic package not installed; pip install 'sebastian[anthropic]'"
                 ) from exc
             client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
+            # B77: with nothing resolved the SDK fails only on the first request, with a bare
+            # TypeError that escapes every LLMError handler. Use the SDK's own resolution.
+            if not any(getattr(client, a, None) for a in ("api_key", "auth_token", "credentials")):
+                raise LLMError(
+                    "no Anthropic credentials: set ANTHROPIC_API_KEY (or ANTHROPIC_AUTH_TOKEN)"
+                )
         self._client: Any = client  # SDK or test double; typed loosely by design
         self.model = model
         self.max_tokens = max_tokens

@@ -211,3 +211,27 @@ def test_traces_after_real_run(tmp_path: Path, capsys: pytest.CaptureFixture[str
     assert main(["traces"]) == 0
     out = capsys.readouterr().out.split()
     assert out[2:] == ["completed", "steps=1", "tokens=20"]
+
+
+@pytest.mark.parametrize("argv", [["redteam", "-n", "1"], ["run", "say hi", "-w", "{ws}"]])
+def test_missing_api_key_is_one_line_exit_2(
+    argv: list[str],
+    home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # B77: no key used to end in an SDK TypeError traceback on the first model call
+    pytest.importorskip("anthropic")
+    for name in list(os.environ):
+        if name.startswith(("ANTHROPIC_", "SEBASTIAN_BACKEND")):
+            monkeypatch.delenv(name)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    assert main([a.format(ws=ws) for a in argv]) == 2
+    err = capsys.readouterr().err.strip()
+    assert "ANTHROPIC_API_KEY" in err
+    assert "Traceback" not in err
+    assert len(err.splitlines()) == 1
