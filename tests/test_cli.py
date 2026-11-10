@@ -235,3 +235,37 @@ def test_missing_api_key_is_one_line_exit_2(
     assert "ANTHROPIC_API_KEY" in err
     assert "Traceback" not in err
     assert len(err.splitlines()) == 1
+
+
+def test_demo_usage_out_writes_the_spend_contract(tmp_path: Path) -> None:
+    # Bastion G1b-2: the summon workflow hands this file to `tools.summon finish --usage`
+    ws, out = tmp_path / "ws", tmp_path / "usage.json"
+    ws.mkdir()
+    assert main(["demo", "-w", str(ws), "--usage-out", str(out)]) == 0
+    assert json.loads(out.read_text(encoding="utf-8")) == {
+        "model": "demo",
+        "input_tokens": 0,
+        "output_tokens": 0,
+    }
+
+
+def test_run_usage_out_records_tokens_model_and_cost(tmp_path: Path, home: Path) -> None:
+    ws, out = tmp_path / "ws", tmp_path / "usage.json"
+    ws.mkdir()
+    script = [LLMResponse("done", (), Usage(120, 30))]
+    argv = ["run", "t", "-w", str(ws), "--model", "claude-haiku-5-5", "--usage-out", str(out)]
+    assert main(argv, llm_factory=factory(script, [])) == 0
+    usage = json.loads(out.read_text(encoding="utf-8"))
+    assert usage["model"] == "claude-haiku-5-5"
+    assert (usage["input_tokens"], usage["output_tokens"]) == (120, 30)
+    assert "cost_usd" not in usage  # no price known: absent, never a false $0
+
+
+def test_usage_out_write_failure_warns_and_keeps_the_exit_code(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    bad = tmp_path / "missing-dir" / "usage.json"
+    assert main(["demo", "-w", str(ws), "--usage-out", str(bad)]) == 0
+    assert "usage-out" in capsys.readouterr().err

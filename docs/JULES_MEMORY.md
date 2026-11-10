@@ -60,6 +60,7 @@ How this repo links to Jonny's other agents and bots (Lestinxor, Grok, Claude, c
 
 Newest first. Format: `YYYY-MM-DD | item | PR | outcome | one-line note`.
 
+- 2026-11-10 | B78 | this PR | success | Usage file for Bastion G1b; UniSync gateway rejects floats, so Bastion converts cost to integer micro-dollars.
 - 2026-11-10 | B77 | this PR | success | Owner-requested guarded fix; check the SDK's resolved credentials, not just env vars.
 - 2026-11-10 | B69 | this PR | success | Offline-only baseline (no key/bwrap); no-key TypeError crash logged as B77.
 - 2026-11-08 | B59 | this PR | success | Added --vs comparison in timeline rendering.
