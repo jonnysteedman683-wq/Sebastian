@@ -1,5 +1,5 @@
 {
-  "summary": "5 commit(s): perf: use file iterators for jsonl processing; perf: use file iterators for jsonl processing; perf: use file iterators for jsonl processing; perf: use file iterators for jsonl processing; Merge pull request #140 from jonnysteedman683-wq/sebastian/bolt-jsonl-iterators-2280251658466524068",
+  "summary": "3 commit(s): docs: red-team runbook and offline baseline (B69); style: ruff format trace.py; Merge pull request #141 from jonnysteedman683-wq/ccr-8110cf24-3vb759",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
@@ -8,8 +8,8 @@
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "486de4a671eaa2dbea2a0e0eda915e18479d38d0",
-          "path": ".jules/bolt.md"
+          "sha": "3051183da390f4be28675ab915461ed58ea87b8e",
+          "path": "CHANGELOG.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 150,
+  "seq": 151,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "cd561ade66d0a30df375cc0ea5bc55ba017842f0",
-    "to_sha": "486de4a671eaa2dbea2a0e0eda915e18479d38d0"
+    "from_sha": "486de4a671eaa2dbea2a0e0eda915e18479d38d0",
+    "to_sha": "3051183da390f4be28675ab915461ed58ea87b8e"
   },
-  "generated_at": "2026-11-10T04:14:45Z",
+  "generated_at": "2026-11-10T05:22:32Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -85,5 +85,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "f7c35c5f5a1badf485cf649139dbee4b0fe46b041ea8200d671be04bb0adff9f"
+  "signature": "e77152bbdd86d8eb947d60c0b0a16dc927734d2021480fd19012d87d2d297b33"
 }
