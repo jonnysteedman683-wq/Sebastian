@@ -1,40 +1,23 @@
 {
-  "summary": "3 commit(s): sec: add CSP headers to HTML reports; sec: add CSP headers to HTML reports; Merge pull request #137 from jonnysteedman683-wq/sebastian/sec-add-csp-12966756404582805760",
-  "changes": [
-    {
-      "category": "ABILITY_CHANGE",
-      "title": "3 file(s) changed",
-      "description": "Detected automatically from code: 3 file(s) changed.",
-      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
-      "evidence": [
-        {
-          "sha": "cd561ade66d0a30df375cc0ea5bc55ba017842f0",
-          "path": ".jules/sentinel.md"
-        }
-      ],
-      "permission": "n/a",
-      "flags": []
-    }
-  ],
+  "summary": "No changes in last 24h; head = cd561ad",
+  "changes": [],
   "prs": [],
   "security_alerts": [],
   "breaking_changes": [],
-  "open_questions": [
-    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
-  ],
+  "open_questions": [],
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 148,
+  "seq": 149,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "e5060bb849dac380cae22584e3caae0541ae78b0",
+    "from_sha": "cd561ade66d0a30df375cc0ea5bc55ba017842f0",
     "to_sha": "cd561ade66d0a30df375cc0ea5bc55ba017842f0"
   },
-  "generated_at": "2026-11-10T03:19:30Z",
+  "generated_at": "2026-11-10T03:54:33Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -84,6 +67,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "NORMAL",
-  "signature": "af849d8a2bfd82a6512f9027d740784ff23e21755d93f696000fe9cbee3d5ac5"
+  "priority": "LOW",
+  "signature": "c57e3ce17cb6e9e64b092d8f18419b0c1ca056a7b248f97a76d829da01de8b76"
 }
