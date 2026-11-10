@@ -1,14 +1,14 @@
 {
-  "summary": "2 commit(s): fix: missing API key gives one clear line, not a traceback (B77); Merge pull request #142 from jonnysteedman683-wq/ccr-8110cf24-3vb759",
+  "summary": "2 commit(s): feat: --usage-out FILE for Bastion's Spend view (B78); Merge pull request #143 from jonnysteedman683-wq/ccr-8110cf24-3vb759",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "9 file(s) changed",
-      "description": "Detected automatically from code: 9 file(s) changed.",
+      "title": "5 file(s) changed",
+      "description": "Detected automatically from code: 5 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "018277e07b8a1bd5880da3de814b08b5cb9ff8b2",
+          "sha": "143569ed929faf7ebaf066ff1a27e088787da9ec",
           "path": "CHANGELOG.md"
         }
       ],
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 152,
+  "seq": 153,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "3051183da390f4be28675ab915461ed58ea87b8e",
-    "to_sha": "018277e07b8a1bd5880da3de814b08b5cb9ff8b2"
+    "from_sha": "018277e07b8a1bd5880da3de814b08b5cb9ff8b2",
+    "to_sha": "143569ed929faf7ebaf066ff1a27e088787da9ec"
   },
-  "generated_at": "2026-11-10T05:29:54Z",
+  "generated_at": "2026-11-10T06:48:20Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -85,5 +85,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "520c2fc4227570c3af540fe35d96dadbd32c2062450c9e33d43bc29bd9fe3d2e"
+  "signature": "1683e7101f0bc992719a79caf7b719069982cc67003bd72a5033c5809eb22adc"
 }
