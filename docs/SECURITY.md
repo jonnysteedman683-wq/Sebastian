@@ -283,6 +283,13 @@ Residual: `--push-main` bypasses human review by design. Branch protection on th
 - Best-effort: a failed write prints a warning and never changes a command's exit code or blocks a run.
 - The key is the ledger's service-role key until per-agent tokens exist (proposed in LESTINXOR-AGENT `docs/UNISYNC.md`). Keep it in the runner's secrets, never in the repo or in prompts; the agent loop never sees it because reporting runs in the harness after the run ends.
 
+## Langfuse traces (`langfuse.py`; opt-in, B79)
+
+- Off unless `--langfuse` is passed; then needs `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`. `LANGFUSE_HOST` must be an https origin (default Langfuse Cloud); anything else is refused before a request is made.
+- Unlike UniSync it sends the task and the final answer, because that is what makes a trace useful. Both pass through `trace.redact_text` (the same redactor as `traces.jsonl`) and are capped at 4000 characters. Also sent: run id, stop reason, step count, model, token counts and cost when priced. Never file contents, tool output or the full trace.
+- The keys go only to the configured host, in a Basic auth header built in the harness after the run ends; the agent loop never sees them. Redirects are refused (as P1-19), so the Basic auth header is never forwarded to another host.
+- Best-effort: a failure prints one warning and never changes the exit code.
+
 ## Residual risks (escalated, not fixed)
 
 1. **`run_command` arguments are not jailed without a sandbox.** Without one, an allowlisted `cat /etc/passwd` reads outside the workspace, and allowlisting an interpreter (`python`) is equivalent to arbitrary code. Mitigation: approval gate (EXEC needs a yes), the allowlist, and **the bubblewrap sandbox, required by default (`--sandbox auto`)**: bubblewrap with every namespace unshared, only the workspace mounted read-write at `/workspace`, system paths read-only, private `/tmp`, cleared env, and executables restricted to system paths. With bwrap, home directories, `/root` and the rest of `/etc` are not visible. **`auto` fails closed (P1-01):** with no usable bubblewrap the CLI exits with code 2 and `run_command` is never registered. Commands run on the host only when the user passes `--sandbox none`, which prints a warning on every run and is recorded in the `run_start` trace (`sandbox="none"`).

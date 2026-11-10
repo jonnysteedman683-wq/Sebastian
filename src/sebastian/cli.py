@@ -17,7 +17,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from sebastian import __version__, history, unisync
+from sebastian import __version__, history, langfuse, unisync
 from sebastian.agent import Sebastian
 from sebastian.approval import ApprovalGate, Approver, DenyApprover, InteractiveApprover
 from sebastian.budget import Budget
@@ -78,6 +78,11 @@ def _build_parser() -> argparse.ArgumentParser:
         type=Path,
         metavar="FILE",
         help="write the run's model and token/cost usage as JSON to FILE (Bastion Spend view)",
+    )
+    demo.add_argument(
+        "--langfuse",
+        action="store_true",
+        help="send the run to Langfuse (LANGFUSE_* env); its link goes in --usage-out",
     )
 
     traces = sub.add_parser("traces", help="list recent runs from traces.jsonl")
@@ -271,6 +276,11 @@ def _add_run_options(run: argparse.ArgumentParser) -> None:
         type=Path,
         metavar="FILE",
         help="write the run's model and token/cost usage as JSON to FILE (Bastion Spend view)",
+    )
+    run.add_argument(
+        "--langfuse",
+        action="store_true",
+        help="send the run to Langfuse (LANGFUSE_* env); its link goes in --usage-out",
     )
     run.add_argument("--model", help="override SEBASTIAN_MODEL")
     run.add_argument(
@@ -921,29 +931,56 @@ def _record_row(cfg: Config, now: float, row: Row, run_id: str) -> None:
 
 def _start(agent: Sebastian, args: argparse.Namespace, ws: Workspace, model: str = "") -> int:
     if args.cmd != "resume":
+        start_ns = time.time_ns()
         result = agent.run(args.task)
         code = _print_result(result)
-        _write_usage(args.usage_out, result, model)
+        trace = _langfuse_trace(args, result, model, args.task, start_ns)
+        _write_usage(args.usage_out, result, model, trace)
         mode = _publish_mode(args)
         if mode is not None and code == 0:
             code = _publish(ws, result, args, mode)
         _report_run(args.cmd, result, code)
         return code
+    start_ns = time.time_ns()
     try:
         result = agent.resume(args.run_id)
     except SessionError as exc:
         print(f"resume: {exc}", file=sys.stderr)
         return 1
     code = _print_result(result)
-    _write_usage(args.usage_out, result, model)
+    trace = _langfuse_trace(args, result, model, f"resume {args.run_id}", start_ns)
+    _write_usage(args.usage_out, result, model, trace)
     _report_run(args.cmd, result, code)
     return code
 
 
-def _write_usage(path: Path | None, result: RunResult, model: str) -> None:
+def _langfuse_trace(
+    args: argparse.Namespace, result: RunResult, model: str, task: str, start_ns: int
+) -> str:
+    """``--langfuse``: send the run to Langfuse; its trace link, or "" after a warning."""
+    if not getattr(args, "langfuse", False):
+        return ""
+    try:
+        return langfuse.export_run(
+            result,
+            command=args.cmd,
+            model=model,
+            task=task,
+            start_ns=start_ns,
+            end_ns=time.time_ns(),
+            settings=langfuse.Settings.from_env(),
+            send=langfuse.http_send,
+        )
+    except langfuse.ExportError as exc:
+        _warn(f"sebastian: --langfuse: {exc}; run not traced")
+        return ""
+
+
+def _write_usage(path: Path | None, result: RunResult, model: str, trace_url: str = "") -> None:
     """``--usage-out``: the run's usage in Bastion's Spend contract. Never changes the exit code.
 
     ``cost_usd`` is written only when a price was known; an unpriced run must not read as $0.
+    ``trace_url`` (``--langfuse``) is the run's Langfuse trace; Bastion links it from the outcome.
     """
     if path is None:
         return
@@ -954,6 +991,8 @@ def _write_usage(path: Path | None, result: RunResult, model: str) -> None:
     }
     if result.usage.cost > 0:
         usage["cost_usd"] = round(result.usage.cost, 6)
+    if trace_url:
+        usage["trace_url"] = trace_url
     try:
         path.write_text(json.dumps(usage, sort_keys=True) + "\n", encoding="utf-8")
     except OSError as exc:
@@ -1234,9 +1273,13 @@ def _main(argv: Sequence[str] | None, llm_factory: Callable[[str], LLM] | None) 
         from sebastian.approval import AllowApprover  # noqa: PLC0415
 
         agent = Sebastian(llm=_demo_llm(), tools=registry, gate=ApprovalGate(AllowApprover()))
-        result = agent.run("Write hello.txt containing 'hello' and verify it.")
+        task = "Write hello.txt containing 'hello' and verify it."
+        start_ns = time.time_ns()
+        result = agent.run(task)
         code = _print_result(result)
-        _write_usage(args.usage_out, result, "demo")
+        _write_usage(
+            args.usage_out, result, "demo", _langfuse_trace(args, result, "demo", task, start_ns)
+        )
         return code
 
     run_info: dict[str, str] = {}

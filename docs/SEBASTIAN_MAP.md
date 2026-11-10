@@ -99,3 +99,5 @@ note (memory uses BM25, see Architecture), B52 (`llm/base.py:38` `parse_retry_af
 ## UniSync (added 2026-10-31)
 
 `src/sebastian/unisync.py` reports finished `run`/`resume`/`evolve` commands to the shared UNISYNCARC ledger (Supabase, `unisync_events`) that all of Jonny's agents share; `sebastian unisync ping|escalate` posts directly. Stdlib only, opt-in via `UNISYNC_SUPABASE_URL`/`UNISYNC_SUPABASE_KEY`. Protocol spec: LESTINXOR-AGENT `docs/UNISYNC.md`.
+
+`src/sebastian/langfuse.py` (B79) sends a finished `run`/`resume`/`demo` to Langfuse as one OTLP/JSON span when `--langfuse` is given, and returns the trace link that `cli.py` writes as `trace_url` into the `--usage-out` file for Bastion. Stdlib only; keys from `LANGFUSE_PUBLIC_KEY`/`LANGFUSE_SECRET_KEY`.
