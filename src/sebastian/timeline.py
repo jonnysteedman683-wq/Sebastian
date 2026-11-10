@@ -35,18 +35,18 @@ class Entry:
 
 def load_events(path: str | Path, run_id: str) -> tuple[str, list[dict[str, Any]]]:
     """Events for the run whose id is ``run_id`` or starts with it (at least 6 characters)."""
+    events: dict[str, list[dict[str, Any]]] = {}
     try:
-        lines = Path(path).read_text(encoding="utf-8").splitlines()
+        with Path(path).open("r", encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(rec, dict) and isinstance(rec.get("run_id"), str):
+                    events.setdefault(rec["run_id"], []).append(rec)
     except FileNotFoundError:
         raise TimelineError(f"no trace file at {path}") from None
-    events: dict[str, list[dict[str, Any]]] = {}
-    for line in lines:
-        try:
-            rec = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(rec, dict) and isinstance(rec.get("run_id"), str):
-            events.setdefault(rec["run_id"], []).append(rec)
     if run_id in events:
         return run_id, events[run_id]
     if len(run_id) < MIN_PREFIX:
