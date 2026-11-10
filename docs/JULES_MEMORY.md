@@ -60,6 +60,7 @@ How this repo links to Jonny's other agents and bots (Lestinxor, Grok, Claude, c
 
 Newest first. Format: `YYYY-MM-DD | item | PR | outcome | one-line note`.
 
+- 2026-11-10 | B79 | this PR | success | Langfuse's batch ingestion API sunsets 2026-11-16; use OTLP/JSON at /api/public/otel/v1/traces. urllib forwards auth on redirects: refuse them.
 - 2026-11-10 | B78 | this PR | success | Usage file for Bastion G1b; UniSync gateway rejects floats, so Bastion converts cost to integer micro-dollars.
 - 2026-11-10 | B77 | this PR | success | Owner-requested guarded fix; check the SDK's resolved credentials, not just env vars.
 - 2026-11-10 | B69 | this PR | success | Offline-only baseline (no key/bwrap); no-key TypeError crash logged as B77.
