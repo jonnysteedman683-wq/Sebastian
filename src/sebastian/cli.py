@@ -73,6 +73,12 @@ def _build_parser() -> argparse.ArgumentParser:
 
     demo = sub.add_parser("demo", help="offline scripted run (no API key) to verify install")
     demo.add_argument("--workspace", "-w", type=Path, required=True)
+    demo.add_argument(
+        "--usage-out",
+        type=Path,
+        metavar="FILE",
+        help="write the run's model and token/cost usage as JSON to FILE (Bastion Spend view)",
+    )
 
     traces = sub.add_parser("traces", help="list recent runs from traces.jsonl")
     traces.add_argument("-n", "--limit", type=_positive_int, default=10, help="runs to show")
@@ -260,6 +266,12 @@ def _add_show_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -
 
 def _add_run_options(run: argparse.ArgumentParser) -> None:
     run.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
+    run.add_argument(
+        "--usage-out",
+        type=Path,
+        metavar="FILE",
+        help="write the run's model and token/cost usage as JSON to FILE (Bastion Spend view)",
+    )
     run.add_argument("--model", help="override SEBASTIAN_MODEL")
     run.add_argument(
         "--max-output-tokens",
@@ -907,10 +919,11 @@ def _record_row(cfg: Config, now: float, row: Row, run_id: str) -> None:
         )  # fmt: skip
 
 
-def _start(agent: Sebastian, args: argparse.Namespace, ws: Workspace) -> int:
+def _start(agent: Sebastian, args: argparse.Namespace, ws: Workspace, model: str = "") -> int:
     if args.cmd != "resume":
         result = agent.run(args.task)
         code = _print_result(result)
+        _write_usage(args.usage_out, result, model)
         mode = _publish_mode(args)
         if mode is not None and code == 0:
             code = _publish(ws, result, args, mode)
@@ -922,8 +935,29 @@ def _start(agent: Sebastian, args: argparse.Namespace, ws: Workspace) -> int:
         print(f"resume: {exc}", file=sys.stderr)
         return 1
     code = _print_result(result)
+    _write_usage(args.usage_out, result, model)
     _report_run(args.cmd, result, code)
     return code
+
+
+def _write_usage(path: Path | None, result: RunResult, model: str) -> None:
+    """``--usage-out``: the run's usage in Bastion's Spend contract. Never changes the exit code.
+
+    ``cost_usd`` is written only when a price was known; an unpriced run must not read as $0.
+    """
+    if path is None:
+        return
+    usage: dict[str, object] = {
+        "model": model,
+        "input_tokens": result.usage.input_tokens,
+        "output_tokens": result.usage.output_tokens,
+    }
+    if result.usage.cost > 0:
+        usage["cost_usd"] = round(result.usage.cost, 6)
+    try:
+        path.write_text(json.dumps(usage, sort_keys=True) + "\n", encoding="utf-8")
+    except OSError as exc:
+        _warn(f"sebastian: --usage-out {path}: {exc.strerror or exc}")
 
 
 def _warn(msg: str) -> None:
@@ -1100,7 +1134,7 @@ def _run_agent(ctx: AgentContext) -> int:
         gauntlet=gauntlet,
         run_info={**(run_info or {}), "model": model},  # B58: `sebastian cost` groups by it
     )
-    return _start(agent, args, ws)
+    return _start(agent, args, ws, model)
 
 
 def _apply_task_file(cfg: Config, args: argparse.Namespace) -> Config:
@@ -1200,7 +1234,10 @@ def _main(argv: Sequence[str] | None, llm_factory: Callable[[str], LLM] | None) 
         from sebastian.approval import AllowApprover  # noqa: PLC0415
 
         agent = Sebastian(llm=_demo_llm(), tools=registry, gate=ApprovalGate(AllowApprover()))
-        return _print_result(agent.run("Write hello.txt containing 'hello' and verify it."))
+        result = agent.run("Write hello.txt containing 'hello' and verify it.")
+        code = _print_result(result)
+        _write_usage(args.usage_out, result, "demo")
+        return code
 
     run_info: dict[str, str] = {}
     if args.allow_cmd:
