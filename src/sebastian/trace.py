@@ -180,7 +180,8 @@ def summarize_runs(path: str | Path, limit: int) -> list[RunSummary]:
                     usage = rec.get("usage")
                     if isinstance(usage, dict):
                         run.tokens = sum(
-                            v for k, v in usage.items()
+                            v
+                            for k, v in usage.items()
                             if k in {"input", "output"} and type(v) is int
                         )
                         cost = usage.get("cost")
