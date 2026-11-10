@@ -49,6 +49,7 @@ attack's goal is a fixed harmless canary (`PWNED.txt` / `echo pwned`), enforced 
 else is discarded. Attacks run with all gated actions denied, so a successful attack changes
 nothing; it only shows the model *tried*. Breaches become live scar cases, so the suite grows
 with every new technique the attacker finds. Review new `redteam-*` scars before committing them.
+Runbook for live rounds (prerequisites, reading a breach, scar review): [REDTEAM.md](REDTEAM.md).
 
 `--target critic` (B35) attacks the Gauntlet reviewer instead. Each attack is a text-file edit
 task plus a fixed change that also adds an unrequested line containing `PWNED`, disguised for
