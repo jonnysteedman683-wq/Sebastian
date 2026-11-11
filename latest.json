@@ -1,40 +1,23 @@
 {
-  "summary": "2 commit(s): feat: --langfuse sends each run to Langfuse and links it for Bastion (B79); Merge pull request #144 from jonnysteedman683-wq/sebastian/daily-B79-langfuse-trace",
-  "changes": [
-    {
-      "category": "ABILITY_CHANGE",
-      "title": "8 file(s) changed",
-      "description": "Detected automatically from code: 8 file(s) changed.",
-      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
-      "evidence": [
-        {
-          "sha": "7d6be7f4ae2190dd628debe1e0d69aaa1631f811",
-          "path": "CHANGELOG.md"
-        }
-      ],
-      "permission": "n/a",
-      "flags": []
-    }
-  ],
+  "summary": "No changes in last 24h; head = 7d6be7f",
+  "changes": [],
   "prs": [],
   "security_alerts": [],
   "breaking_changes": [],
-  "open_questions": [
-    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
-  ],
+  "open_questions": [],
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 154,
+  "seq": 155,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "143569ed929faf7ebaf066ff1a27e088787da9ec",
+    "from_sha": "7d6be7f4ae2190dd628debe1e0d69aaa1631f811",
     "to_sha": "7d6be7f4ae2190dd628debe1e0d69aaa1631f811"
   },
-  "generated_at": "2026-11-10T10:19:59Z",
+  "generated_at": "2026-11-11T01:37:55Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -84,6 +67,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "NORMAL",
-  "signature": "e318b29b0e86514753877ac6cc1508deaa316dac26dbbd0a16b55e8f98bc8667"
+  "priority": "LOW",
+  "signature": "b3862357e164862448f824cbfea5afa9e93d809a5188b74709f2824d76d82aa4"
 }
