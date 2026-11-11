@@ -1,23 +1,40 @@
 {
-  "summary": "No changes in last 24h; head = 7d6be7f",
-  "changes": [],
+  "summary": "2 commit(s): sec: add missing CSP header to timeline comparison page; Merge pull request #145 from jonnysteedman683-wq/sebastian/sec-add-csp-timeline-16425564322340772102",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "2 file(s) changed",
+      "description": "Detected automatically from code: 2 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "ed25f0c1fc23b6377cccc446e4a56c81b25799b3",
+          "path": ".jules/sentinel.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
   "prs": [],
   "security_alerts": [],
   "breaking_changes": [],
-  "open_questions": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 155,
+  "seq": 156,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
     "from_sha": "7d6be7f4ae2190dd628debe1e0d69aaa1631f811",
-    "to_sha": "7d6be7f4ae2190dd628debe1e0d69aaa1631f811"
+    "to_sha": "ed25f0c1fc23b6377cccc446e4a56c81b25799b3"
   },
-  "generated_at": "2026-11-11T01:37:55Z",
+  "generated_at": "2026-11-11T02:57:44Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -67,6 +84,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "LOW",
-  "signature": "b3862357e164862448f824cbfea5afa9e93d809a5188b74709f2824d76d82aa4"
+  "priority": "NORMAL",
+  "signature": "4fa7b09cb41c4ab71422a0366e4cde13d1e406a831985c88c535981605bc7b6b"
 }
