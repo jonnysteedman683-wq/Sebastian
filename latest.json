@@ -8,7 +8,7 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 159,
+  "seq": 160,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
@@ -17,7 +17,7 @@
     "from_sha": "f6916b16239cd580719eb047720b6931d9e2234c",
     "to_sha": "f6916b16239cd580719eb047720b6931d9e2234c"
   },
-  "generated_at": "2026-11-13T02:18:18Z",
+  "generated_at": "2026-11-14T01:55:17Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -68,5 +68,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "LOW",
-  "signature": "5d47854c8f20c6ebb8b65e48dce00c0dc94e98e570c5cc70ae6083be3403fad7"
+  "signature": "5184afb591fed40b81744ceaba9a67954f6cf048bec0a0ab629b45c09ed28859"
 }
