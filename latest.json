@@ -1,23 +1,40 @@
 {
-  "summary": "No changes in last 24h; head = f6916b1",
-  "changes": [],
+  "summary": "2 commit(s): perf: optimize summarize_runs with fast string filtering and no generator overhead; Merge pull request #150 from jonnysteedman683-wq/sebastian/bolt-summarize-runs-7197800862438592717",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "2 file(s) changed",
+      "description": "Detected automatically from code: 2 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "3f404242cbe4f70251c99dc8ef14fcdf65dcfb48",
+          "path": ".jules/bolt.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
   "prs": [],
   "security_alerts": [],
   "breaking_changes": [],
-  "open_questions": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 160,
+  "seq": 161,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
     "from_sha": "f6916b16239cd580719eb047720b6931d9e2234c",
-    "to_sha": "f6916b16239cd580719eb047720b6931d9e2234c"
+    "to_sha": "3f404242cbe4f70251c99dc8ef14fcdf65dcfb48"
   },
-  "generated_at": "2026-11-14T01:55:17Z",
+  "generated_at": "2026-11-14T07:29:49Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -67,6 +84,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "LOW",
-  "signature": "5184afb591fed40b81744ceaba9a67954f6cf048bec0a0ab629b45c09ed28859"
+  "priority": "NORMAL",
+  "signature": "fd01e2f0e43b7d59ba999e6ef12507385862e68bc7c672032e0f280fdfcd649e"
 }
