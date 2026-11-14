@@ -336,38 +336,44 @@ border-radius:8px;overflow:hidden;border:1px solid var(--line)}}
 text-align:left}}
 .summary-table th{{background:var(--line);color:var(--fg)}}
 .summary-table caption{{margin-bottom:8px;font-weight:bold;text-align:left}}
+.scroll{{overflow-x:auto}}
+.scroll:focus-visible{{outline:2px solid var(--model);outline-offset:2px}}
+.summary-table th[scope="col"]{{font-weight:500;font-size:13px}}
+.summary-table th[scope="row"]{{font-weight:normal}}
 @media (max-width:800px){{.comparison{{grid-template-columns:1fr}}}}
 @media (max-width:520px){{li{{grid-template-columns:1fr;gap:2px}}}}
 </style></head><body><main>
 <h1>Comparison: <code>{_e(run_a[:12])}</code> vs <code>{_e(run_b[:12])}</code></h1>
 <p class="sub">Generated {_e(stamp)} UTC from traces.jsonl. <b>{diff_text}</b></p>
 
+<div class="scroll" tabindex="0" role="region" aria-label="Run comparison summary">
 <table class="summary-table">
   <tr>
-    <th>Run</th>
-    <th>Stop Reason</th>
-    <th>Steps</th>
-    <th>Tokens</th>
-    <th>Cost</th>
-    <th>Gauntlet Loops</th>
+    <th scope="col">Run</th>
+    <th scope="col">Stop Reason</th>
+    <th scope="col">Steps</th>
+    <th scope="col">Tokens</th>
+    <th scope="col">Cost</th>
+    <th scope="col">Gauntlet Loops</th>
   </tr>
   <tr>
-    <td><b>A:</b> <code>{_e(run_a[:12])}</code></td>
+    <th scope="row"><b>A:</b> <code>{_e(run_a[:12])}</code></th>
     <td>{_e(stats_a.stop)}</td>
     <td>{_e(stats_a.steps)}</td>
-    <td>{_e("{stats_a.tokens:,}")}</td>
-    <td>{_e("${stats_a.cost:.4f}")}</td>
+    <td>{_e(f"{stats_a.tokens:,}")}</td>
+    <td>{_e(f"${stats_a.cost:.4f}")}</td>
     <td>{_e(stats_a.gauntlet_loops)}</td>
   </tr>
   <tr>
-    <td><b>B:</b> <code>{_e(run_b[:12])}</code></td>
+    <th scope="row"><b>B:</b> <code>{_e(run_b[:12])}</code></th>
     <td>{_e(stats_b.stop)}</td>
     <td>{_e(stats_b.steps)}</td>
-    <td>{_e("{stats_b.tokens:,}")}</td>
-    <td>{_e("${stats_b.cost:.4f}")}</td>
+    <td>{_e(f"{stats_b.tokens:,}")}</td>
+    <td>{_e(f"${stats_b.cost:.4f}")}</td>
     <td>{_e(stats_b.gauntlet_loops)}</td>
   </tr>
 </table>
+</div>
 
 <div class="comparison">
   <div>
