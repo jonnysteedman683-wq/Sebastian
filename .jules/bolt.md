@@ -28,3 +28,7 @@
 ## 2026-11-10 - [Memory Overhead of read_text().splitlines() on large files]
 **Learning:** `Path.read_text().splitlines()` loads the entire file into memory as a single string, and then allocates a massive list of strings. For large `.jsonl` trace and history files, this leads to significant O(N) memory allocation and CPU overhead, sometimes over 1.5 seconds for large files compared to 0.15s for iterators.
 **Action:** Use file iterators (`with path.open("r", encoding="utf-8") as fh: for line in fh:`) instead of `.read_text().splitlines()` when parsing log or trace files, and apply fast string filtering before calling `json.loads()`.
+
+## 2026-11-12 - [json.loads overhead on large trace files]
+**Learning:** In `summarize_runs()`, calling `json.loads` on every line of a large trace file to extract usage information from a small subset of events (`run_start`, `run_end`) incurs significant overhead. Additionally, using generator expressions in this hot loop (e.g. `sum(v for k, v in dict.items())`) adds unnecessary setup costs.
+**Action:** Add fast string substring matching filters (`in line`) before calling `json.loads` to skip irrelevant lines entirely, and replace generator comprehensions with manual loops or direct lookups when parsing traces or hot paths.
