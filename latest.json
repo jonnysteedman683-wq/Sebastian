@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): 🎨 Palette: [Table Accessibility] Improve run comparison table accessibility; Merge pull request #149 from jonnysteedman683-wq/sebastian/palette-timeline-a11y-14610270936402533865",
+  "summary": "2 commit(s): sec: remove invalid frame-ancestors from CSP meta tags; Merge pull request #148 from jonnysteedman683-wq/sebastian/sentinel-csp-meta-16480318938822144458",
   "changes": [
     {
       "category": "ABILITY_CHANGE",
-      "title": "2 file(s) changed",
-      "description": "Detected automatically from code: 2 file(s) changed.",
+      "title": "3 file(s) changed",
+      "description": "Detected automatically from code: 3 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "480d7597c790121163ff48eb3ffc92883ed4dcdd",
-          "path": ".jules/palette.md"
+          "sha": "bc787ff451a9bd2b0a8a9a36281535920c44fdc6",
+          "path": "src/sebastian/dashboard.py"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 162,
+  "seq": 163,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "3f404242cbe4f70251c99dc8ef14fcdf65dcfb48",
-    "to_sha": "480d7597c790121163ff48eb3ffc92883ed4dcdd"
+    "from_sha": "480d7597c790121163ff48eb3ffc92883ed4dcdd",
+    "to_sha": "bc787ff451a9bd2b0a8a9a36281535920c44fdc6"
   },
-  "generated_at": "2026-11-14T07:32:18Z",
+  "generated_at": "2026-11-14T07:35:42Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -85,5 +85,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "NORMAL",
-  "signature": "51dc9c8508fd81a6069a0cc9c3fed10d2d3a5f0fed2a43b29195d1a37bc298f4"
+  "signature": "9cd791528b5d650b8e8da0d10cd9ab8205610ed99bfc2f92026210611cf1b664"
 }
