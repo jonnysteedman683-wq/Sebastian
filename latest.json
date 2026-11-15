@@ -1,15 +1,15 @@
 {
-  "summary": "2 commit(s): docs: complete Phase 1 discovery report; Merge pull request #147 from jonnysteedman683-wq/sebastian/phase1-discovery-6251715800009389637",
+  "summary": "4 commit(s): docs: propose B80 pin ruff exactly (locked, owner-approved); docs: B80 done-when covers SEBASTIAN_MAP; drop unused noqa so CI is green; Merge branch 'main' into docs/backlog-pin-ruff; Merge pull request #151 from jonnysteedman683-wq/docs/backlog-pin-ruff",
   "changes": [
     {
       "category": "DOCS",
-      "title": "2 file(s) changed",
-      "description": "Detected automatically from code: 2 file(s) changed.",
+      "title": "1 file(s) changed",
+      "description": "Detected automatically from code: 1 file(s) changed.",
       "impact": "unclear (mechanical draft; not reviewed by the watcher)",
       "evidence": [
         {
-          "sha": "b6b520d3e8a1ac29439245af85ba01c4a47d2301",
-          "path": "docs/SEBASTIAN_MAP.md"
+          "sha": "f6eb51ad54808f6b86bf0f98e14194890682fa35",
+          "path": "docs/BACKLOG.md"
         }
       ],
       "permission": "n/a",
@@ -25,16 +25,16 @@
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 167,
+  "seq": 168,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "6a17a4a6a68ca23c00dc9254464518252679ef37",
-    "to_sha": "b6b520d3e8a1ac29439245af85ba01c4a47d2301"
+    "from_sha": "b6b520d3e8a1ac29439245af85ba01c4a47d2301",
+    "to_sha": "f6eb51ad54808f6b86bf0f98e14194890682fa35"
   },
-  "generated_at": "2026-11-15T09:46:45Z",
+  "generated_at": "2026-11-15T09:48:07Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -85,5 +85,5 @@
   "risk_score": 0,
   "escalate": false,
   "priority": "LOW",
-  "signature": "3f3caed846a484ec43ba1fe80e8d02db09294a530b0435250d79ed59e7f7d035"
+  "signature": "89ea864fdc4bff63285af1dbad4f4f7b01e8187ec77ab0089d3bbca7171426e4"
 }
