@@ -62,8 +62,8 @@ graph TD
 ## Test inventory
 
 - **Framework:** `pytest`
-- **Count:** 1148 passed, 2 skipped.
-- **Coverage:** 98.92% overall.
+- **Count:** 1183 passed, 2 skipped.
+- **Coverage:** 98.85% overall.
 - **Untested modules:** `__main__.py` in `sebastian` and `sebastian/watch` (pure CLI entrypoints).
 
 ## Runtime check
@@ -71,7 +71,7 @@ graph TD
 - **Install:** `uv venv && source .venv/bin/activate && uv pip install -e '.[dev,anthropic,watch]'`
 - **Start:** `sebastian demo -w /tmp/ws` (creates a temporary workspace and runs tests)
 - **Baseline Test:** `PYTHONPATH=src python -m pytest --cov`
-- **Baseline Commit Hash:** 098dc29c2fba8f77c2eeab168d803d14a2cb7391
+- **Baseline Commit Hash:** f6916b16239cd580719eb047720b6931d9e2234c
 
 ## Debt register
 
