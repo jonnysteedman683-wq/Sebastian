@@ -1,40 +1,23 @@
 {
-  "summary": "2 commit(s): sec: remove invalid frame-ancestors from CSP meta tags; Merge pull request #148 from jonnysteedman683-wq/sebastian/sentinel-csp-meta-16480318938822144458",
-  "changes": [
-    {
-      "category": "ABILITY_CHANGE",
-      "title": "3 file(s) changed",
-      "description": "Detected automatically from code: 3 file(s) changed.",
-      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
-      "evidence": [
-        {
-          "sha": "bc787ff451a9bd2b0a8a9a36281535920c44fdc6",
-          "path": "src/sebastian/dashboard.py"
-        }
-      ],
-      "permission": "n/a",
-      "flags": []
-    }
-  ],
+  "summary": "No changes in last 24h; head = bc787ff",
+  "changes": [],
   "prs": [],
   "security_alerts": [],
   "breaking_changes": [],
-  "open_questions": [
-    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
-  ],
+  "open_questions": [],
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 163,
+  "seq": 164,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
-    "from_sha": "480d7597c790121163ff48eb3ffc92883ed4dcdd",
+    "from_sha": "bc787ff451a9bd2b0a8a9a36281535920c44fdc6",
     "to_sha": "bc787ff451a9bd2b0a8a9a36281535920c44fdc6"
   },
-  "generated_at": "2026-11-14T07:35:42Z",
+  "generated_at": "2026-11-15T01:26:54Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -84,6 +67,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "NORMAL",
-  "signature": "9cd791528b5d650b8e8da0d10cd9ab8205610ed99bfc2f92026210611cf1b664"
+  "priority": "LOW",
+  "signature": "f4739cdb9193c590a05c342e57a45440bfa177278f950b00b443d76400262da0"
 }
