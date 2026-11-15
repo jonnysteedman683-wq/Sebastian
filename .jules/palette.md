@@ -25,6 +25,12 @@
 **Learning:** When using `list-style: none` on lists (like `<ol>` or `<ul>`) to remove default bullets or numbers, Safari VoiceOver intentionally drops the list semantics, preventing screen readers from announcing it as a list and providing item counts.
 **Action:** Added `role="list"` to the `<ol>` container to restore semantic meaning while keeping the visual styling.
 
+## 2023-11-14 - SVG Interactive Elements and role="img"
+**Learning:** Using `role="img"` on an `<svg>` element flattens the accessibility tree for that element in screen readers. This completely hides any inner interactive elements (like data points with `tabindex="0"`) from keyboard and screen reader navigation, making the chart tooltips inaccessible.
+**Action:** Changed the `<svg>` role from `img` to `group` in `src/sebastian/dashboard.py` so that both the chart label is announced and the inner data points remain accessible to screen readers.
+## 2026-11-08 - Tab Identification and Page Titles
+**Learning:** Generic page titles (like "Sebastian run") make it difficult to distinguish between multiple open tabs. A specific identifier in the `<title>` tag improves navigation and general usability when comparing distinct instances (e.g., multiple run timelines).
+**Action:** Added the specific `run_id` to the `<title>` element in the timeline HTML page.
 ## 2025-02-13 - SVG Interactive Charts Role
 **Learning:** Using `role="img"` on an `<svg>` element flattens its accessibility tree, which hides focusable interactive children (like `<circle tabindex="0">`) from screen readers.
 **Action:** Changed the SVG role from `img` to `group` to preserve the accessibility tree while retaining the `aria-label`.
