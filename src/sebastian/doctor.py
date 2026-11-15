@@ -173,8 +173,12 @@ def check_memory(home: Path) -> Check:
 def check_history(home: Path) -> Check:
     """Every line of ``history.jsonl`` is a valid record; malformed ones are skipped by readers."""
     path = home / history.HISTORY_FILE
+    lines = []
     try:
-        lines = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        with path.open("r", encoding="utf-8") as fh:
+            for ln in fh:
+                if ln.strip():
+                    lines.append(ln)
     except FileNotFoundError:
         return Check("history", PASS, "no history yet")
     except (OSError, UnicodeDecodeError) as exc:

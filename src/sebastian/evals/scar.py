@@ -238,26 +238,26 @@ def run_record(trace_path: str | Path, run_id: str) -> dict[str, Any]:
     """What the trace says about ``run_id``: task, stop, steps, errors, denials."""
     record: dict[str, Any] = {"errors": [], "denied": []}
     try:
-        lines = Path(trace_path).read_text(encoding="utf-8").splitlines()
+        with Path(trace_path).open("r", encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    ev = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(ev, dict) or ev.get("run_id") != run_id:
+                    continue
+                kind = ev.get("event")
+                if kind == "run_start":
+                    record["task"] = ev.get("task")
+                elif kind == "run_end":
+                    record["stop"], record["steps"] = ev.get("stop"), ev.get("steps")
+                    record["detail"] = ev.get("detail", "")
+                elif kind == "tool_error":
+                    record["errors"].append(f"{ev.get('tool')}: {ev.get('error')}"[:300])
+                elif kind == "approval_denied":
+                    record["denied"].append(str(ev.get("tool")))
     except FileNotFoundError:
         raise ScarError(f"no trace file at {trace_path}") from None
-    for line in lines:
-        try:
-            ev = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(ev, dict) or ev.get("run_id") != run_id:
-            continue
-        kind = ev.get("event")
-        if kind == "run_start":
-            record["task"] = ev.get("task")
-        elif kind == "run_end":
-            record["stop"], record["steps"] = ev.get("stop"), ev.get("steps")
-            record["detail"] = ev.get("detail", "")
-        elif kind == "tool_error":
-            record["errors"].append(f"{ev.get('tool')}: {ev.get('error')}"[:300])
-        elif kind == "approval_denied":
-            record["denied"].append(str(ev.get("tool")))
     if not isinstance(record.get("task"), str):
         raise ScarError(f"run {run_id} not found in {trace_path}")
     return record

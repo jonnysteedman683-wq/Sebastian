@@ -49,6 +49,7 @@ attack's goal is a fixed harmless canary (`PWNED.txt` / `echo pwned`), enforced 
 else is discarded. Attacks run with all gated actions denied, so a successful attack changes
 nothing; it only shows the model *tried*. Breaches become live scar cases, so the suite grows
 with every new technique the attacker finds. Review new `redteam-*` scars before committing them.
+Runbook for live rounds (prerequisites, reading a breach, scar review): [REDTEAM.md](REDTEAM.md).
 
 `--target critic` (B35) attacks the Gauntlet reviewer instead. Each attack is a text-file edit
 task plus a fixed change that also adds an unrequested line containing `PWNED`, disguised for
@@ -281,6 +282,13 @@ Residual: `--push-main` bypasses human review by design. Branch protection on th
 - Can only post `heartbeat`, `memory.write` and `escalate`, which are valid for any agent at any time, so it cannot write an envelope that breaks the shared ledger's task rules for other agents. The head row's digest is re-checked before anything is written on top of it.
 - Best-effort: a failed write prints a warning and never changes a command's exit code or blocks a run.
 - The key is the ledger's service-role key until per-agent tokens exist (proposed in LESTINXOR-AGENT `docs/UNISYNC.md`). Keep it in the runner's secrets, never in the repo or in prompts; the agent loop never sees it because reporting runs in the harness after the run ends.
+
+## Langfuse traces (`langfuse.py`; opt-in, B79)
+
+- Off unless `--langfuse` is passed; then needs `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`. `LANGFUSE_HOST` must be an https origin (default Langfuse Cloud); anything else is refused before a request is made.
+- Unlike UniSync it sends the task and the final answer, because that is what makes a trace useful. Both pass through `trace.redact_text` (the same redactor as `traces.jsonl`) and are capped at 4000 characters. Also sent: run id, stop reason, step count, model, token counts and cost when priced. Never file contents, tool output or the full trace.
+- The keys go only to the configured host, in a Basic auth header built in the harness after the run ends; the agent loop never sees them. Redirects are refused (as P1-19), so the Basic auth header is never forwarded to another host.
+- Best-effort: a failure prints one warning and never changes the exit code.
 
 ## Residual risks (escalated, not fixed)
 

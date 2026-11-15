@@ -44,22 +44,22 @@ def run_models(path: str | Path) -> dict[str, str]:
     """``run_id -> model`` from ``run_start`` events; malformed lines are skipped."""
     out: dict[str, str] = {}
     try:
-        lines = Path(path).read_text(encoding="utf-8").splitlines()
+        with Path(path).open("r", encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if (
+                    isinstance(rec, dict)
+                    and rec.get("event") == "run_start"
+                    and isinstance(rec.get("run_id"), str)
+                    and isinstance(rec.get("model"), str)
+                    and rec["model"]
+                ):
+                    out[rec["run_id"]] = rec["model"]
     except FileNotFoundError:
-        return out
-    for line in lines:
-        try:
-            rec = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if (
-            isinstance(rec, dict)
-            and rec.get("event") == "run_start"
-            and isinstance(rec.get("run_id"), str)
-            and isinstance(rec.get("model"), str)
-            and rec["model"]
-        ):
-            out[rec["run_id"]] = rec["model"]
+        pass
     return out
 
 

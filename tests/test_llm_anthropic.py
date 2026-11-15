@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -135,3 +136,36 @@ def test_anthropic_429_carries_retry_after() -> None:
     with pytest.raises(TransientLLMError) as info:
         AnthropicLLM("m", client=fake_client(err)).complete("s", [Message(Role.USER, "x")], [])
     assert info.value.retry_after == 7.0
+
+
+def _no_anthropic_credentials(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """No key, token, profile or credentials file the SDK could discover."""
+    for name in list(os.environ):
+        if name.startswith("ANTHROPIC_"):
+            monkeypatch.delenv(name)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+
+
+def test_anthropic_without_credentials_names_the_variable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # B77: the SDK used to fail later with a bare TypeError on the first request
+    _no_anthropic_credentials(monkeypatch, tmp_path)
+    with pytest.raises(LLMError, match="ANTHROPIC_API_KEY"):
+        AnthropicLLM("m")
+
+
+def test_anthropic_auth_token_alone_is_accepted(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _no_anthropic_credentials(monkeypatch, tmp_path)
+    monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "tok")
+    assert AnthropicLLM("m")._client is not None
+
+
+def test_injected_client_skips_the_credential_check(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _no_anthropic_credentials(monkeypatch, tmp_path)
+    assert AnthropicLLM("m", client=fake_client(None))._client is not None

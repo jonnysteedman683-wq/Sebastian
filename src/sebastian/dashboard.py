@@ -110,7 +110,7 @@ def multi_line_chart(title: str, series: Sequence[tuple[str, Points]], label: st
     keys = f'<div class="legend" aria-hidden="true">{"".join(legend)}</div>' if legend else ""
     return (
         f"<figure><figcaption>{_e(title)}</figcaption>{keys}"
-        f'<svg viewBox="0 0 {CHART_W} {CHART_H}" role="img" '
+        f'<svg viewBox="0 0 {CHART_W} {CHART_H}" role="group" '
         f'aria-label="{_e(label)}" focusable="false">'
         f"{body}</svg></figure>"
     )
@@ -339,6 +339,8 @@ def render(s: Snapshot) -> str:
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';
+form-action 'none';">
 <title>Sebastian dashboard</title>
 <style>
 :root{{--bg:#fbfbfa;--fg:#1d1d1b;--muted:#6b6b66;--line:#e4e3df;--card:#fff;--accent:#2f6fde;

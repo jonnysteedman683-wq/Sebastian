@@ -77,25 +77,25 @@ def record_opened(home: Path, url: str, branch: str, item: str, model: str, t: f
 
 def load(home: Path) -> dict[str, PrEntry]:
     """Every PR in the ledger by URL, with its recorded outcomes. Bad lines are skipped."""
-    try:
-        lines = (home / LEDGER_FILE).read_text(encoding="utf-8").splitlines()
-    except FileNotFoundError:
-        return {}
     prs: dict[str, PrEntry] = {}
-    for line in lines:
-        try:
-            rec = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(rec, dict) or not isinstance(rec.get("url"), str):
-            continue
-        event, url = rec.get("event"), rec["url"]
-        if event == "opened" and isinstance(rec.get("t"), int | float):
-            branch, item, model = rec.get("branch"), rec.get("item"), rec.get("model")
-            if isinstance(branch, str) and isinstance(item, str) and isinstance(model, str):
-                prs.setdefault(url, PrEntry(url, branch, item, model, float(rec["t"])))
-        elif event in _OUTCOMES and url in prs:
-            prs[url].outcomes.add(str(event))
+    try:
+        with (home / LEDGER_FILE).open("r", encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(rec, dict) or not isinstance(rec.get("url"), str):
+                    continue
+                event, url = rec.get("event"), rec["url"]
+                if event == "opened" and isinstance(rec.get("t"), int | float):
+                    branch, item, model = rec.get("branch"), rec.get("item"), rec.get("model")
+                    if isinstance(branch, str) and isinstance(item, str) and isinstance(model, str):
+                        prs.setdefault(url, PrEntry(url, branch, item, model, float(rec["t"])))
+                elif event in _OUTCOMES and url in prs:
+                    prs[url].outcomes.add(str(event))
+    except FileNotFoundError:
+        pass
     return prs
 
 

@@ -28,3 +28,10 @@
 ## 2026-11-08 - Tab Identification and Page Titles
 **Learning:** Generic page titles (like "Sebastian run") make it difficult to distinguish between multiple open tabs. A specific identifier in the `<title>` tag improves navigation and general usability when comparing distinct instances (e.g., multiple run timelines).
 **Action:** Added the specific `run_id` to the `<title>` element in the timeline HTML page.
+## 2025-02-13 - SVG Interactive Charts Role
+**Learning:** Using `role="img"` on an `<svg>` element flattens its accessibility tree, which hides focusable interactive children (like `<circle tabindex="0">`) from screen readers.
+**Action:** Changed the SVG role from `img` to `group` to preserve the accessibility tree while retaining the `aria-label`.
+
+## 2026-11-06 - Comparison Summary Table Accessibility
+**Learning:** The run comparison summary table lacked a scrollable container for smaller viewports, which breaks accessibility for keyboard and screen reader users when overflow occurs. Furthermore, standard HTML tables without `<th scope="col">` and `<th scope="row">` lack proper semantic context for data tables.
+**Action:** Wrapped the summary table in a `.scroll` container with `tabindex="0"`, `role="region"`, and an `aria-label`. Added row and column header scopes and matching CSS.
