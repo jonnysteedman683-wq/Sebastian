@@ -404,6 +404,7 @@ def render_html(run_id: str, entries: Sequence[Entry], generated: float) -> str:
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
+<title>Sebastian run {_e(run_id[:12])}</title>
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline';
 form-action 'none';">
 <title>Sebastian run</title>
