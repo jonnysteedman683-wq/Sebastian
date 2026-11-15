@@ -63,15 +63,15 @@ def append(path: str | Path, record: Record) -> None:
 
 def load(path: str | Path) -> list[Record]:
     """All valid records, oldest first. Missing file -> []; malformed lines are skipped."""
-    try:
-        lines = Path(path).read_text(encoding="utf-8").splitlines()
-    except FileNotFoundError:
-        return []
     out = []
-    for line in lines:
-        rec = _parse(line)
-        if rec is not None:
-            out.append(rec)
+    try:
+        with Path(path).open("r", encoding="utf-8") as fh:
+            for line in fh:
+                rec = _parse(line)
+                if rec is not None:
+                    out.append(rec)
+    except FileNotFoundError:
+        pass
     return sorted(out, key=lambda r: r.t)
 
 

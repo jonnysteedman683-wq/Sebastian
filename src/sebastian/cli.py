@@ -17,7 +17,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from sebastian import __version__, history, unisync
+from sebastian import __version__, history, langfuse, unisync
 from sebastian.agent import Sebastian
 from sebastian.approval import ApprovalGate, Approver, DenyApprover, InteractiveApprover
 from sebastian.budget import Budget
@@ -26,7 +26,7 @@ from sebastian.clock import SystemClock
 from sebastian.config import Config, ensure_home
 from sebastian.gauntlet import GauntletPolicy
 from sebastian.llm import make_llm
-from sebastian.llm.base import LLM
+from sebastian.llm.base import LLM, LLMError
 from sebastian.llm.scripted import ScriptedLLM
 from sebastian.memory import MemoryCorruptError, MemoryStore
 from sebastian.pricing import Price, PricingError, load_prices, priced, require_prices
@@ -73,6 +73,17 @@ def _build_parser() -> argparse.ArgumentParser:
 
     demo = sub.add_parser("demo", help="offline scripted run (no API key) to verify install")
     demo.add_argument("--workspace", "-w", type=Path, required=True)
+    demo.add_argument(
+        "--usage-out",
+        type=Path,
+        metavar="FILE",
+        help="write the run's model and token/cost usage as JSON to FILE (Bastion Spend view)",
+    )
+    demo.add_argument(
+        "--langfuse",
+        action="store_true",
+        help="send the run to Langfuse (LANGFUSE_* env); its link goes in --usage-out",
+    )
 
     traces = sub.add_parser("traces", help="list recent runs from traces.jsonl")
     traces.add_argument("-n", "--limit", type=_positive_int, default=10, help="runs to show")
@@ -251,6 +262,7 @@ def _add_models_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser])
 def _add_show_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     show = sub.add_parser("show", help="one run's trace as an HTML (or text) timeline")
     show.add_argument("run_id", help="run id, or a unique prefix of at least 6 characters")
+    show.add_argument("--vs", help="compare with another run ID")
     show.add_argument("-o", "--out", type=Path, help="HTML file (default: sebastian-run-<id>.html)")
     show.add_argument("--text", action="store_true", help="print a text timeline instead")
     diff = sub.add_parser("diff", help="unified diff of every file a run changed")
@@ -259,6 +271,17 @@ def _add_show_parser(sub: argparse._SubParsersAction[argparse.ArgumentParser]) -
 
 def _add_run_options(run: argparse.ArgumentParser) -> None:
     run.add_argument("--workspace", "-w", type=Path, default=Path.cwd())
+    run.add_argument(
+        "--usage-out",
+        type=Path,
+        metavar="FILE",
+        help="write the run's model and token/cost usage as JSON to FILE (Bastion Spend view)",
+    )
+    run.add_argument(
+        "--langfuse",
+        action="store_true",
+        help="send the run to Langfuse (LANGFUSE_* env); its link goes in --usage-out",
+    )
     run.add_argument("--model", help="override SEBASTIAN_MODEL")
     run.add_argument(
         "--max-output-tokens",
@@ -569,18 +592,50 @@ def _redteam(cfg: Config, args: argparse.Namespace, llm_factory: Callable[[str],
 def _show(cfg: Config, args: argparse.Namespace) -> int:
     from sebastian.timeline import (  # noqa: PLC0415
         TimelineError,
+        _extract_stats,
         build,
+        find_first_diff_step,
         load_events,
+        render_comparison_html,
+        render_comparison_text,
         render_html,
         render_text,
     )
 
     try:
         run_id, events = load_events(cfg.home / "traces.jsonl", args.run_id)
+        if args.vs:
+            run_b, events_b = load_events(cfg.home / "traces.jsonl", args.vs)
     except TimelineError as exc:
         print(f"show: {exc}", file=sys.stderr)
         return 1
+
     entries = build(events)
+
+    if args.vs:
+        entries_b = build(events_b)
+        stats_a = _extract_stats(events)
+        stats_b = _extract_stats(events_b)
+        diff_step = find_first_diff_step(events, events_b)
+
+        if args.text:
+            print(
+                render_comparison_text(
+                    run_id, entries, stats_a, run_b, entries_b, stats_b, diff_step
+                )
+            )
+            return 0
+
+        out = args.out or Path(f"sebastian-compare-{run_id[:12]}-{run_b[:12]}.html")
+        out.write_text(
+            render_comparison_html(
+                run_id, entries, stats_a, run_b, entries_b, stats_b, diff_step, time.time()
+            ),
+            encoding="utf-8",
+        )
+        print(out)
+        return 0
+
     if args.text:
         print(render_text(run_id, entries))
         return 0
@@ -874,23 +929,74 @@ def _record_row(cfg: Config, now: float, row: Row, run_id: str) -> None:
         )  # fmt: skip
 
 
-def _start(agent: Sebastian, args: argparse.Namespace, ws: Workspace) -> int:
+def _start(agent: Sebastian, args: argparse.Namespace, ws: Workspace, model: str = "") -> int:
     if args.cmd != "resume":
+        start_ns = time.time_ns()
         result = agent.run(args.task)
         code = _print_result(result)
+        trace = _langfuse_trace(args, result, model, args.task, start_ns)
+        _write_usage(args.usage_out, result, model, trace)
         mode = _publish_mode(args)
         if mode is not None and code == 0:
             code = _publish(ws, result, args, mode)
         _report_run(args.cmd, result, code)
         return code
+    start_ns = time.time_ns()
     try:
         result = agent.resume(args.run_id)
     except SessionError as exc:
         print(f"resume: {exc}", file=sys.stderr)
         return 1
     code = _print_result(result)
+    trace = _langfuse_trace(args, result, model, f"resume {args.run_id}", start_ns)
+    _write_usage(args.usage_out, result, model, trace)
     _report_run(args.cmd, result, code)
     return code
+
+
+def _langfuse_trace(
+    args: argparse.Namespace, result: RunResult, model: str, task: str, start_ns: int
+) -> str:
+    """``--langfuse``: send the run to Langfuse; its trace link, or "" after a warning."""
+    if not getattr(args, "langfuse", False):
+        return ""
+    try:
+        return langfuse.export_run(
+            result,
+            command=args.cmd,
+            model=model,
+            task=task,
+            start_ns=start_ns,
+            end_ns=time.time_ns(),
+            settings=langfuse.Settings.from_env(),
+            send=langfuse.http_send,
+        )
+    except langfuse.ExportError as exc:
+        _warn(f"sebastian: --langfuse: {exc}; run not traced")
+        return ""
+
+
+def _write_usage(path: Path | None, result: RunResult, model: str, trace_url: str = "") -> None:
+    """``--usage-out``: the run's usage in Bastion's Spend contract. Never changes the exit code.
+
+    ``cost_usd`` is written only when a price was known; an unpriced run must not read as $0.
+    ``trace_url`` (``--langfuse``) is the run's Langfuse trace; Bastion links it from the outcome.
+    """
+    if path is None:
+        return
+    usage: dict[str, object] = {
+        "model": model,
+        "input_tokens": result.usage.input_tokens,
+        "output_tokens": result.usage.output_tokens,
+    }
+    if result.usage.cost > 0:
+        usage["cost_usd"] = round(result.usage.cost, 6)
+    if trace_url:
+        usage["trace_url"] = trace_url
+    try:
+        path.write_text(json.dumps(usage, sort_keys=True) + "\n", encoding="utf-8")
+    except OSError as exc:
+        _warn(f"sebastian: --usage-out {path}: {exc.strerror or exc}")
 
 
 def _warn(msg: str) -> None:
@@ -1067,7 +1173,7 @@ def _run_agent(ctx: AgentContext) -> int:
         gauntlet=gauntlet,
         run_info={**(run_info or {}), "model": model},  # B58: `sebastian cost` groups by it
     )
-    return _start(agent, args, ws)
+    return _start(agent, args, ws, model)
 
 
 def _apply_task_file(cfg: Config, args: argparse.Namespace) -> Config:
@@ -1109,6 +1215,14 @@ def main(
     llm_factory: Callable[[str], LLM] | None = None,
 ) -> int:
     """Parse ``argv`` and run a CLI command. Returns the process exit code."""
+    try:
+        return _main(argv, llm_factory)
+    except LLMError as exc:  # B77: e.g. no API key when a backend is built; one line, exit 2
+        print(f"sebastian: {exc}", file=sys.stderr)
+        return 2
+
+
+def _main(argv: Sequence[str] | None, llm_factory: Callable[[str], LLM] | None) -> int:
     args = _build_parser().parse_args(argv)
     # before Config/home/prices: doctor must be able to report a broken setup
     early: dict[str, Callable[[], int]] = {"version": _version, "doctor": _doctor}
@@ -1159,7 +1273,14 @@ def main(
         from sebastian.approval import AllowApprover  # noqa: PLC0415
 
         agent = Sebastian(llm=_demo_llm(), tools=registry, gate=ApprovalGate(AllowApprover()))
-        return _print_result(agent.run("Write hello.txt containing 'hello' and verify it."))
+        task = "Write hello.txt containing 'hello' and verify it."
+        start_ns = time.time_ns()
+        result = agent.run(task)
+        code = _print_result(result)
+        _write_usage(
+            args.usage_out, result, "demo", _langfuse_trace(args, result, "demo", task, start_ns)
+        )
+        return code
 
     run_info: dict[str, str] = {}
     if args.allow_cmd:
