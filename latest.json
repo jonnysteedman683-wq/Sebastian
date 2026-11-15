@@ -1,23 +1,40 @@
 {
-  "summary": "No changes in last 24h; head = bc787ff",
-  "changes": [],
+  "summary": "4 commit(s): feat: add run ID to timeline page title; Merge branch 'main' into sebastian/palette-timeline-title-17054462649580508728; test: drop unused noqa S310 flagged by ruff 0.17 (RUF100); Merge pull request #138 from jonnysteedman683-wq/sebastian/palette-timeline-title-17054462649580508728",
+  "changes": [
+    {
+      "category": "ABILITY_CHANGE",
+      "title": "3 file(s) changed",
+      "description": "Detected automatically from code: 3 file(s) changed.",
+      "impact": "unclear (mechanical draft; not reviewed by the watcher)",
+      "evidence": [
+        {
+          "sha": "700e073168c7bb086c0b0fb08d89fd6b0a7f7ce7",
+          "path": ".jules/palette.md"
+        }
+      ],
+      "permission": "n/a",
+      "flags": []
+    }
+  ],
   "prs": [],
   "security_alerts": [],
   "breaking_changes": [],
-  "open_questions": [],
+  "open_questions": [
+    "Mechanical draft (no draft service configured): descriptions come from computed capability changes and commit messages and were not reviewed by the watcher."
+  ],
   "pr_previews": [],
   "escalation_reasons": [],
   "report_type": "repo_change_report",
-  "seq": 164,
+  "seq": 165,
   "source_bot": "GROK-WATCHER",
   "target_bot": "CO-ORDINATOR-BOT",
   "repo": "jonnysteedman683-wq/Sebastian",
   "branch": "main",
   "range": {
     "from_sha": "bc787ff451a9bd2b0a8a9a36281535920c44fdc6",
-    "to_sha": "bc787ff451a9bd2b0a8a9a36281535920c44fdc6"
+    "to_sha": "700e073168c7bb086c0b0fb08d89fd6b0a7f7ce7"
   },
-  "generated_at": "2026-11-15T01:26:54Z",
+  "generated_at": "2026-11-15T09:42:13Z",
   "version": {
     "before": "0.1.0",
     "after": "0.1.0"
@@ -67,6 +84,6 @@
   },
   "risk_score": 0,
   "escalate": false,
-  "priority": "LOW",
-  "signature": "f4739cdb9193c590a05c342e57a45440bfa177278f950b00b443d76400262da0"
+  "priority": "NORMAL",
+  "signature": "537ac45ec3e45dfd04bcb20eddd01f02cc7578394e0dbad7a1d6c365de265b74"
 }
